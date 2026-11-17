@@ -1,3 +1,9 @@
 {
-  "rewrites": [{ "source": "/((?!assets/|.*\\..*).*)", "destination": "/index.html" }]
+  "functions": {
+    "api/og.js": { "includeFiles": "api/_fontes/**" }
+  },
+  "rewrites": [
+    { "source": "/convite/:token", "destination": "/api/convite?token=:token" },
+    { "source": "/((?!assets/|api/|.*\\..*).*)", "destination": "/index.html" }
+  ]
 }

@@ -17,6 +17,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return; // Supabase, Google Fonts etc. vão direto para a rede
+  if (url.pathname.startsWith('/api/')) return; // imagens geradas na hora: sem cache aqui
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).catch(() => caches.match('/app').then((r) => r || caches.match('/'))));
     return;

@@ -32,6 +32,12 @@ const ESTUDOS = [
   ['Autoconhecimento', 'Grupos que conversaram sobre sonhos pelo método de Ullman relataram ganhos de compreensão pessoal comparáveis aos de um método conduzido por terapeuta.', 'Edwards et al. (2013), Frontiers in Psychology', 'https://doi.org/10.3389/fpsyg.2013.00979'],
   ['Criatividade', 'Quem lembra muitos sonhos teve notas mais altas de criatividade. É uma associação, não prova de causa.', 'Vallat, Türker, Nicolas e Ruby (2022), Nature and Science of Sleep', 'https://doi.org/10.2147/NSS.S342137'],
   ['Sono', 'Num diário de sonhos de cinco semanas com 149 pessoas, as noites com sonho lembrado tiveram sono mais longo e despertar mais descansado.', 'Clocks & Sleep (2020), estudo com diário', 'https://doi.org/10.3390/clockssleep2010007'],
+  ['Empatia', 'Conversar sobre o sonho de alguém pelo método de Ullman aumentou a empatia de quem ouviu pela pessoa que contou o sonho.', 'Blagrove et al. (2019), Frontiers in Psychology', 'https://doi.org/10.3389/fpsyg.2019.01351'],
+  ['Memória', 'Quem sonhou com uma tarefa de navegação durante um cochilo se saiu melhor nela depois. Pensar na tarefa acordado não teve o mesmo efeito.', 'Wamsley et al. (2010), Current Biology', 'https://doi.org/10.1016/j.cub.2010.03.027'],
+  ['Pesadelos', 'Reescrever um pesadelo recorrente e ensaiar a nova versão acordado reduziu os pesadelos e melhorou o sono num ensaio clínico com 168 pessoas com estresse pós-traumático.', 'Krakow et al. (2001), JAMA', 'https://doi.org/10.1001/jama.286.5.537'],
+  ['Por que uns lembram', 'Quem lembra muitos sonhos tem mais atividade em áreas do cérebro ligadas à atenção e desperta mais durante a noite, o que ajuda a guardar o sonho.', 'Eichenlaub et al. (2014), Neuropsychopharmacology', 'https://doi.org/10.1038/npp.2014.6'],
+  ['Sonho lúcido', 'Pessoas em sonho lúcido entenderam perguntas feitas pelos pesquisadores e responderam com movimentos dos olhos, ainda dormindo.', 'Konkoly et al. (2021), Current Biology', 'https://doi.org/10.1016/j.cub.2021.01.026'],
+  ['Cérebro', 'Com EEG de alta densidade, pesquisadores acharam uma região no fundo do córtex cuja atividade indica se a pessoa está sonhando. O resultado ainda é debatido.', 'Siclari et al. (2017), Nature Neuroscience', 'https://doi.org/10.1038/nn.4545'],
 ];
 
 const LIVROS = [
@@ -193,15 +199,17 @@ export default function Home() {
             <h2 className="titulo-l">O que diz a ciência</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: '#E6EDF5' }}>{n('Alguns estudos sobre lembrar, registrar e conversar sobre os sonhos. Sem exagero: cada um mostra uma parte, e a ciência dos sonhos ainda está em construção.')}</p>
           </div>
-          <div className="cartoes-4">
-            {ESTUDOS.map(([tag, txt, ref, url]) => (
-              <article key={tag} style={{ background: '#fff', color: 'var(--ink)', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <span className="rotulo-forte" style={{ color: 'var(--azul-escuro)' }}>{tag}</span>
-                <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6 }}>{n(txt)}</p>
-                <span style={{ marginTop: 'auto', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{ref}</span>
-                <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 700 }}>Ler o artigo</a>
-              </article>
-            ))}
+          <div className="esteira">
+            <div className="esteira-trilho">
+              {[...ESTUDOS, ...ESTUDOS].map(([tag, txt, ref, url], i) => (
+                <article key={tag + i} className="estudo" aria-hidden={i >= ESTUDOS.length || undefined}>
+                  <span className="rotulo-forte" style={{ color: 'var(--azul-escuro)' }}>{tag}</span>
+                  <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6 }}>{n(txt)}</p>
+                  <span style={{ marginTop: 'auto', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{ref}</span>
+                  <a href={url} target="_blank" rel="noopener noreferrer" tabIndex={i >= ESTUDOS.length ? -1 : undefined} style={{ fontSize: 13, fontWeight: 700 }}>Ler o artigo</a>
+                </article>
+              ))}
+            </div>
           </div>
           <p className="cabeca-larga" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#E6EDF5' }}>{n('Um aviso honesto: um levantamento com quase 5 mil pessoas no Reino Unido lembra que ainda faltam estudos sobre os benefícios de manter um diário de sonhos fora da terapia. O Sonhário não promete resultados; ele ajuda você a manter a prática.')} <a href="https://journals.ub.uni-heidelberg.de/index.php/IJoDR/article/view/77247" target="_blank" rel="noopener noreferrer" style={{ color: '#fff', fontWeight: 700 }}>Schredl (2021)</a></p>
         </div>

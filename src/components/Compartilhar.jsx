@@ -101,6 +101,36 @@ function LinkConvite({ s }) {
     try { await navigator.clipboard.writeText(url); avisar('Link copiado'); } catch { prompt('Copie o link:', url); }
   }
 
+  // Card de story (1080×1920) do mesmo link. Já busca a imagem quando o link existe,
+  // para o compartilhar abrir na hora do toque (o iPhone exige isso).
+  const [story, setStory] = useState(null);
+  useEffect(() => {
+    if (!url) return;
+    let vivo = true;
+    const token = url.split('/convite/')[1];
+    fetch('/api/og?formato=story&token=' + encodeURIComponent(token))
+      .then((r) => (r.ok && !r.redirected && (r.headers.get('content-type') || '').startsWith('image/png') ? r.blob() : null))
+      .then((b) => vivo && setStory(b ? new File([b], 'sonhario-story.png', { type: 'image/png' }) : false))
+      .catch(() => vivo && setStory(false));
+    return () => { vivo = false; };
+  }, [url]);
+
+  async function mandarStory() {
+    if (!story) return;
+    navigator.clipboard?.writeText(url).catch(() => {});
+    const dica = 'Link copiado. No story, use a figurinha de link e cole.';
+    if (navigator.canShare?.({ files: [story] })) {
+      try { await navigator.share({ files: [story] }); avisar(dica); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(story);
+    a.download = story.name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    avisar('Imagem baixada. ' + dica);
+  }
+
   return (
     <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
@@ -111,7 +141,13 @@ function LinkConvite({ s }) {
             <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Link deste sonho" style={{ fontSize: 13 }} />
             <button type="button" className="btn btn-linha" onClick={copiar}><Copiar size={16} /> Copiar</button>
           </div>
-          <button type="button" className="btn btn-azul" style={{ alignSelf: 'flex-start' }} onClick={() => mandarLink(url, avisar)}>Mandar</button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button type="button" className="btn btn-azul" onClick={() => mandarLink(url, avisar)}>Mandar</button>
+            {story !== false && (
+              <button type="button" className="btn btn-linha" onClick={mandarStory} disabled={!story}>{story ? 'Card para o story' : 'Preparando o card…'}</button>
+            )}
+          </div>
+          {story && <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('No Instagram, ponha a figurinha de link embaixo da seta e cole o link: ele já fica copiado.')}</p>}
         </>
       ) : (
         <>
