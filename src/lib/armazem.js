@@ -81,6 +81,8 @@ function linha(s, userId) {
   for (const c of CAMPOS) o[c] = s[c];
   // Só vai junto quando o banco já tem a coluna (veio na leitura); assim nada quebra antes da migração.
   if (Array.isArray(s.compartilhado_com)) o.compartilhado_com = s.compartilhado_com;
+  // Lixeira: idem, só vai quando o sonho já tem o campo (bloco 8 do schema.sql).
+  if (s.apagado_em !== undefined) o.apagado_em = s.apagado_em;
   return o;
 }
 export function remoto(userId) {
