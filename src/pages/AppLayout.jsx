@@ -7,10 +7,10 @@ import Entrar from './Entrar.jsx';
 import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
 import { instalado } from '../lib/lembrete.js';
-import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar } from '../components/Icones.jsx';
+import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, apagarTodos, avisar } = useEstado();
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete'
@@ -35,6 +35,14 @@ export default function AppLayout() {
   const naCaptura = pathname === '/app' || pathname === '/app/';
   const aba = ({ isActive }) => 'aba' + (isActive ? ' ativa' : '');
   const abrir = (j) => { setMenu(false); setJanela(j); };
+  async function apagarTudo() {
+    setMenu(false);
+    const n = sonhos.length;
+    const r = prompt(`Isso apaga os ${n} sonhos do seu acervo, com áudios e conclusões. Não dá para desfazer.\n\nPara confirmar, digite APAGAR:`);
+    if ((r || '').trim().toUpperCase() !== 'APAGAR') return;
+    await apagarTodos();
+    avisar(n === 1 ? '1 sonho apagado' : n + ' sonhos apagados');
+  }
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -54,6 +62,7 @@ export default function AppLayout() {
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
+              {sonhos.length > 0 && <button role="menuitem" type="button" className="menu-item" style={{ color: '#B42318' }} onClick={apagarTudo}><Lixo size={18} /> Apagar todos os sonhos</button>}
               {usuario ? (
                 <button role="menuitem" type="button" className="menu-item" onClick={sair}><Sair size={18} /> <span>Sair<br /><span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{usuario.email}</span></span></button>
               ) : temLogin ? (
