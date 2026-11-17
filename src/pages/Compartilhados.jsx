@@ -45,15 +45,22 @@ function Vazio({ texto }) {
 
 function Pessoas_() {
   const { compartilhamentos, usuario } = useEstado();
-  const { comigo } = compartilhamentos;
+  const { comigo, aguardando } = compartilhamentos;
+  const esperando = aguardando.length > 0 && (
+    <div className="aviso">{semViuvas(aguardando.length === 1
+      ? `Seu pedido para ver o sonho de ${aguardando[0].dono_nome || aguardando[0].dono_email} está esperando aprovação.`
+      : `${aguardando.length} pedidos esperando aprovação.`)}</div>
+  );
+  if (!comigo.length && esperando) return <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>{esperando}</div>;
   if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando um paciente ou amigo liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
   const grupos = ['terapeuta', 'amigo'].map((p) => [PAPEIS[p].grupo, comigo.filter((c) => c.papel === p)]).filter(([, l]) => l.length);
   return (
     <div style={{ width: '100%', maxWidth: 960, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h1 className="titulo-m">Compartilhados com você</h1>
-        <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Você vê só o que cada pessoa escolheu mostrar. Aqui é só leitura.')}</p>
+        <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Você vê só os sonhos que cada pessoa escolheu mostrar, um por um. Aqui é só leitura.')}</p>
       </div>
+      {esperando}
       {grupos.map(([nome, lista]) => (
         <section key={nome} aria-label={nome} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h2 className="rotulo">{nome}</h2>
@@ -63,7 +70,7 @@ function Pessoas_() {
                 <Avatar nome={c.dono_nome || c.dono_email} foto={pessoa(compartilhamentos.perfis, c.dono_email).foto} size={48} />
                 <span style={{ minWidth: 0, marginRight: 'auto' }}>
                   <strong style={{ display: 'block', fontSize: 16 }}>{c.dono_nome || c.dono_email}</strong>
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>{c.escopo === 'todos' ? 'todos os sonhos' : 'sonhos escolhidos'}{c.ver_amplificacoes ? ' · com amplificações' : ''}</span>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>sonhos que {(c.dono_nome || 'a pessoa').split(' ')[0]} escolheu mostrar</span>
                 </span>
                 <Avancar size={18} />
               </Link>

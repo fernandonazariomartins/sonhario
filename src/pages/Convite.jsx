@@ -14,6 +14,7 @@ export default function Convite() {
   const { pronto, usuario, temLogin, entrar, recarregarCompartilhamentos } = useEstado();
   const [convite, setConvite] = useState(undefined); // undefined: carregando; null: não existe
   const [erro, setErro] = useState('');
+  const [esperando, setEsperando] = useState(false);
 
   useEffect(() => {
     if (!temLogin) { setConvite(null); return; }
@@ -27,7 +28,9 @@ export default function Convite() {
     aceitarConvite(token)
       .then(async (r) => {
         await recarregarCompartilhamentos();
-        if (vivo) navegar('/app/compartilhados/' + r.dono + (r.sonho ? '/' + r.sonho : ''), { replace: true });
+        if (!vivo) return;
+        if (r.pendente) { setEsperando(true); return; }
+        navegar('/app/compartilhados/' + r.dono + (r.sonho ? '/' + r.sonho : ''), { replace: true });
       })
       .catch((e) => vivo && setErro(e.message));
     return () => { vivo = false; };
@@ -35,7 +38,16 @@ export default function Convite() {
 
   const nome = convite?.dono_nome || 'Alguém';
   let corpo;
-  if (convite === undefined || (usuario && convite && !erro)) {
+  if (esperando) {
+    corpo = (
+      <>
+        <Avatar nome={nome} foto={convite.dono_foto} size={72} />
+        <h1 className="titulo-m">{semViuvas('Pedido enviado')}</h1>
+        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(`Assim que ${nome.split(' ')[0]} aprovar, o sonho aparece no seu Sonhário, em Compartilhados.`)}</p>
+        <Link className="btn btn-preto btn-grande" to="/app">Abrir o meu Sonhário</Link>
+      </>
+    );
+  } else if (convite === undefined || (usuario && convite && !erro)) {
     corpo = <p style={{ color: 'var(--muted)' }}>Abrindo o convite…</p>;
   } else if (!convite) {
     corpo = (
@@ -57,9 +69,9 @@ export default function Convite() {
     corpo = (
       <>
         <Avatar nome={nome} foto={convite.dono_foto} size={72} />
-        <h1 className="titulo-m">{semViuvas(`${nome} compartilhou ${convite.de_um_sonho ? 'um sonho' : 'os sonhos'} com você`)}</h1>
-        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Entre com a sua conta Google para ver. É de graça, e você também ganha um caderno para anotar os seus sonhos, se quiser.')}</p>
-        <button type="button" className="btn btn-preto btn-grande" onClick={() => { convitePendente.guardar(token); entrar(); }}>Entrar com Google e ver</button>
+        <h1 className="titulo-m">{semViuvas(`${nome} quer te mostrar um sonho`)}</h1>
+        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(`Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça.`)}</p>
+        <button type="button" className="btn btn-preto btn-grande" onClick={() => { convitePendente.guardar(token); entrar(); }}>Entrar com Google</button>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Você só lê: o sonho continua sendo de quem compartilhou.')}</p>
       </>
     );

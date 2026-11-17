@@ -14,7 +14,7 @@ export function EstadoProvider({ children }) {
   const [semConta, setSemConta] = useState(() => localStorage.getItem(PULOU) === '1' || !supabase);
   const [sonhos, setSonhos] = useState([]);
   const [aviso, setAviso] = useState('');
-  const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], comigo: [], perfis: {} });
+  const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} });
   const sonhosRef = useRef([]);
   useEffect(() => { sonhosRef.current = sonhos; }, [sonhos]);
 
@@ -54,8 +54,8 @@ export function EstadoProvider({ children }) {
 
   // Convites feitos e recebidos. Se o banco ainda não tem a tabela, fica tudo vazio.
   const recarregarCompartilhamentos = useCallback(async () => {
-    if (!usuario) { setCompartilhamentos({ meus: [], comigo: [], perfis: {} }); return; }
-    try { setCompartilhamentos(await listarCompartilhamentos(usuario)); } catch { setCompartilhamentos({ meus: [], comigo: [], perfis: {} }); }
+    if (!usuario) { setCompartilhamentos({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} }); return; }
+    try { setCompartilhamentos(await listarCompartilhamentos(usuario)); } catch { setCompartilhamentos({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} }); }
   }, [usuario]);
   useEffect(() => {
     if (!pronto) return;

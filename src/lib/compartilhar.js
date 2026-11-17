@@ -7,11 +7,6 @@ export const PAPEIS = {
   amigo: { rotulo: 'amigo ou amiga', grupo: 'Amigos' },
 };
 
-export const ESCOPOS = {
-  todos: 'Todos os sonhos',
-  escolhidos: 'Só os que eu escolher',
-};
-
 export const nomeDe = (u) => u?.user_metadata?.full_name || u?.user_metadata?.name || (u?.email || '').split('@')[0];
 const emailValido = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
@@ -32,8 +27,10 @@ export async function listarCompartilhamentos(usuario) {
   const eu = (usuario.email || '').toLowerCase();
   const { data: ps } = await supabase.rpc('perfis_conectados');
   return {
-    meus: data.filter((c) => c.dono_id === usuario.id),
-    comigo: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id),
+    meus: data.filter((c) => c.dono_id === usuario.id && !c.pendente),
+    pedidos: data.filter((c) => c.dono_id === usuario.id && c.pendente),
+    comigo: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id && !c.pendente),
+    aguardando: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id && c.pendente),
     perfis: Object.fromEntries((ps || []).map((p) => [p.email, p])),
   };
 }
@@ -52,13 +49,13 @@ export function pessoa(perfis, email, apelido = '') {
   return { email, nome: p?.nome || apelido || email, foto: p?.foto || '', temConta: !!p };
 }
 
-export async function convidar(usuario, { email, nome = '', papel, escopo, ver_amplificacoes }) {
+export async function convidar(usuario, { email, nome = '', papel, ver_amplificacoes }) {
   const e = email.trim().toLowerCase();
   if (!emailValido(e)) throw new Error('Confira o e-mail.');
   if (e === (usuario.email || '').toLowerCase()) throw new Error('Esse é o seu próprio e-mail.');
   const { data, error } = await supabase.from('compartilhamentos').insert({
     dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '',
-    convidado_email: e, convidado_nome: nome.trim(), papel, escopo, ver_amplificacoes,
+    convidado_email: e, convidado_nome: nome.trim(), papel, escopo: 'escolhidos', ver_amplificacoes,
   }).select().single();
   if (error) throw new Error(error.code === '23505' ? 'Esse e-mail já tem acesso.' : error.message);
   return data;
@@ -85,16 +82,15 @@ export async function urlAudioCompartilhado(ref) {
   return error ? null : data.signedUrl;
 }
 
-// Texto do convite, para mandar por WhatsApp ou e-mail.
-export function textoConvite(c) {
+// Texto do convite pelo e-mail, para mandar por WhatsApp ou e-mail.
+export function textoConvite(c, sonho) {
   const app = location.origin + '/app/compartilhados';
-  const quem = c.papel === 'terapeuta' ? 'Compartilhei com você o meu caderno de sonhos no Sonhário, para acompanharmos nas sessões.' : 'Compartilhei com você alguns dos meus sonhos no Sonhário.';
-  return `${quem}\n\nPara ver, entre com a sua conta Google (${c.convidado_email}) em:\n${app}`;
+  return `Compartilhei com você um sonho que anotei no Sonhário${sonho?.titulo?.trim() ? ': “' + sonho.titulo.trim() + '”' : ''}.\n\nPara ver, entre com a sua conta Google (${c.convidado_email}) em:\n${app}`;
 }
 
 // Quem pode ver um sonho meu.
 export function quemVe(meus, sonho) {
-  return meus.filter((c) => c.escopo === 'todos' || (sonho.compartilhado_com || []).includes(c.convidado_email));
+  return meus.filter((c) => (sonho.compartilhado_com || []).includes(c.convidado_email));
 }
 
 // Rótulo da aba: "Pacientes", "Amigos" ou "Compartilhados" quando há dos dois.
@@ -115,8 +111,8 @@ function novoToken() {
   return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Cria um link que vale para uma pessoa (a primeira que abrir e entrar).
-export async function criarLink(usuario, { sonhoId = null, papel, ver_amplificacoes }) {
+// Cria um link. Pode ir para várias pessoas: cada uma vira um pedido para aprovar.
+export async function criarLink(usuario, { sonhoId, papel, ver_amplificacoes }) {
   const token = novoToken();
   const { error } = await supabase.from('convites').insert({
     token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '', sonho_id: sonhoId, papel, ver_amplificacoes,
@@ -137,9 +133,14 @@ export async function aceitarConvite(token) {
   return data?.[0];
 }
 
-export async function mandarLink(url, deUmSonho, avisar) {
-  const texto = (deUmSonho ? 'Quero te mostrar um sonho que anotei no Sonhário.' : 'Compartilhei meu caderno de sonhos com você no Sonhário.') + ' Abra o link e entre com a sua conta Google:\n' + url;
+export async function mandarLink(url, avisar) {
+  const texto = 'Quero te mostrar um sonho que anotei no Sonhário. Abra o link e entre com a sua conta Google:\n' + url;
   try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); }
   catch { prompt('Copie o link:', url); }
+}
+
+export async function aprovarPedido(id) {
+  const { error } = await supabase.rpc('aprovar_pedido', { pedido: id });
+  if (error) throw error;
 }
