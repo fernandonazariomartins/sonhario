@@ -50,6 +50,11 @@ O Sonhário tem projeto próprio no Google Cloud (**Sonhario**, ID `sonhario-515
 4. Ainda no Supabase: **Authentication › URL Configuration**:
    - **Site URL:** o endereço do Sonhário na Vercel (ex.: `https://sonhario.vercel.app`).
    - **Redirect URLs:** `https://sonhario.vercel.app/app` e `http://localhost:5173/app`.
+5. **Tirar o endereço do Supabase da tela do Google.** O app usa o botão oficial do Google, que faz o login aqui no site:
+   - No cliente OAuth "Sonhario web", em **Origens JavaScript autorizadas**, adicione `https://sonhario-flame.vercel.app` e `http://localhost:5173`.
+   - Na Vercel, adicione `VITE_GOOGLE_CLIENT_ID` com o Client ID desse cliente e faça um novo deploy.
+   - Sem essa variável (ou no iPhone com o app instalado), o login volta a ser o antigo, por redirecionamento.
+   - Em **Google Auth Platform › Branding**, preencha nome, logo, página inicial e política de privacidade (`/privacidade`) e peça a verificação da marca, para a tela mostrar "Sonhário" com o logo.
 
 ### 4. Publicar na Vercel (≈ 3 min)
 1. Suba esta pasta para um repositório no GitHub (ex.: `sonhario`).
