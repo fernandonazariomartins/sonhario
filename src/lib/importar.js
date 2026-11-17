@@ -231,10 +231,11 @@ export function combinarComAcervo(entrando, acervo, pularRepetidos = true) {
   const usados = new Set();
   const novos = [];
   const completar = [];
+  let pulados = 0;
   for (const s of entrando) {
     const candidatos = porChave.get(dia(s) + '|' + tituloNorm(s)) || [];
     const igual = comeco(s) && candidatos.find((e) => comeco(e) === comeco(s));
-    if (igual) { usados.add(igual.id); if (!pularRepetidos) novos.push(s); continue; }
+    if (igual) { usados.add(igual.id); if (pularRepetidos) pulados++; else novos.push(s); continue; }
     if (comeco(s)) {
       const vazio = candidatos.find((e) => !usados.has(e.id) && !comeco(e));
       if (vazio) {
@@ -242,10 +243,10 @@ export function combinarComAcervo(entrando, acervo, pularRepetidos = true) {
         completar.push({ ...vazio, texto: s.texto, temas: [...new Set([...(vazio.temas || []), ...(s.temas || [])])] });
         continue;
       }
-    } else if (candidatos.length && pularRepetidos) continue;
+    } else if (candidatos.length && pularRepetidos) { pulados++; continue; }
     novos.push(s);
   }
-  return { novos, completar };
+  return { novos, completar, pulados };
 }
 
 // Sonho sem nada dentro: sem título, relato, áudio, temas nem amplificações.
