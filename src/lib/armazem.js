@@ -79,12 +79,14 @@ export const local = {
 function linha(s, userId) {
   const o = { user_id: userId };
   for (const c of CAMPOS) o[c] = s[c];
+  // Só vai junto quando o banco já tem a coluna (veio na leitura); assim nada quebra antes da migração.
+  if (typeof s.compartilhado === 'boolean') o.compartilhado = s.compartilhado;
   return o;
 }
 export function remoto(userId) {
   return {
     async listar() {
-      const { data, error } = await supabase.from('sonhos').select(CAMPOS.join(',')).order('sonhado_em', { ascending: false });
+      const { data, error } = await supabase.from('sonhos').select('*').order('sonhado_em', { ascending: false });
       if (error) throw error;
       return data;
     },

@@ -6,12 +6,13 @@ import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { sugerirTemas } from '../lib/temasAuto.js';
 import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { PAPEIS, quemVe } from '../lib/compartilhar.js';
 
 export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio, usuario, avisar } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, usuario, avisar, compartilhamentos } = useEstado();
   const estiloTema = useCorTema();
   const original = sonhos.find((s) => s.id === id);
   const [s, setS] = useState(original);
@@ -214,8 +215,33 @@ export default function Sonho() {
           <input type="checkbox" checked={!!s.levar_sessao} onChange={(e) => mudar({ levar_sessao: e.target.checked }, true)} style={{ width: 20, height: 20, accentColor: 'var(--azul)', flex: 'none' }} />
           <span style={{ fontSize: 14, lineHeight: 1.45 }}><strong>Levar para a próxima sessão</strong><br /><span style={{ color: 'var(--muted)' }}>Fica marcado para você lembrar antes da análise.</span></span>
         </label>
+        <CompartilharSonho s={s} meus={compartilhamentos.meus} mudar={mudar} />
         <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('As amplificações são suas. O Sonhário não interpreta sonhos e não substitui a sua análise.')}</p>
       </aside>
     </div>
+  );
+}
+
+// Quem vê este sonho. Com "só os que eu escolher", a pessoa marca aqui.
+// (Se há convites, o banco já tem a coluna "compartilhado": vêm do mesmo bloco do schema.)
+function CompartilharSonho({ s, meus, mudar }) {
+  if (!meus.length) return null;
+  const escolhe = meus.some((c) => c.escopo === 'escolhidos');
+  const veem = quemVe(meus, s);
+  const nomes = (lista) => lista.map((c) => (c.convidado_nome || c.convidado_email) + (c.papel === 'terapeuta' ? ' (' + PAPEIS.terapeuta.rotulo + ')' : '')).join(', ');
+  const conteudo = (
+    <span style={{ fontSize: 14, lineHeight: 1.45 }}>
+      <strong>{escolhe ? 'Compartilhar este sonho' : 'Compartilhado'}</strong><br />
+      <span style={{ color: 'var(--muted)' }}>
+        {veem.length ? 'Visível para ' + nomes(veem) + '.' : 'Ninguém vê este sonho.'}
+      </span>
+    </span>
+  );
+  if (!escolhe) return <div className="painel" style={{ padding: '16px 20px' }}>{conteudo}</div>;
+  return (
+    <label className="painel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+      <input type="checkbox" checked={!!s.compartilhado} onChange={(e) => mudar({ compartilhado: e.target.checked }, true)} style={{ width: 20, height: 20, accentColor: 'var(--azul)', flex: 'none' }} />
+      {conteudo}
+    </label>
   );
 }

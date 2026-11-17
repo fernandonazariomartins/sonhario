@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase, entrarComGoogle, sair } from './supabase.js';
 import { local, remoto, levarParaConta } from './armazem.js';
 import { mapaDeCores, corDoTema } from './coresTema.js';
+import { listarCompartilhamentos } from './compartilhar.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -13,6 +14,7 @@ export function EstadoProvider({ children }) {
   const [semConta, setSemConta] = useState(() => localStorage.getItem(PULOU) === '1' || !supabase);
   const [sonhos, setSonhos] = useState([]);
   const [aviso, setAviso] = useState('');
+  const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], comigo: [] });
   const sonhosRef = useRef([]);
   useEffect(() => { sonhosRef.current = sonhos; }, [sonhos]);
 
@@ -49,6 +51,13 @@ export function EstadoProvider({ children }) {
       recarregar();
     })();
   }, [pronto, usuario, recarregar, avisar]);
+
+  // Convites feitos e recebidos. Se o banco ainda não tem a tabela, fica tudo vazio.
+  const recarregarCompartilhamentos = useCallback(async () => {
+    if (!usuario) { setCompartilhamentos({ meus: [], comigo: [] }); return; }
+    try { setCompartilhamentos(await listarCompartilhamentos(usuario)); } catch { setCompartilhamentos({ meus: [], comigo: [] }); }
+  }, [usuario]);
+  useEffect(() => { if (pronto) recarregarCompartilhamentos(); }, [pronto, recarregarCompartilhamentos]);
 
   const salvar = useCallback(async (sonho) => {
     const s = { ...sonho, atualizado_em: new Date().toISOString() };
@@ -89,7 +98,7 @@ export function EstadoProvider({ children }) {
   }, [loja, avisar, recarregar]);
 
   const valor = {
-    pronto, usuario, sonhos, aviso, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
+    pronto, usuario, sonhos, aviso, compartilhamentos, recarregarCompartilhamentos, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),
     temLogin: !!supabase,

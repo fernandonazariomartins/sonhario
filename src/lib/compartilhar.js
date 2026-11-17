@@ -1,0 +1,78 @@
+// Compartilhar sonhos com o terapeuta ou com amigos.
+// Quem compartilha convida pelo e-mail; quem foi convidado entra com Google e lê (sem editar).
+import { supabase, AUDIO_BUCKET } from './supabase.js';
+
+export const PAPEIS = {
+  terapeuta: { rotulo: 'terapeuta', grupo: 'Pacientes' },
+  amigo: { rotulo: 'amigo ou amiga', grupo: 'Amigos' },
+};
+
+export const ESCOPOS = {
+  todos: 'Todos os sonhos',
+  escolhidos: 'Só os que eu escolher',
+};
+
+export const nomeDe = (u) => u?.user_metadata?.full_name || u?.user_metadata?.name || (u?.email || '').split('@')[0];
+const emailValido = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+// Os dois lados de uma vez: os convites que eu fiz e os que recebi.
+export async function listarCompartilhamentos(usuario) {
+  const { data, error } = await supabase.from('compartilhamentos').select('*').order('criado_em');
+  if (error) throw error;
+  const eu = (usuario.email || '').toLowerCase();
+  return {
+    meus: data.filter((c) => c.dono_id === usuario.id),
+    comigo: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id),
+  };
+}
+
+export async function convidar(usuario, { email, nome, papel, escopo, ver_amplificacoes }) {
+  const e = email.trim().toLowerCase();
+  if (!emailValido(e)) throw new Error('Confira o e-mail.');
+  if (e === (usuario.email || '').toLowerCase()) throw new Error('Esse é o seu próprio e-mail.');
+  const { data, error } = await supabase.from('compartilhamentos').insert({
+    dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '',
+    convidado_email: e, convidado_nome: nome.trim(), papel, escopo, ver_amplificacoes,
+  }).select().single();
+  if (error) throw new Error(error.code === '23505' ? 'Esse e-mail já tem acesso.' : error.message);
+  return data;
+}
+
+export async function mudarCompartilhamento(id, parcial) {
+  const { error } = await supabase.from('compartilhamentos').update(parcial).eq('id', id);
+  if (error) throw error;
+}
+
+export async function desfazer(id) {
+  const { error } = await supabase.from('compartilhamentos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function sonhosDe(donoId) {
+  const { data, error } = await supabase.rpc('sonhos_compartilhados', { dono: donoId });
+  if (error) throw error;
+  return data;
+}
+
+export async function urlAudioCompartilhado(ref) {
+  const { data, error } = await supabase.storage.from(AUDIO_BUCKET).createSignedUrl(ref, 60 * 60);
+  return error ? null : data.signedUrl;
+}
+
+// Texto do convite, para mandar por WhatsApp ou e-mail.
+export function textoConvite(c) {
+  const app = location.origin + '/app/compartilhados';
+  const quem = c.papel === 'terapeuta' ? 'Compartilhei com você o meu caderno de sonhos no Sonhário, para acompanharmos nas sessões.' : 'Compartilhei com você alguns dos meus sonhos no Sonhário.';
+  return `${quem}\n\nPara ver, entre com a sua conta Google (${c.convidado_email}) em:\n${app}`;
+}
+
+// Quem pode ver um sonho meu.
+export function quemVe(meus, sonho) {
+  return meus.filter((c) => c.escopo === 'todos' || sonho.compartilhado);
+}
+
+// Rótulo da aba: "Pacientes", "Amigos" ou "Compartilhados" quando há dos dois.
+export function rotuloAba(comigo) {
+  const papeis = new Set(comigo.map((c) => c.papel));
+  return papeis.size === 1 ? PAPEIS[[...papeis][0]].grupo : 'Compartilhados';
+}

@@ -10,12 +10,16 @@ const SECOES = [
   ]],
   ['Onde ficam os dados', [
     'Sem conta, tudo fica apenas no seu aparelho, no próprio navegador.',
-    'Com conta, os sonhos e os áudios ficam guardados no Supabase, um serviço de banco de dados. Regras de acesso garantem que cada pessoa veja somente os próprios sonhos.',
+    'Com conta, os sonhos e os áudios ficam guardados no Supabase, um serviço de banco de dados. Regras de acesso garantem que cada pessoa veja somente os próprios sonhos e os que alguém compartilhou com ela.',
   ]],
   ['O que não fazemos', [
-    'Não vendemos, não alugamos e não compartilhamos seus dados com ninguém.',
+    'Não vendemos, não alugamos e não compartilhamos seus dados com ninguém. Só vê seus sonhos quem você mesmo convidar.',
     'Não usamos seus sonhos para publicidade nem para treinar inteligência artificial.',
     'Ninguém lê os seus sonhos. Eles são seus.',
+  ]],
+  ['Compartilhar com terapeuta ou amigos', [
+    'Você pode liberar o acesso aos seus sonhos para outras pessoas, pelo e-mail da conta Google delas. Você escolhe se elas veem todos os sonhos ou só os que você marcar, e se veem as amplificações.',
+    'Quem recebe o acesso só lê: não edita nem apaga. Você pode tirar o acesso a qualquer momento, e ele some na hora.',
   ]],
   ['Transcrição de voz', [
     'Quando você grava, a fala pode virar texto pelo reconhecimento de voz do próprio navegador (por exemplo, o do Google Chrome), que segue as regras de privacidade de quem fez o navegador.',
