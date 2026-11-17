@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useEstado } from '../lib/estado.jsx';
+import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { Voltar, Fechar, Mais, Lixo, Ok, Calendario } from '../components/Icones.jsx';
@@ -11,6 +11,7 @@ export default function Sonho() {
   const [params] = useSearchParams();
   const navegar = useNavigate();
   const { sonhos, salvar, apagar, urlAudio, usuario, avisar } = useEstado();
+  const estiloTema = useCorTema();
   const original = sonhos.find((s) => s.id === id);
   const [s, setS] = useState(original);
   const [novoTema, setNovoTema] = useState('');
@@ -112,8 +113,8 @@ export default function Sonho() {
           <h2 id="t-temas" className="rotulo">Temas</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             {s.temas.map((t) => (
-              <span key={t} style={{ height: 32, padding: '0 4px 0 12px', borderRadius: 999, background: 'var(--cinza)', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 2 }}>{t}
-                <button type="button" onClick={() => mudar({ temas: s.temas.filter((x) => x !== t) }, true)} aria-label={'Tirar o tema ' + t} style={{ width: 28, height: 28, border: 0, background: 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}><Fechar size={12} /></button>
+              <span key={t} style={{ ...estiloTema(t), height: 30, padding: '0 2px 0 10px', borderRadius: 6, fontSize: 13.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2 }}>{t}
+                <button type="button" onClick={() => mudar({ temas: s.temas.filter((x) => x !== t) }, true)} aria-label={'Tirar o tema ' + t} style={{ width: 28, height: 28, border: 0, background: 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'inherit', opacity: 0.6 }}><Fechar size={12} /></button>
               </span>
             ))}
             <form onSubmit={(e) => { e.preventDefault(); addTema(novoTema); }} style={{ display: 'inline-flex' }}>
@@ -126,7 +127,7 @@ export default function Sonho() {
           {recentes.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>Usados antes:</span>
-              {recentes.map((t) => <button key={t} type="button" onClick={() => addTema(t)} style={{ height: 32, padding: '0 10px', borderRadius: 999, border: '1px solid var(--line-strong)', background: '#fff', fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>{t}</button>)}
+              {recentes.map((t) => <button key={t} type="button" onClick={() => addTema(t)} style={{ ...estiloTema(t), height: 28, padding: '0 9px', borderRadius: 6, border: 0, fontSize: 13, fontWeight: 600, opacity: 0.75 }}>+ {t}</button>)}
             </div>
           )}
         </section>
