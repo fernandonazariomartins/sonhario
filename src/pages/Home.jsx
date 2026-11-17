@@ -224,7 +224,7 @@ export default function Home() {
       <footer style={{ padding: '40px 20px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         <Logo />
         <Assinatura />
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>Privacidade · Termos</span>
+        <Link to="/privacidade" style={{ fontSize: 13, color: 'var(--muted)' }}>Privacidade e termos</Link>
       </footer>
     </div>
   );
