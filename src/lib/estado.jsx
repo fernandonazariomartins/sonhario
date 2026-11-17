@@ -4,15 +4,19 @@ import { supabase, entrarComGoogle, sair } from './supabase.js';
 import { local, remoto, levarParaConta } from './armazem.js';
 import { mapaDeCores, corDoTema } from './coresTema.js';
 import { listarCompartilhamentos, salvarMeuPerfil } from './compartilhar.js';
+import { sonhosDeExemplo } from './exemplos.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
+const SEM_EXEMPLOS = 'sonhario:sem-exemplos';
 
 export function EstadoProvider({ children }) {
   const [pronto, setPronto] = useState(false);
   const [sessao, setSessao] = useState(null);
   const [semConta, setSemConta] = useState(() => localStorage.getItem(PULOU) === '1' || !supabase);
   const [sonhos, setSonhos] = useState([]);
+  const [carregado, setCarregado] = useState(false);
+  const [semExemplos, setSemExemplos] = useState(() => localStorage.getItem(SEM_EXEMPLOS) === '1');
   const [aviso, setAviso] = useState('');
   const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} });
   const sonhosRef = useRef([]);
@@ -36,11 +40,13 @@ export function EstadoProvider({ children }) {
 
   const recarregar = useCallback(async () => {
     try { setSonhos(await loja.listar()); } catch (e) { avisar('Não deu para carregar os sonhos: ' + e.message); }
+    setCarregado(true);
   }, [loja, avisar]);
 
   // Ao entrar com Google, leva para a conta o que estava salvo no aparelho.
   useEffect(() => {
     if (!pronto) return;
+    setCarregado(false);
     (async () => {
       if (usuario && local.listar().length) {
         try {
@@ -101,15 +107,19 @@ export function EstadoProvider({ children }) {
     try { await loja.apagarTodos(); setSonhos([]); } catch (e) { avisar('Não deu para apagar: ' + e.message); await recarregar(); }
   }, [loja, avisar, recarregar]);
 
+  // Exemplos só na tela, nunca no banco. Esperam a lista carregar para não piscar para quem já tem sonhos.
+  const exemplos = useMemo(() => (carregado && !semExemplos ? sonhosDeExemplo(sonhos.length) : []), [carregado, semExemplos, sonhos.length]);
+
   const valor = {
-    pronto, usuario, sonhos, aviso, compartilhamentos, recarregarCompartilhamentos, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
+    pronto, usuario, sonhos, exemplos, semExemplos,
+    esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),
     temLogin: !!supabase,
     semConta,
     entrar: () => entrarComGoogle(),
     pularLogin: () => { localStorage.setItem(PULOU, '1'); setSemConta(true); },
-    sair: async () => { await sair(); localStorage.removeItem(PULOU); setSemConta(false); setSonhos([]); },
+    sair: async () => { await sair(); localStorage.removeItem(PULOU); setSemConta(false); setSonhos([]); setCarregado(false); },
   };
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }
