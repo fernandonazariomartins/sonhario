@@ -361,3 +361,69 @@ language sql stable security definer set search_path = public as $$
       and c.convidado_email = any (s.compartilhado_com)
   );
 $$;
+
+-- 8. Link sem aprovação ------------------------------------------------------
+-- O link pode pedir aprovação (padrão) ou deixar entrar direto. Nos dois casos,
+-- quem abre precisa entrar com Google, e vê só o sonho daquele link.
+alter table public.convites add column if not exists aprovar boolean not null default true;
+
+drop function if exists public.ver_convite(text);
+create function public.ver_convite(chave text)
+returns table (dono_nome text, dono_foto text, de_um_sonho boolean, aprovar boolean)
+language sql stable security definer set search_path = public as $$
+  select c.dono_nome, coalesce(p.foto, ''), c.sonho_id is not null, c.aprovar
+  from public.convites c left join public.perfis p on p.id = c.dono_id
+  where c.token = chave;
+$$;
+revoke all on function public.ver_convite(text) from public;
+grant execute on function public.ver_convite(text) to anon, authenticated;
+
+create or replace function public.aceitar_convite(chave text)
+returns table (dono uuid, sonho uuid, pendente boolean)
+language plpgsql security definer set search_path = public as $$
+declare
+  cv public.convites;
+  ja public.compartilhamentos;
+  meu_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if auth.uid() is null or meu_email = '' then raise exception 'Entre com Google para abrir o convite.'; end if;
+  select * into cv from public.convites where token = chave;
+  if not found then raise exception 'Esse link não existe mais. Peça um novo.'; end if;
+  if cv.dono_id = auth.uid() then raise exception 'Esse link é seu. Mande para a pessoa com quem quer compartilhar.'; end if;
+
+  select * into ja from public.compartilhamentos c where c.dono_id = cv.dono_id and c.convidado_email = meu_email;
+
+  -- Já aprovada antes, ou link que entra direto: ganha o sonho na hora.
+  if (found and not ja.pendente) or not cv.aprovar then
+    if not found then
+      insert into public.compartilhamentos (dono_id, dono_nome, dono_email, convidado_email, papel, escopo, ver_amplificacoes, pendente)
+      values (cv.dono_id, cv.dono_nome, cv.dono_email, meu_email, cv.papel, 'escolhidos', cv.ver_amplificacoes, false);
+    elsif ja.pendente then
+      -- Tinha um pedido de outro link: este sonho entra; os outros continuam esperando aprovação.
+      update public.compartilhamentos c
+         set pendente = false,
+             sonhos_pedidos = array_remove(c.sonhos_pedidos, cv.sonho_id)
+       where c.id = ja.id;
+    end if;
+    if cv.sonho_id is not null then
+      update public.sonhos set compartilhado_com = array_append(compartilhado_com, meu_email)
+      where id = cv.sonho_id and user_id = cv.dono_id and not (meu_email = any (compartilhado_com));
+    end if;
+    return query select cv.dono_id, cv.sonho_id, false;
+    return;
+  end if;
+
+  if found then
+    update public.compartilhamentos c
+       set sonhos_pedidos = case when cv.sonho_id is null or cv.sonho_id = any (c.sonhos_pedidos) then c.sonhos_pedidos else array_append(c.sonhos_pedidos, cv.sonho_id) end
+     where c.id = ja.id;
+  else
+    insert into public.compartilhamentos (dono_id, dono_nome, dono_email, convidado_email, papel, escopo, ver_amplificacoes, pendente, sonhos_pedidos)
+    values (cv.dono_id, cv.dono_nome, cv.dono_email, meu_email, cv.papel, 'escolhidos', cv.ver_amplificacoes, true,
+            case when cv.sonho_id is null then '{}'::uuid[] else array[cv.sonho_id] end);
+  end if;
+  return query select cv.dono_id, cv.sonho_id, true;
+end;
+$$;
+revoke all on function public.aceitar_convite(text) from public, anon;
+grant execute on function public.aceitar_convite(text) to authenticated;

@@ -70,7 +70,9 @@ export default function Convite() {
       <>
         <Avatar nome={nome} foto={convite.dono_foto} size={72} />
         <h1 className="titulo-m">{semViuvas(`${nome} quer te mostrar um sonho`)}</h1>
-        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(`Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça.`)}</p>
+        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(convite.aprovar === false
+          ? 'Entre com a sua conta Google para ver este sonho, e só ele. É de graça.'
+          : `Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça.`)}</p>
         <button type="button" className="btn btn-preto btn-grande" onClick={() => { convitePendente.guardar(token); entrar(); }}>Entrar com Google</button>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Você só lê: o sonho continua sendo de quem compartilhou.')}</p>
       </>
