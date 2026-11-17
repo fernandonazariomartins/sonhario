@@ -6,6 +6,7 @@ import { PAPEIS, sonhosDe, urlAudioCompartilhado, desfazer, pessoa } from '../li
 import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
+import { interpretar, casar } from '../lib/busca.js';
 import { Nota, Status } from './Acervo.jsx';
 import { Voltar, Avancar, Busca, Calendario, Pessoas } from '../components/Icones.jsx';
 
@@ -91,11 +92,17 @@ function SonhosDaPessoa({ c }) {
   const [filtro, setFiltro] = useState(''); // '' | 'sessao' | 'atencao'
   const nome = c.dono_nome || c.dono_email;
   const temas = useMemo(() => contarTemas(sonhos).slice(0, 8), [sonhos]);
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    return sonhos.filter((s) =>
-      (!filtro || (filtro === 'sessao' ? s.levar_sessao : s.status === 'dar_atencao')) &&
-      (!q || [s.titulo, s.texto, ...(s.temas || []), ...(s.conclusoes || []).map((x) => x.texto)].join(' ').toLowerCase().includes(q)));
+  const { filtrados, achados } = useMemo(() => {
+    const consulta = interpretar(busca);
+    const achados = new Map();
+    const filtrados = sonhos.filter((s) => {
+      if (filtro && !(filtro === 'sessao' ? s.levar_sessao : s.status === 'dar_atencao')) return false;
+      if (consulta.vazia) return true;
+      const r = casar(s, consulta);
+      if (r) achados.set(s.id, { ...r, termos: consulta.termos });
+      return !!r;
+    });
+    return { filtrados, achados };
   }, [sonhos, busca, filtro]);
   const nSessao = sonhos.filter((s) => s.levar_sessao).length;
   const nAtencao = sonhos.filter((s) => s.status === 'dar_atencao').length;
@@ -116,7 +123,8 @@ function SonhosDaPessoa({ c }) {
           {!carregando && <span style={{ fontSize: 14, color: 'var(--muted)' }}>{sonhos.length === 1 ? '1 sonho compartilhado' : sonhos.length + ' sonhos compartilhados'}</span>}
         </div>
         <label className="busca"><Busca size={18} /><span className="sr">Buscar nos sonhos de {nome}</span>
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar: palavra, pessoa, lugar" />
+          <input type="search" value={busca} onChange={(e) => setBusca(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') setBusca(''); }} placeholder="Buscar: palavra, pessoa, lugar" enterKeyHint="search" autoComplete="off" spellCheck={false} />
+          {busca && <button type="button" className="busca-limpar" onClick={() => setBusca('')} aria-label="Limpar busca">×</button>}
         </label>
       </div>
 
@@ -136,7 +144,7 @@ function SonhosDaPessoa({ c }) {
       {carregando ? <p style={{ color: 'var(--muted)' }}>Carregando os sonhos…</p>
         : erro ? <div className="aviso">Não deu para carregar: {erro}</div>
         : !sonhos.length ? <div className="painel" style={{ padding: 24, color: 'var(--muted)' }}>{semViuvas(`${nome} ainda não escolheu nenhum sonho para mostrar.`)}</div>
-        : <div className="mural">{filtrados.map((s) => <Nota key={s.id} s={s} para={`/app/compartilhados/${c.dono_id}/${s.id}`} />)}</div>}
+        : <div className="mural">{filtrados.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} para={`/app/compartilhados/${c.dono_id}/${s.id}`} />)}</div>}
       {!carregando && sonhos.length > 0 && filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
 
       <button type="button" onClick={sair} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: '8px 0' }}>Deixar de ver os sonhos de {nome}</button>

@@ -49,6 +49,16 @@ input, textarea, select { font-family: inherit; color: var(--ink); }
 .aba.ativa svg { color: var(--azul); }
 .busca { flex: 1 1 220px; max-width: 480px; height: 44px; border-radius: 10px; background: var(--cinza); display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--muted); }
 .busca input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 14px; outline: none; }
+.busca input::-webkit-search-cancel-button { display: none; }
+.busca:focus-within { box-shadow: 0 0 0 2px var(--ink) inset; }
+.busca-limpar { border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; width: 32px; height: 32px; margin-right: -8px; border-radius: 8px; cursor: pointer; }
+.busca-limpar:hover { color: var(--ink); background: rgba(0,0,0,.06); }
+.busca-atalho { font: 600 12px/1 var(--sans, inherit); color: var(--muted); border: 1px solid var(--line-strong); border-radius: 5px; padding: 3px 6px; }
+@media (hover: none) { .busca-atalho { display: none; } }
+.busca-resumo { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; font-size: 14px; }
+.busca-dica { font-size: 12.5px; color: var(--muted); }
+mark.achado { background: #FFE58A; color: inherit; border-radius: 3px; padding: 0 1px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.contagem-achados { font-size: 11px; font-weight: 800; color: var(--ink); background: #FFE58A; border-radius: 999px; padding: 2px 7px; }
 
 /* cartões de sonho */
 .mural { column-width: 250px; column-gap: 16px; }
