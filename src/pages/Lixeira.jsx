@@ -63,17 +63,17 @@ export default function Lixeira() {
       )}
 
       {sonhos.length > 0 && (
-        <details style={{ marginTop: 40, paddingTop: 16, borderTop: '1px solid var(--line)', color: 'var(--muted)', fontSize: 13 }}>
-          <summary style={{ cursor: 'pointer', width: 'fit-content' }}>Opções avançadas</summary>
-          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, maxWidth: 520 }}>
-            <p style={{ margin: 0, lineHeight: 1.6 }}>
-              {semViuvas('Manda o acervo inteiro para a lixeira de uma vez. Use só se quiser recomeçar do zero.')}
+        <section style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid var(--line)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 16px' }}>
+          <div style={{ flex: '1 1 300px', minWidth: 0 }}>
+            <div style={{ fontWeight: 800 }}>Apagar todos os sonhos</div>
+            <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6, maxWidth: 520 }}>
+              {semViuvas(`Manda o acervo inteiro para a lixeira de uma vez. Dá para restaurar em até ${DIAS_LIXEIRA} dias.`)}
             </p>
-            <button type="button" className="btn btn-linha" style={{ minHeight: 36, color: 'var(--danger)', borderColor: '#F1C4BF' }} onClick={apagarTudo}>
-              <Lixo size={16} /> Apagar todos os sonhos ({sonhos.length})
-            </button>
           </div>
-        </details>
+          <button type="button" className="btn btn-linha" style={{ color: 'var(--danger)', borderColor: '#F1C4BF' }} onClick={apagarTudo}>
+            <Lixo size={16} /> Apagar todos ({sonhos.length})
+          </button>
+        </section>
       )}
     </div>
   );
