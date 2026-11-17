@@ -46,17 +46,20 @@ export default function Acervo() {
   const vista = params.get('v') || 'mural';
   const [busca, setBusca] = useState('');
   const [soAtencao, setSoAtencao] = useState(false);
+  const [soSemTitulo, setSoSemTitulo] = useState(false);
+  const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
   const POR_PAGINA = 50;
   const [limite, setLimite] = useState(POR_PAGINA);
-  useEffect(() => { setLimite(POR_PAGINA); }, [busca, soAtencao, vista]);
+  useEffect(() => { setLimite(POR_PAGINA); }, [busca, soAtencao, soSemTitulo, vista]);
 
   const temas = useMemo(() => contarTemas(sonhos), [sonhos]);
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return sonhos.filter((s) =>
       (vista === 'temas' || !soAtencao || s.status === 'dar_atencao') &&
+      (vista === 'temas' || !soSemTitulo || !s.titulo?.trim()) &&
       (!q || [s.titulo, s.texto, ...(s.temas || []), ...(s.conclusoes || []).map((c) => c.texto)].join(' ').toLowerCase().includes(q)));
-  }, [sonhos, busca, soAtencao, vista]);
+  }, [sonhos, busca, soAtencao, soSemTitulo, vista]);
 
   const mudar = (v) => setParams(v === 'mural' ? {} : { v });
   const aba = (v, Icone, nome) => (
@@ -75,11 +78,16 @@ export default function Acervo() {
 
       {sonhos.length === 0 ? <Vazio /> : (
         <>
-          {vista !== 'temas' && sonhos.some((x) => x.status === 'dar_atencao') && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-linha" onClick={() => setSoAtencao(!soAtencao)} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
+          {vista !== 'temas' && (semTitulo > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
+              {semTitulo > 0 && (
+                <button type="button" className="btn btn-linha" onClick={() => setSoSemTitulo(!soSemTitulo)} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
+                  sem título · {semTitulo}
+                </button>
+              )}
+              {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha" onClick={() => setSoAtencao(!soAtencao)} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
                 <span className="ponto" style={{ background: STATUS.dar_atencao.cor }} />só “dar atenção”
-              </button>
+              </button>}
             </div>
           )}
 
