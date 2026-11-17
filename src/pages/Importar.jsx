@@ -23,7 +23,7 @@ export default function Importar() {
 
   const doKeep = lido ? lido.keep.map((o) => deKeepJSON(o, marcados.length ? marcados : null)).filter(Boolean) : [];
   const todos = lido ? [...lido.sonhos, ...doKeep] : [];
-  const { novos, completar } = combinarComAcervo(todos, sonhos, pularRepetidos);
+  const { novos, completar, pulados } = combinarComAcervo(todos, sonhos, pularRepetidos);
   const finais = [...novos, ...completar];
 
   async function importar() {
@@ -91,7 +91,7 @@ export default function Importar() {
             <div className="aviso">{semViuvas('Este arquivo .csv traz só o título, a data e os temas. O texto de cada sonho fica nas páginas do Notion: envie o .zip do export para trazer os relatos também.')}</div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <strong style={{ fontSize: 16 }}>{novos.length === 1 ? '1 sonho novo' : novos.length + ' sonhos novos'}{completar.length > 0 && ' · ' + completar.length + ' para completar com o relato'}</strong>
+            <strong style={{ fontSize: 16 }}>{novos.length === 1 ? '1 sonho novo' : novos.length + ' sonhos novos'}{completar.length > 0 && ' · ' + completar.length + ' para completar com o relato'}{pulados > 0 && <span style={{ fontWeight: 500, color: 'var(--muted)' }}>{' · ' + (pulados === 1 ? '1 já está' : pulados + ' já estão') + ' no Sonhário'}</span>}</strong>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}><input type="checkbox" checked={pularRepetidos} onChange={(e) => setPularRepetidos(e.target.checked)} /> Pular sonhos que já estão no Sonhário</label>
             <button className="btn btn-azul" style={{ marginLeft: 'auto' }} disabled={!finais.length || importando} onClick={importar}>{importando ? 'Importando…' : 'Importar ' + finais.length}</button>
           </div>
