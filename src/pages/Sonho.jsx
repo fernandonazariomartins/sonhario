@@ -4,14 +4,18 @@ import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { sugerirTemas } from '../lib/temasAuto.js';
-import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca } from '../components/Icones.jsx';
+import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca, Compartilhar } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { quemVe, pessoa } from '../lib/compartilhar.js';
+import { CompartilharSonho } from '../components/Compartilhar.jsx';
+import Avatar from '../components/Avatar.jsx';
 
 export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio, usuario, avisar } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, usuario, avisar, compartilhamentos, temLogin } = useEstado();
+  const [compartilhando, setCompartilhando] = useState(false);
   const estiloTema = useCorTema();
   const original = sonhos.find((s) => s.id === id);
   const [s, setS] = useState(original);
@@ -75,12 +79,19 @@ export default function Sonho() {
     setConclusao('');
   };
 
+  const veem = quemVe(compartilhamentos.meus, s).map((c) => pessoa(compartilhamentos.perfis, c.convidado_email, c.convidado_nome));
+
   return (
     <div style={{ width: '100%', maxWidth: 1280, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <div style={{ flexBasis: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Link to="/app/acervo" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Acervo</Link>
         {params.get('novo') && <span style={{ height: 28, padding: '0 10px', borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} /> guardado</span>}
+        {temLogin && <button type="button" className="btn btn-linha" style={{ minHeight: 40, marginLeft: 'auto' }} onClick={() => setCompartilhando(true)}>
+          {veem.length > 0 && <span style={{ display: 'inline-flex' }}>{veem.slice(0, 3).map((p, k) => <span key={p.email} style={{ marginLeft: k ? -8 : 0, border: '2px solid #fff', borderRadius: 999, display: 'inline-flex' }}><Avatar nome={p.nome} foto={p.foto} size={22} /></span>)}</span>}
+          <Compartilhar size={16} /> Compartilhar
+        </button>}
       </div>
+      {compartilhando && <CompartilharSonho s={s} mudar={mudar} aoFechar={() => setCompartilhando(false)} />}
 
       <article className="painel" style={{ flex: '999 1 560px', minWidth: 0, padding: 'clamp(20px, 4vw, 36px)', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {editandoData ? (
@@ -219,3 +230,4 @@ export default function Sonho() {
     </div>
   );
 }
+

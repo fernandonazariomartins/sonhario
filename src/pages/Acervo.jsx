@@ -5,16 +5,16 @@ import { STATUS, CORES, dataCurta, mesAno, duracao, contarTemas } from '../lib/s
 import { Mural, Lista, Tema, Busca, Mic } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 
-function Status({ s, cor }) {
+export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
   return <span className="status" style={{ color: cor }}><span className="ponto" style={{ background: st.cor }} />{st.rotulo}</span>;
 }
 
-function Nota({ s, comTemas = true }) {
+export function Nota({ s, comTemas = true, para }) {
   const estiloTema = useCorTema();
   const c = CORES[s.cor] || CORES.branco;
   return (
-    <Link to={'/app/sonho/' + s.id} className="nota" style={{ background: c.fundo }}>
+    <Link to={para || '/app/sonho/' + s.id} className="nota" style={{ background: c.fundo }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
         {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}

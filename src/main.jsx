@@ -14,6 +14,7 @@ import Sonho from './pages/Sonho.jsx';
 import Importar from './pages/Importar.jsx';
 import Insights from './pages/Insights.jsx';
 import Privacidade from './pages/Privacidade.jsx';
+import Compartilhados from './pages/Compartilhados.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -28,6 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="sonho/:id" element={<Sonho />} />
             <Route path="importar" element={<Importar />} />
             <Route path="insights" element={<Insights />} />
+            <Route path="compartilhados" element={<Compartilhados />} />
+            <Route path="compartilhados/:dono" element={<Compartilhados />} />
+            <Route path="compartilhados/:dono/:id" element={<Compartilhados />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
