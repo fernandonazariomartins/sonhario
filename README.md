@@ -36,10 +36,10 @@ Sem o `.env.local`, o app roda inteiro no modo sem conta.
 3. Em **Project Settings › API**, copie a **Project URL** e a chave **anon public**. Elas vão no `.env.local` e na Vercel como `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
 
 ### 3. Login com Google (≈ 5 min)
-Dá para reaproveitar a credencial OAuth que o Torvilo já usa no Google Cloud.
-1. Em https://console.cloud.google.com › **APIs e serviços › Credenciais**, abra o **ID do cliente OAuth** do Torvilo.
-2. Em **URIs de redirecionamento autorizados**, adicione: `https://SEU-PROJETO.supabase.co/auth/v1/callback` (a Project URL do passo 2 + `/auth/v1/callback`). Salve.
-3. No Supabase do Sonhário: **Authentication › Sign In / Providers › Google** › ative, cole o **Client ID** e o **Client Secret** dessa credencial e salve.
+O Sonhário tem projeto próprio no Google Cloud (**Sonhario**, ID `sonhario-515000`), separado do Torvilo.
+1. Google Auth Platform: app "Sonhário", público Externo. Cliente OAuth Web "Sonhario web" com o redirecionamento `https://sburmejkmlkmzijmrpqr.supabase.co/auth/v1/callback`.
+2. No Supabase: **Authentication › Sign In / Providers › Google** ativado com o Client ID e o Client Secret desse cliente.
+3. Para qualquer pessoa entrar, publique o app em **Google Auth Platform › Público-alvo › Publicar app** (enquanto estiver em teste, só usuários de teste entram).
 4. Ainda no Supabase: **Authentication › URL Configuration**:
    - **Site URL:** o endereço do Sonhário na Vercel (ex.: `https://sonhario.vercel.app`).
    - **Redirect URLs:** `https://sonhario.vercel.app/app` e `http://localhost:5173/app`.
