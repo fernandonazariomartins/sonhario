@@ -60,8 +60,19 @@ export function EstadoProvider({ children }) {
     try { await loja.apagar(id, s); } catch (e) { avisar('Não deu para apagar: ' + e.message); }
   }, [loja, sonhos, avisar]);
 
+  const salvarVarios = useCallback(async (lista) => {
+    const agora = new Date().toISOString();
+    const novos = lista.map((s) => ({ ...s, atualizado_em: agora }));
+    try { await loja.salvarVarios(novos); } catch (e) { avisar('Não deu para salvar: ' + e.message); }
+    await recarregar();
+  }, [loja, avisar, recarregar]);
+
+  const apagarTodos = useCallback(async () => {
+    try { await loja.apagarTodos(); setSonhos([]); } catch (e) { avisar('Não deu para apagar: ' + e.message); await recarregar(); }
+  }, [loja, avisar, recarregar]);
+
   const valor = {
-    pronto, usuario, sonhos, aviso, avisar, recarregar, salvar, apagar,
+    pronto, usuario, sonhos, aviso, avisar, recarregar, salvar, apagar, salvarVarios, apagarTodos,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),
     temLogin: !!supabase,

@@ -6,7 +6,7 @@ import { tituloDe, dataCurta } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 
 export default function Importar() {
-  const { sonhos, salvar, avisar } = useEstado();
+  const { sonhos, salvarVarios, avisar } = useEstado();
   const navegar = useNavigate();
   const [lido, setLido] = useState(null); // { sonhos, keep, marcadores }
   const [marcados, setMarcados] = useState([]);
@@ -24,14 +24,25 @@ export default function Importar() {
   const doKeep = lido ? lido.keep.map((o) => deKeepJSON(o, marcados.length ? marcados : null)).filter(Boolean) : [];
   const todos = lido ? [...lido.sonhos, ...doKeep] : [];
   const chave = (s) => (tituloDe(s) + '|' + s.sonhado_em.slice(0, 10)).toLowerCase();
-  const existentes = new Set(sonhos.map(chave));
-  const finais = pularRepetidos ? todos.filter((s) => !existentes.has(chave(s))) : todos;
+  const existentes = new Map(sonhos.map((s) => [chave(s), s]));
+  // Sonho que já está no Sonhário, mas sem o relato (ex.: veio só do CSV): completa em vez de duplicar.
+  const completar = todos.flatMap((s) => {
+    const e = existentes.get(chave(s));
+    return e && !e.texto?.trim() && s.texto?.trim()
+      ? [{ ...e, texto: s.texto, temas: [...new Set([...(e.temas || []), ...s.temas])] }]
+      : [];
+  });
+  const novos = pularRepetidos ? todos.filter((s) => !existentes.has(chave(s))) : todos;
+  const finais = [...novos, ...completar];
 
   async function importar() {
     setImportando(true);
-    for (const s of finais) await salvar(s);
+    await salvarVarios(finais);
     setImportando(false);
-    avisar(finais.length === 1 ? '1 sonho importado' : finais.length + ' sonhos importados');
+    const partes = [];
+    if (novos.length) partes.push(novos.length === 1 ? '1 sonho importado' : novos.length + ' sonhos importados');
+    if (completar.length) partes.push(completar.length === 1 ? '1 completado com o relato' : completar.length + ' completados com o relato');
+    avisar(partes.join(' · '));
     navegar('/app/acervo');
   }
 
@@ -47,8 +58,8 @@ export default function Importar() {
           <h2 style={{ fontSize: 18, fontWeight: 800 }}>Notion</h2>
           <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>
             <li>Abra a tabela de sonhos no Notion.</li>
-            <li>No menu ••• escolha <strong>Exportar</strong> › <strong>Markdown e CSV</strong>.</li>
-            <li>Envie o arquivo <strong>.csv</strong> aqui.</li>
+            <li>No menu ••• escolha <strong>Exportar</strong> › <strong>Markdown e CSV</strong>, com <strong>Incluir subpáginas</strong> ligado.</li>
+            <li>Envie o arquivo <strong>.zip</strong> inteiro aqui, sem descompactar. É nele que estão os relatos.</li>
           </ol>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--azul)' }}>Reconhece o template Meu Sonhário</span>
         </div>
@@ -68,7 +79,7 @@ export default function Importar() {
 
       <label className="btn btn-preto btn-grande" style={{ alignSelf: 'flex-start' }}>
         Escolher arquivos
-        <input type="file" multiple accept=".csv,.json,.txt,.md" onChange={escolher} className="sr" />
+        <input type="file" multiple accept=".zip,.csv,.json,.txt,.md" onChange={escolher} className="sr" />
       </label>
 
       {lido && (
@@ -85,8 +96,11 @@ export default function Importar() {
               </div>
             </div>
           )}
+          {lido.soCSV && (
+            <div className="aviso">{semViuvas('Este arquivo .csv traz só o título, a data e os temas. O texto de cada sonho fica nas páginas do Notion: envie o .zip do export para trazer os relatos também.')}</div>
+          )}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <strong style={{ fontSize: 16 }}>{finais.length === 1 ? '1 sonho encontrado' : finais.length + ' sonhos encontrados'}</strong>
+            <strong style={{ fontSize: 16 }}>{novos.length === 1 ? '1 sonho novo' : novos.length + ' sonhos novos'}{completar.length > 0 && ' · ' + completar.length + ' para completar com o relato'}</strong>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}><input type="checkbox" checked={pularRepetidos} onChange={(e) => setPularRepetidos(e.target.checked)} /> Pular sonhos que já estão no Sonhário</label>
             <button className="btn btn-azul" style={{ marginLeft: 'auto' }} disabled={!finais.length || importando} onClick={importar}>{importando ? 'Importando…' : 'Importar ' + finais.length}</button>
           </div>
