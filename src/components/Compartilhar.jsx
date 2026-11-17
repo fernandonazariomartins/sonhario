@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import Janela from './Janela.jsx';
 import Avatar from './Avatar.jsx';
 import { useEstado } from '../lib/estado.jsx';
-import { PAPEIS, ESCOPOS, convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa } from '../lib/compartilhar.js';
+import { PAPEIS, ESCOPOS, convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink } from '../lib/compartilhar.js';
 import { semViuvas } from '../lib/tipografia.js';
-import { Copiar, Lixo, Mais } from './Icones.jsx';
+import { Copiar, Lixo, Mais, Link as IconeLink } from './Icones.jsx';
 
 function Opcoes({ valor, opcoes, aoMudar, rotulo }) {
   return (
@@ -103,6 +103,57 @@ export function FormConvite({ escopoInicial = 'escolhidos', aoConvidar }) {
   );
 }
 
+// Gera um link: a pessoa abre, cria a conta com Google e já vê.
+export function LinkConvite({ sonhoId = null }) {
+  const { usuario, avisar } = useEstado();
+  const [papel, setPapel] = useState('amigo');
+  const [amp, setAmp] = useState(false);
+  const [url, setUrl] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+
+  async function gerar() {
+    setOcupado(true);
+    try { const u = await criarLink(usuario, { sonhoId, papel, ver_amplificacoes: amp }); setUrl(u); mandarLink(u, !!sonhoId, avisar); }
+    catch (e) { avisar('Não deu para criar o link: ' + e.message); }
+    setOcupado(false);
+  }
+  async function copiar() {
+    try { await navigator.clipboard.writeText(url); avisar('Link copiado'); } catch { prompt('Copie o link:', url); }
+  }
+
+  return (
+    <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('A pessoa abre o link, entra com a conta Google e já vê. O link vale para uma pessoa só.')}</p>
+      {url ? (
+        <>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Link do convite" style={{ fontSize: 13 }} />
+            <button type="button" className="btn btn-linha" onClick={copiar}><Copiar size={16} /> Copiar</button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-azul" onClick={() => mandarLink(url, !!sonhoId, avisar)}>Mandar</button>
+            <button type="button" className="btn" style={{ color: 'var(--muted)' }} onClick={() => setUrl('')}>Outro link, para outra pessoa</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div role="radiogroup" aria-label="Para quem" className="abas" style={{ background: '#fff', alignSelf: 'flex-start' }}>
+            {[['terapeuta', 'Meu terapeuta'], ['amigo', 'Amigo ou amiga']].map(([k, r]) => (
+              <button key={k} type="button" role="radio" aria-checked={papel === k} className={'aba' + (papel === k ? ' ativa' : '')} style={papel === k ? { background: 'var(--cinza)' } : undefined} onClick={() => setPapel(k)}>{r}</button>
+            ))}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
+            <input type="checkbox" checked={amp} onChange={(e) => setAmp(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
+            Mostrar também as amplificações
+          </label>
+          <button type="button" className="btn btn-azul" style={{ alignSelf: 'flex-start' }} onClick={gerar} disabled={ocupado}><IconeLink size={16} /> {ocupado ? 'Criando…' : 'Criar link'}</button>
+        </>
+      )}
+    </section>
+  );
+}
+
 function PedirLogin({ aoFechar, titulo }) {
   const { entrar } = useEstado();
   return (
@@ -117,7 +168,7 @@ function PedirLogin({ aoFechar, titulo }) {
 export default function Compartilhar({ aoFechar }) {
   const { usuario, avisar, compartilhamentos, recarregarCompartilhamentos } = useEstado();
   const { meus, perfis } = compartilhamentos;
-  const [abrindo, setAbrindo] = useState(meus.length === 0);
+  const [abrindo, setAbrindo] = useState(false);
   if (!usuario) return <PedirLogin aoFechar={aoFechar} titulo="Compartilhar sonhos" />;
 
   async function mudar(c, parcial) {
@@ -149,9 +200,10 @@ export default function Compartilhar({ aoFechar }) {
         );
       })}
 
+      <LinkConvite />
       {abrindo
         ? <div style={{ borderTop: meus.length ? '1px solid var(--line)' : 0, paddingTop: meus.length ? 14 : 0 }}><FormConvite aoConvidar={() => setAbrindo(false)} /></div>
-        : <button type="button" className="btn btn-tracejado" onClick={() => setAbrindo(true)}><Mais size={16} /> Compartilhar com mais alguém</button>}
+        : <button type="button" className="btn btn-tracejado" onClick={() => setAbrindo(true)}><Mais size={16} /> Convidar pelo e-mail</button>}
     </Janela>
   );
 }
@@ -160,7 +212,7 @@ export default function Compartilhar({ aoFechar }) {
 export function CompartilharSonho({ s, mudar, aoFechar }) {
   const { usuario, compartilhamentos } = useEstado();
   const { meus, perfis } = compartilhamentos;
-  const [convidando, setConvidando] = useState(meus.length === 0);
+  const [convidando, setConvidando] = useState(false);
   if (!usuario) return <PedirLogin aoFechar={aoFechar} titulo="Compartilhar este sonho" />;
 
   const com = s.compartilhado_com || [];
@@ -168,6 +220,8 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
 
   return (
     <Janela titulo="Compartilhar este sonho" aoFechar={aoFechar}>
+      <LinkConvite sonhoId={s.id} />
+      {meus.length > 0 && <span className="rotulo" style={{ marginTop: 4 }}>Ou escolha quem já tem acesso</span>}
       {meus.length > 0 && (
         <div role="group" aria-label="Com quem" style={{ display: 'flex', flexDirection: 'column' }}>
           {meus.map((c) => {
@@ -187,7 +241,7 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
       )}
       {convidando
         ? <FormConvite aoConvidar={(c) => { if (c.escopo === 'escolhidos') alternar(c.convidado_email, true); setConvidando(false); }} />
-        : <button type="button" className="btn btn-tracejado" onClick={() => setConvidando(true)}><Mais size={16} /> Outra pessoa</button>}
+        : <button type="button" className="btn btn-tracejado" onClick={() => setConvidando(true)}><Mais size={16} /> Convidar pelo e-mail</button>}
       {meus.length > 0 && !convidando && <button type="button" className="btn btn-azul btn-grande" onClick={aoFechar}>Pronto</button>}
     </Janela>
   );

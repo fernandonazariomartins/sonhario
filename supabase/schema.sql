@@ -203,3 +203,62 @@ grant execute on function public.posso_ouvir(text) to authenticated;
 drop policy if exists "audios: ouvir os compartilhados" on storage.objects;
 create policy "audios: ouvir os compartilhados" on storage.objects
   for select using (bucket_id = 'audios' and public.posso_ouvir(name));
+
+-- 7. Link de convite ---------------------------------------------------------
+-- A pessoa gera um link (de um sonho ou do caderno). Quem abre, entra com Google
+-- e passa a ver. Cada link vale para uma pessoa só: o primeiro que abrir.
+create table if not exists public.convites (
+  token             text primary key,
+  dono_id           uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  dono_nome         text not null default '',
+  dono_email        text not null default '',
+  sonho_id          uuid references public.sonhos (id) on delete cascade,
+  papel             text not null default 'amigo' check (papel in ('terapeuta', 'amigo')),
+  ver_amplificacoes boolean not null default false,
+  criado_em         timestamptz not null default now(),
+  usado_por         text,
+  usado_em          timestamptz
+);
+alter table public.convites enable row level security;
+drop policy if exists "convites: os meus" on public.convites;
+create policy "convites: os meus" on public.convites
+  for all using (auth.uid() = dono_id) with check (auth.uid() = dono_id);
+
+-- O que aparece antes de entrar: quem convidou e se o link ainda vale.
+create or replace function public.ver_convite(chave text)
+returns table (dono_nome text, dono_foto text, de_um_sonho boolean, usado_por text)
+language sql stable security definer set search_path = public as $$
+  select c.dono_nome, coalesce(p.foto, ''), c.sonho_id is not null, c.usado_por
+  from public.convites c left join public.perfis p on p.id = c.dono_id
+  where c.token = chave;
+$$;
+revoke all on function public.ver_convite(text) from public;
+grant execute on function public.ver_convite(text) to anon, authenticated;
+
+-- Abrir o convite já com a conta: libera o acesso e, se for de um sonho, aquele sonho.
+create or replace function public.aceitar_convite(chave text)
+returns table (dono uuid, sonho uuid)
+language plpgsql security definer set search_path = public as $$
+declare
+  cv public.convites;
+  meu_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if auth.uid() is null or meu_email = '' then raise exception 'Entre com Google para abrir o convite.'; end if;
+  select * into cv from public.convites where token = chave;
+  if not found then raise exception 'Esse link não existe mais. Peça um novo.'; end if;
+  if cv.dono_id = auth.uid() then raise exception 'Esse link é seu. Mande para a pessoa com quem quer compartilhar.'; end if;
+  if cv.usado_por is not null and cv.usado_por <> meu_email then raise exception 'Esse link já foi aberto por outra pessoa. Peça um novo.'; end if;
+
+  update public.convites set usado_por = meu_email, usado_em = coalesce(usado_em, now()) where token = chave;
+  insert into public.compartilhamentos (dono_id, dono_nome, dono_email, convidado_email, papel, escopo, ver_amplificacoes)
+  values (cv.dono_id, cv.dono_nome, cv.dono_email, meu_email, cv.papel, 'escolhidos', cv.ver_amplificacoes)
+  on conflict (dono_id, convidado_email) do nothing;
+  if cv.sonho_id is not null then
+    update public.sonhos set compartilhado_com = array_append(compartilhado_com, meu_email)
+    where id = cv.sonho_id and user_id = cv.dono_id and not (meu_email = any (compartilhado_com));
+  end if;
+  return query select cv.dono_id, cv.sonho_id;
+end;
+$$;
+revoke all on function public.aceitar_convite(text) from public, anon;
+grant execute on function public.aceitar_convite(text) to authenticated;

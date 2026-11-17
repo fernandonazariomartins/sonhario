@@ -15,6 +15,7 @@ import Importar from './pages/Importar.jsx';
 import Insights from './pages/Insights.jsx';
 import Privacidade from './pages/Privacidade.jsx';
 import Compartilhados from './pages/Compartilhados.jsx';
+import Convite from './pages/Convite.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/privacidade" element={<Privacidade />} />
+          <Route path="/convite/:token" element={<Convite />} />
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Captura />} />
             <Route path="acervo" element={<Acervo />} />

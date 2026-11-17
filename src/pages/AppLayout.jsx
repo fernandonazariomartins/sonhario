@@ -8,7 +8,7 @@ import Entrar from './Entrar.jsx';
 import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
 import Compartilhar from '../components/Compartilhar.jsx';
-import { rotuloAba } from '../lib/compartilhar.js';
+import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas } from '../components/Icones.jsx';
 
@@ -29,6 +29,8 @@ export default function AppLayout() {
     if (!pronto) return;
     if (!usuario && temLogin && pathname.startsWith('/app/compartilhados')) sessionStorage.setItem(DESTINO, pathname);
     if (usuario) {
+      const convite = convitePendente.pegar();
+      if (convite) { navegar('/convite/' + convite, { replace: true }); return; }
       const destino = sessionStorage.getItem(DESTINO);
       if (destino) { sessionStorage.removeItem(DESTINO); if (destino !== pathname) navegar(destino, { replace: true }); }
     }

@@ -14,7 +14,7 @@ Um caderno para lembrar, organizar e voltar aos seus sonhos. Mesmo padrão do To
 - **Botão + flutuante** em todas as telas fora da captura.
 - **Insights** (`/app/insights`): Circum-ambulação, Constelação, Latência, Complexo, Enantiodromia e Energia psíquica. Cada um desbloqueia quando há dados suficientes.
 - **Contribuir com uma ideia** (menu ⋯, rodapé do app e da home): a mensagem vai para o e-mail do Fernando.
-- **Compartilhar com terapeuta ou amigos:** botão "Compartilhar" no sonho (escolhe a pessoa, com nome e foto do Google) e menu ⋯ para gerenciar quem tem acesso. Quem foi convidado entra com Google e ganha a aba Pacientes/Amigos, só leitura. Precisa do bloco 6 do `supabase/schema.sql`.
+- **Compartilhar com terapeuta ou amigos:** botão "Compartilhar" no sonho (escolhe a pessoa, com nome e foto do Google) e menu ⋯ para gerenciar quem tem acesso. Quem foi convidado entra com Google e ganha a aba Pacientes/Amigos, só leitura. Também gera **link de convite** (vale para uma pessoa: quem abrir e entrar com Google passa a ver). Precisa dos blocos 6 e 7 do `supabase/schema.sql`.
 - **Lembrete da manhã** (menu ⋯): notificação "Sonhou? Registre." na hora em que a pessoa acorda.
 
 ## Rodar no computador

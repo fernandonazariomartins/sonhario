@@ -19,6 +19,7 @@ const SECOES = [
   ]],
   ['Compartilhar com terapeuta ou amigos', [
     'Você pode liberar o acesso aos seus sonhos para outras pessoas, pelo e-mail da conta Google delas. Você escolhe se elas veem todos os sonhos ou só os que você marcar, e se veem as amplificações.',
+    'Você também pode gerar um link. Ele vale para uma pessoa só: a primeira que abrir e entrar com a conta Google passa a ver, e o link deixa de funcionar para qualquer outra.',
     'Quem recebe o acesso só lê: não edita nem apaga. Você pode tirar o acesso a qualquer momento, e ele some na hora.',
   ]],
   ['Transcrição de voz', [

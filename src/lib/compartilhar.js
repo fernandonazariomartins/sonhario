@@ -102,3 +102,44 @@ export function rotuloAba(comigo) {
   const papeis = new Set(comigo.map((c) => c.papel));
   return papeis.size === 1 ? PAPEIS[[...papeis][0]].grupo : 'Compartilhados';
 }
+
+/* ---------- link de convite ---------- */
+const PENDENTE = 'sonhario:convite';
+export const convitePendente = {
+  guardar: (t) => { try { localStorage.setItem(PENDENTE, t); } catch { /* sem armazenamento */ } },
+  pegar: () => { try { const t = localStorage.getItem(PENDENTE); localStorage.removeItem(PENDENTE); return t; } catch { return null; } },
+};
+
+function novoToken() {
+  const b = crypto.getRandomValues(new Uint8Array(18));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Cria um link que vale para uma pessoa (a primeira que abrir e entrar).
+export async function criarLink(usuario, { sonhoId = null, papel, ver_amplificacoes }) {
+  const token = novoToken();
+  const { error } = await supabase.from('convites').insert({
+    token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '', sonho_id: sonhoId, papel, ver_amplificacoes,
+  });
+  if (error) throw error;
+  return location.origin + '/convite/' + token;
+}
+
+export async function verConvite(token) {
+  const { data, error } = await supabase.rpc('ver_convite', { chave: token });
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+export async function aceitarConvite(token) {
+  const { data, error } = await supabase.rpc('aceitar_convite', { chave: token });
+  if (error) throw new Error(error.message);
+  return data?.[0];
+}
+
+export async function mandarLink(url, deUmSonho, avisar) {
+  const texto = (deUmSonho ? 'Quero te mostrar um sonho que anotei no Sonhário.' : 'Compartilhei meu caderno de sonhos com você no Sonhário.') + ' Abra o link e entre com a sua conta Google:\n' + url;
+  try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); }
+  catch { prompt('Copie o link:', url); }
+}
