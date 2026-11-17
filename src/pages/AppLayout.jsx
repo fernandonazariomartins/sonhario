@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ehVazio } from '../lib/importar.js';
+import { ehVazio, arrumarDoNotion } from '../lib/importar.js';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
@@ -13,10 +13,12 @@ import { instalado } from '../lib/lembrete.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, apagarTodos, apagarVarios, avisar, compartilhamentos } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, apagarTodos, apagarVarios, salvarVarios, avisar, compartilhamentos } = useEstado();
   const navegar = useNavigate();
   const comigoTodos = [...compartilhamentos.comigo, ...compartilhamentos.aguardando];
   const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
+  const doNotion = useMemo(() => arrumarDoNotion(sonhos), [sonhos]);
+  const [arrumando, setArrumando] = useState(false);
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'compartilhar'
@@ -59,6 +61,15 @@ export default function AppLayout() {
   const naCaptura = pathname === '/app' || pathname === '/app/';
   const aba = ({ isActive }) => 'aba' + (isActive ? ' ativa' : '');
   const abrir = (j) => { setMenu(false); setJanela(j); };
+  // Sonhos que vieram do Notion com o cabeçalho ("# Sem título", "Data : …") dentro do relato.
+  async function arrumarNotion() {
+    setMenu(false);
+    setArrumando(true);
+    const n = doNotion.length;
+    await salvarVarios(doNotion);
+    setArrumando(false);
+    avisar(n === 1 ? '1 sonho do Notion arrumado' : n + ' sonhos do Notion arrumados');
+  }
   async function apagarVazios() {
     setMenu(false);
     const n = vazios.length;
@@ -96,6 +107,7 @@ export default function AppLayout() {
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
+              {doNotion.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={arrumarNotion}><Importar size={18} /> Arrumar sonhos vindos do Notion ({doNotion.length})</button>}
               {vazios.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={apagarVazios}><Lixo size={18} /> Apagar sonhos vazios ({vazios.length})</button>}
               {sonhos.length > 0 && <button role="menuitem" type="button" className="menu-item" style={{ color: '#B42318' }} onClick={apagarTudo}><Lixo size={18} /> Apagar todos os sonhos</button>}
               {usuario ? (
@@ -110,6 +122,11 @@ export default function AppLayout() {
       {!naCaptura && compartilhamentos.pedidos.length > 0 && (
         <button type="button" onClick={() => setJanela('compartilhar')} style={{ border: 0, borderBottom: '1px solid #F3DDB5', background: 'var(--warn-bg)', color: 'var(--warn-ink)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Pessoas size={16} /> {compartilhamentos.pedidos.length === 1 ? '1 pessoa abriu seu link e quer ver um sonho' : compartilhamentos.pedidos.length + ' pessoas abriram seu link e querem ver um sonho'} · <span style={{ textDecoration: 'underline' }}>ver pedidos</span>
+        </button>
+      )}
+      {!naCaptura && doNotion.length > 0 && (
+        <button type="button" disabled={arrumando} onClick={arrumarNotion} style={{ border: 0, borderBottom: '1px solid #F3DDB5', background: 'var(--warn-bg)', color: 'var(--warn-ink)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', textAlign: 'center' }}>
+          <Importar size={16} /> {doNotion.length === 1 ? '1 sonho veio do Notion com o cabeçalho no relato' : doNotion.length + ' sonhos vieram do Notion com o cabeçalho no relato'} · <span style={{ textDecoration: 'underline' }}>{arrumando ? 'arrumando…' : 'arrumar título e data'}</span>
         </button>
       )}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

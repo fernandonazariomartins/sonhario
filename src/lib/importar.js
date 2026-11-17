@@ -72,35 +72,74 @@ export function deNotionCSV(texto) {
 const PROPS = { data: 'data', date: 'data', status: 'status', temas: 'temas', tags: 'temas', tema: 'temas', 'observações': 'obs', observacoes: 'obs', notas: 'obs', 'adicionado em': 'criado', 'created time': 'criado', 'criado em': 'criado' };
 const SEM_TITULO = ['untitled', 'sem título', 'sem titulo', 'new page', 'nova página'];
 
-export function deNotionPagina(texto) {
+// Links internos do Notion ("[texto](Pagina%20abc.md)") viram só o texto.
+const semLinks = (t) => t.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+
+// Separa as linhas da página. Se o cabeçalho chegou numa linha só
+// ("# Sem título Data : 02/02/2023 Adicionado em: …"), quebra antes de cada propriedade.
+const CHAVES_RE = new RegExp('\\s+(' + Object.keys(PROPS).join('|') + ')\\s*:', 'gi');
+function linhasDaPagina(texto) {
   const linhas = texto.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n');
+  const i = linhas.findIndex((l) => l.trim());
+  if (i >= 0 && /^#\s+/.test(linhas[i])) linhas.splice(i, 1, ...linhas[i].replace(CHAVES_RE, '\n$1:').split('\n'));
+  return linhas;
+}
+
+// Devolve o sonho; null se não for uma página da tabela de sonhos;
+// false se for uma página da tabela, mas sem título nem relato (não há o que trazer).
+export function deNotionPagina(texto) {
+  const linhas = linhasDaPagina(texto);
   let i = 0;
   while (i < linhas.length && !linhas[i].trim()) i++;
   let titulo = '';
   if (/^#\s+/.test(linhas[i] || '')) { titulo = linhas[i].replace(/^#\s+/, '').trim(); i++; }
-  while (i < linhas.length && !linhas[i].trim()) i++;
   const props = {};
+  let fimProps = i;
   for (; i < linhas.length; i++) {
+    if (!linhas[i].trim()) continue; // o Notion às vezes deixa linha em branco entre as propriedades
     const m = linhas[i].match(/^([^:]{1,40}?)\s*:\s?(.*)$/);
     const chave = m && PROPS[m[1].trim().toLowerCase()];
     if (!chave) break;
     props[chave] = m[2].trim();
+    fimProps = i + 1;
   }
   if (!Object.keys(props).length) return null; // não é uma página da tabela de sonhos
-  const corpo = linhas.slice(i).join('\n').trim();
+  const corpo = semLinks(linhas.slice(fimProps).join('\n')).trim();
   if (SEM_TITULO.includes(titulo.toLowerCase())) titulo = '';
   const sonhado = lerData(props.data) || lerData(props.criado) || new Date().toISOString();
   const obs = props.obs || '';
   const s = novoSonho({
-    titulo,
+    titulo: semLinks(titulo),
     texto: corpo,
     sonhado_em: sonhado,
     criado_em: sonhado,
-    temas: (props.temas || '').split(',').map((t) => t.trim()).filter(Boolean),
+    temas: semLinks(props.temas || '').split(',').map((t) => t.trim()).filter(Boolean),
     status: STATUS_NOTION[(props.status || '').toLowerCase()] || 'nao_aberto',
-    conclusoes: obs ? [{ id: 'imp-' + Math.random().toString(16).slice(2), em: sonhado, origem: 'sozinho', texto: obs }] : [],
+    conclusoes: obs ? [{ id: 'imp-' + Math.random().toString(16).slice(2), em: sonhado, origem: 'sozinho', texto: semLinks(obs) }] : [],
   });
-  return s.titulo || s.texto || s.conclusoes.length ? s : null;
+  return s.titulo || s.texto || s.conclusoes.length ? s : false;
+}
+
+// Sonhos que entraram com o cabeçalho do Notion grudado no relato
+// ("# Sem título", "Data : …", "Adicionado em: …"). Devolve a versão arrumada
+// de cada um, com o mesmo id, ou nada se não houver o que arrumar.
+export function arrumarDoNotion(acervo) {
+  const arrumados = [];
+  for (const s of acervo) {
+    if (!/^\s*#\s/.test(s.texto || '')) continue;
+    const p = deNotionPagina(s.texto);
+    if (p === null) continue;
+    arrumados.push({
+      ...s,
+      titulo: s.titulo?.trim() && !SEM_TITULO.includes(s.titulo.trim().toLowerCase()) ? s.titulo : p ? p.titulo : '',
+      texto: p ? p.texto : '',
+      sonhado_em: p ? p.sonhado_em : lerData(s.texto.match(/Data\s*:\s*([^\n]+)/i)?.[1]) || s.sonhado_em,
+      criado_em: p ? p.criado_em : s.criado_em,
+      temas: [...new Set([...(s.temas || []), ...(p ? p.temas : [])])],
+      conclusoes: (s.conclusoes || []).length ? s.conclusoes : p ? p.conclusoes : [],
+    });
+  }
+  return arrumados;
 }
 
 // Abre o .zip do Notion (que às vezes vem com outro .zip dentro).
@@ -155,6 +194,7 @@ export async function lerArquivos(entrada) {
     const pagina = n.endsWith('.md') ? deNotionPagina(txt) : null;
     if (n.endsWith('.csv')) doCSV.push(...deNotionCSV(txt));
     else if (pagina) paginas.push(pagina);
+    else if (pagina === false) continue; // página do Notion sem título nem relato
     else if (f.name.toLowerCase().endsWith('.json')) {
       try {
         const o = JSON.parse(txt);
