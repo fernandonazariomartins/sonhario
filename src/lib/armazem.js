@@ -56,6 +56,11 @@ export const local = {
     lista.sort((a, b) => b.sonhado_em.localeCompare(a.sonhado_em));
     local.gravarTodos(lista);
   },
+  async apagarVarios(lista) {
+    const ids = new Set(lista.map((s) => s.id));
+    local.gravarTodos(local.listar().filter((x) => !ids.has(x.id)));
+    for (const s of lista) if (s.audio?.ref) await audioLocal.apagar(s.audio.ref).catch(() => {});
+  },
   async apagarTodos() {
     for (const s of local.listar()) if (s.audio?.ref) await audioLocal.apagar(s.audio.ref).catch(() => {});
     local.gravarTodos([]);
@@ -96,6 +101,14 @@ export function remoto(userId) {
     async salvarVarios(sonhos) {
       for (let i = 0; i < sonhos.length; i += 200) {
         const { error } = await supabase.from('sonhos').upsert(sonhos.slice(i, i + 200).map((s) => linha(s, userId)));
+        if (error) throw error;
+      }
+    },
+    async apagarVarios(lista) {
+      const audios = lista.filter((s) => s.audio?.ref).map((s) => s.audio.ref);
+      if (audios.length) await supabase.storage.from(AUDIO_BUCKET).remove(audios);
+      for (let i = 0; i < lista.length; i += 200) {
+        const { error } = await supabase.from('sonhos').delete().in('id', lista.slice(i, i + 200).map((s) => s.id));
         if (error) throw error;
       }
     },

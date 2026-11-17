@@ -32,6 +32,12 @@ function lerData(txt) {
   if (m) return new Date(+m[3], +m[2] - 1, +m[1], 7).toISOString();
   m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return new Date(+m[1], +m[2] - 1, +m[3], 7).toISOString();
+  // Como o Notion em português escreve: "28 de outubro de 2024 21:04"
+  m = t.toLowerCase().match(/^(\d{1,2}) de ([a-zç]+)\.? de (\d{4})/);
+  if (m) {
+    const mes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'].indexOf(m[2].slice(0, 3));
+    if (mes >= 0) return new Date(+m[3], mes, +m[1], 7).toISOString();
+  }
   const d = new Date(t);
   return isNaN(d) ? null : d.toISOString();
 }
@@ -164,3 +170,43 @@ export async function lerArquivos(entrada) {
   sonhos.push(...(paginas.length ? paginas : unicos));
   return { sonhos, keep, marcadores: [...marcadores].sort(), soCSV: !paginas.length && doCSV.length > 0 };
 }
+
+// Compara o que vai entrar com o acervo, sem duplicar.
+// - Mesmo dia, mesmo título e mesmo começo de relato: já está lá, pula.
+// - Mesmo dia e título, e o do acervo está sem relato (ex.: veio só da tabela): completa esse.
+// Cada sonho do acervo só é usado uma vez, então vários "Sem título" no mesmo dia não se misturam.
+const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+const SEM = new Set(['', 'sem titulo', 'untitled']);
+const tituloNorm = (s) => (SEM.has(norm(s.titulo)) ? '' : norm(s.titulo));
+const dia = (s) => (s.sonhado_em || '').slice(0, 10);
+const comeco = (s) => norm(s.texto).slice(0, 80);
+
+export function combinarComAcervo(entrando, acervo, pularRepetidos = true) {
+  const porChave = new Map();
+  for (const e of acervo) {
+    const k = dia(e) + '|' + tituloNorm(e);
+    if (!porChave.has(k)) porChave.set(k, []);
+    porChave.get(k).push(e);
+  }
+  const usados = new Set();
+  const novos = [];
+  const completar = [];
+  for (const s of entrando) {
+    const candidatos = porChave.get(dia(s) + '|' + tituloNorm(s)) || [];
+    const igual = comeco(s) && candidatos.find((e) => comeco(e) === comeco(s));
+    if (igual) { usados.add(igual.id); if (!pularRepetidos) novos.push(s); continue; }
+    if (comeco(s)) {
+      const vazio = candidatos.find((e) => !usados.has(e.id) && !comeco(e));
+      if (vazio) {
+        usados.add(vazio.id);
+        completar.push({ ...vazio, texto: s.texto, temas: [...new Set([...(vazio.temas || []), ...(s.temas || [])])] });
+        continue;
+      }
+    } else if (candidatos.length && pularRepetidos) continue;
+    novos.push(s);
+  }
+  return { novos, completar };
+}
+
+// Sonho sem nada dentro: sem título, relato, áudio, temas nem amplificações.
+export const ehVazio = (s) => !s.titulo?.trim() && !s.texto?.trim() && !s.audio && !(s.temas || []).length && !(s.conclusoes || []).length;
