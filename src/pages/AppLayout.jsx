@@ -13,7 +13,7 @@ import { instalado } from '../lib/lembrete.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarTodos, apagarVarios, salvarVarios, avisar, compartilhamentos } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos } = useEstado();
   const navegar = useNavigate();
   const comigoTodos = [...compartilhamentos.comigo, ...compartilhamentos.aguardando];
   const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
@@ -76,13 +76,6 @@ export default function AppLayout() {
     if (!confirm(`Mandar ${n === 1 ? '1 sonho vazio' : n + ' sonhos vazios'} para a lixeira? São os que não têm título, relato, áudio, temas nem amplificações. Ficam lá por 7 dias.`)) return;
     await apagarVarios(vazios.map((s) => s.id), n === 1 ? '1 sonho vazio na lixeira' : n + ' sonhos vazios na lixeira');
   }
-  async function apagarTudo() {
-    setMenu(false);
-    const n = sonhos.length;
-    const r = prompt(`Isso manda os ${n} sonhos do seu acervo para a lixeira. Ficam lá por 7 dias e depois somem de vez, com áudios e amplificações.\n\nPara confirmar, digite APAGAR:`);
-    if ((r || '').trim().toUpperCase() !== 'APAGAR') return;
-    await apagarTodos();
-  }
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -107,7 +100,6 @@ export default function AppLayout() {
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
               {doNotion.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={arrumarNotion}><Importar size={18} /> Arrumar sonhos vindos do Notion ({doNotion.length})</button>}
               {vazios.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={apagarVazios}><Lixo size={18} /> Apagar sonhos vazios ({vazios.length})</button>}
-              {sonhos.length > 0 && <button role="menuitem" type="button" className="menu-item" style={{ color: '#B42318' }} onClick={apagarTudo}><Lixo size={18} /> Apagar todos os sonhos</button>}
               <Link role="menuitem" className="menu-item" to="/app/lixeira"><Lixo size={18} /> Lixeira{lixeira.length > 0 && <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)' }}>{lixeira.length}</span>}</Link>
               {usuario ? (
                 <button role="menuitem" type="button" className="menu-item" onClick={sair}><Sair size={18} /> <span>Sair<br /><span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{usuario.email}</span></span></button>

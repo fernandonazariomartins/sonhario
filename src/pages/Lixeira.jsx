@@ -10,12 +10,19 @@ function prazo(s) {
 }
 
 export default function Lixeira() {
-  const { lixeira, restaurar, apagarDeVez } = useEstado();
+  const { lixeira, restaurar, apagarDeVez, sonhos, apagarTodos } = useEstado();
 
   function esvaziar() {
     const n = lixeira.length;
     if (!confirm(`Apagar de vez ${n === 1 ? '1 sonho' : n + ' sonhos'}, com áudios e amplificações? Não dá para desfazer.`)) return;
     apagarDeVez(lixeira.map((s) => s.id));
+  }
+
+  async function apagarTudo() {
+    const n = sonhos.length;
+    const r = prompt(`Isso manda os ${n === 1 ? '1 sonho' : n + ' sonhos'} do seu acervo para a lixeira. Ficam lá por ${DIAS_LIXEIRA} dias e depois somem de vez, com áudios e amplificações.\n\nPara confirmar, digite APAGAR:`);
+    if ((r || '').trim().toUpperCase() !== 'APAGAR') return;
+    await apagarTodos();
   }
 
   return (
@@ -53,6 +60,20 @@ export default function Lixeira() {
             );
           })}
         </div>
+      )}
+
+      {sonhos.length > 0 && (
+        <details style={{ marginTop: 40, paddingTop: 16, borderTop: '1px solid var(--line)', color: 'var(--muted)', fontSize: 13 }}>
+          <summary style={{ cursor: 'pointer', width: 'fit-content' }}>Opções avançadas</summary>
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, maxWidth: 520 }}>
+            <p style={{ margin: 0, lineHeight: 1.6 }}>
+              {semViuvas('Manda o acervo inteiro para a lixeira de uma vez. Use só se quiser recomeçar do zero.')}
+            </p>
+            <button type="button" className="btn btn-linha" style={{ minHeight: 36, color: 'var(--danger)', borderColor: '#F1C4BF' }} onClick={apagarTudo}>
+              <Lixo size={16} /> Apagar todos os sonhos ({sonhos.length})
+            </button>
+          </div>
+        </details>
       )}
     </div>
   );
