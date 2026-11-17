@@ -166,7 +166,8 @@ grant execute on function public.perfil_por_email(text) to authenticated;
 
 -- Os sonhos de alguém que compartilhou comigo. Só os que a pessoa liberou
 -- (todos, ou os escolhidos para mim), e as amplificações só se ela permitiu.
-create or replace function public.sonhos_compartilhados(dono uuid)
+drop function if exists public.sonhos_compartilhados(uuid); -- o bloco 8 muda o formato; assim o arquivo roda de novo sem erro
+create function public.sonhos_compartilhados(dono uuid)
 returns table (
   id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
   temas text[], status text, cor text, conclusoes jsonb, levar_sessao boolean, audio jsonb
@@ -297,7 +298,8 @@ revoke all on function public.aprovar_pedido(uuid) from public, anon;
 grant execute on function public.aprovar_pedido(uuid) to authenticated;
 
 -- Pedido ainda não aprovado não vê nada.
-create or replace function public.sonhos_compartilhados(dono uuid)
+drop function if exists public.sonhos_compartilhados(uuid); -- o bloco 8 muda o formato; assim o arquivo roda de novo sem erro
+create function public.sonhos_compartilhados(dono uuid)
 returns table (
   id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
   temas text[], status text, cor text, conclusoes jsonb, levar_sessao boolean, audio jsonb
@@ -313,6 +315,8 @@ language sql stable security definer set search_path = public as $$
     and c.convidado_email = any (s.compartilhado_com)
   order by s.sonhado_em desc;
 $$;
+revoke all on function public.sonhos_compartilhados(uuid) from public, anon;
+grant execute on function public.sonhos_compartilhados(uuid) to authenticated;
 
 create or replace function public.posso_ouvir(caminho text)
 returns boolean
@@ -325,3 +329,69 @@ language sql stable security definer set search_path = public as $$
       and c.convidado_email = any (s.compartilhado_com)
   );
 $$;
+
+-- 8. Imagens nos sonhos ------------------------------------------------------
+-- Um desenho, uma foto, um print. O app reduz cada imagem antes de enviar
+-- (lado maior de 1600 px, WebP/JPEG): cerca de 150 a 400 KB cada.
+alter table public.sonhos add column if not exists imagens jsonb not null default '[]'::jsonb; -- [{ id, ref, largura, altura, bytes, em }]
+create index if not exists sonhos_imagens on public.sonhos using gin (imagens jsonb_path_ops);
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('imagens', 'imagens', false, 10485760, array['image/webp', 'image/jpeg', 'image/png', 'image/gif', 'image/avif', 'image/heic', 'image/heif'])
+on conflict (id) do nothing;
+
+drop policy if exists "imagens: ler as minhas" on storage.objects;
+create policy "imagens: ler as minhas" on storage.objects
+  for select using (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "imagens: enviar as minhas" on storage.objects;
+create policy "imagens: enviar as minhas" on storage.objects
+  for insert with check (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "imagens: trocar as minhas" on storage.objects;
+create policy "imagens: trocar as minhas" on storage.objects
+  for update using (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "imagens: apagar as minhas" on storage.objects;
+create policy "imagens: apagar as minhas" on storage.objects
+  for delete using (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- A imagem de um sonho compartilhado comigo (e já aprovado).
+create or replace function public.posso_ver_imagem(caminho text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.sonhos s
+    join public.compartilhamentos c on c.dono_id = s.user_id
+    where s.imagens @> jsonb_build_array(jsonb_build_object('ref', caminho)) and not c.pendente
+      and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+      and c.convidado_email = any (s.compartilhado_com)
+  );
+$$;
+revoke all on function public.posso_ver_imagem(text) from public, anon;
+grant execute on function public.posso_ver_imagem(text) to authenticated;
+
+drop policy if exists "imagens: ver as compartilhadas" on storage.objects;
+create policy "imagens: ver as compartilhadas" on storage.objects
+  for select using (bucket_id = 'imagens' and public.posso_ver_imagem(name));
+
+-- Quem recebe o sonho passa a ver as imagens também (a função muda de formato, por isso o drop).
+drop function if exists public.sonhos_compartilhados(uuid);
+create function public.sonhos_compartilhados(dono uuid)
+returns table (
+  id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
+  temas text[], status text, cor text, conclusoes jsonb, levar_sessao boolean, audio jsonb, imagens jsonb
+)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.sonhado_em, s.atualizado_em, s.titulo, s.texto, s.temas, s.status, s.cor,
+         case when c.ver_amplificacoes then s.conclusoes else '[]'::jsonb end,
+         s.levar_sessao, s.audio, s.imagens
+  from public.sonhos s
+  join public.compartilhamentos c on c.dono_id = s.user_id
+  where s.user_id = dono and not c.pendente
+    and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+    and c.convidado_email = any (s.compartilhado_com)
+  order by s.sonhado_em desc;
+$$;
+revoke all on function public.sonhos_compartilhados(uuid) from public, anon;
+grant execute on function public.sonhos_compartilhados(uuid) to authenticated;

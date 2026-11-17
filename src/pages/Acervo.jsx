@@ -3,8 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Busca, Mic } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Busca, Mic, Imagem } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { Miniatura } from '../components/Imagens.jsx';
 
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
@@ -13,15 +14,23 @@ export function Status({ s, cor }) {
 
 export function Nota({ s, comTemas = true, para }) {
   const estiloTema = useCorTema();
+  const { urlImagem } = useEstado();
   const c = CORES[s.cor] || CORES.branco;
+  const capa = s.imagens?.[0];
   return (
     <Link to={para || '/app/sonho/' + s.id} className="nota" style={{ background: c.fundo }}>
+      {capa && (
+        <div style={{ margin: '-14px -14px 2px', borderRadius: '12px 12px 0 0', overflow: 'hidden', position: 'relative' }}>
+          <Miniatura img={capa} resolver={urlImagem} style={{ maxHeight: 260 }} />
+          {s.imagens.length > 1 && <span style={{ position: 'absolute', right: 8, bottom: 8, height: 24, padding: '0 8px', borderRadius: 999, background: 'rgba(26,26,26,.72)', color: '#fff', fontSize: 11, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Imagem size={12} w={2.4} />{s.imagens.length}</span>}
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
         {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
       </div>
       {s.titulo?.trim() && <h3>{semViuvas(s.titulo)}</h3>}
-      {s.texto ? <p>{semViuvas(s.texto)}</p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : 'Sem título'}</p>}
+      {s.texto ? <p>{semViuvas(s.texto)}</p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : capa ? 'Só a imagem' : 'Sem título'}</p>}
       {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
       <Status s={s.status} cor={c.rotulo} />
     </Link>

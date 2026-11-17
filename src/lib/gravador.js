@@ -18,7 +18,8 @@ const LIMIAR_VOZ = 0.12; // nível do microfone acima do qual conta como "algué
 export async function iniciarGravacao({ aoTranscrever, aoNivel, aoSilencio, silencioMs = 10000 }) {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const tipo = melhorFormato();
-  const rec = new MediaRecorder(stream, tipo ? { mimeType: tipo } : undefined);
+  // 48 kbps basta para voz e deixa cada minuto com uns 360 KB (o padrão do navegador chega a 1 MB).
+  const rec = new MediaRecorder(stream, { ...(tipo ? { mimeType: tipo } : {}), audioBitsPerSecond: 48000 });
   const pedacos = [];
   rec.ondataavailable = (e) => e.data.size && pedacos.push(e.data);
   rec.start(500);

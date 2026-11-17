@@ -1,6 +1,7 @@
 // Importação de sonhos que a pessoa já tem: Notion (CSV), Google Keep (Takeout, JSON) e texto/Markdown.
 import { unzipSync, strFromU8 } from 'fflate';
 import { novoSonho } from './sonhos.js';
+import { EXT_IMAGEM, tipoPorNome, semMarcasDeImagem, temMarcaDeImagem } from './imagens.js';
 
 const CORES_KEEP = { DEFAULT: 'branco', YELLOW: 'amarelo', GREEN: 'verde', TEAL: 'azul', BLUE: 'azul', CERULEAN: 'azul', ORANGE: 'coral', RED: 'coral', PINK: 'coral', PURPLE: 'lilas', BROWN: 'areia', GRAY: 'areia' };
 
@@ -104,7 +105,10 @@ export function deNotionPagina(texto) {
     fimProps = i + 1;
   }
   if (!Object.keys(props).length) return null; // não é uma página da tabela de sonhos
-  const corpo = semLinks(linhas.slice(fimProps).join('\n')).trim();
+  const bruto = linhas.slice(fimProps).join('\n');
+  // Imagens da página: "![nome.png](Pasta%20da%20pagina/nome.png)". Saem do relato e entram como imagens.
+  const imagens = [...bruto.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map((m) => m[1].trim().replace(/^<|>$/g, ''));
+  const corpo = semLinks(semMarcasDeImagem(bruto)).trim();
   if (SEM_TITULO.includes(titulo.toLowerCase())) titulo = '';
   const sonhado = lerData(props.data) || lerData(props.criado) || new Date().toISOString();
   const obs = props.obs || '';
@@ -117,7 +121,8 @@ export function deNotionPagina(texto) {
     status: STATUS_NOTION[(props.status || '').toLowerCase()] || 'nao_aberto',
     conclusoes: obs ? [{ id: 'imp-' + Math.random().toString(16).slice(2), em: sonhado, origem: 'sozinho', texto: semLinks(obs) }] : [],
   });
-  return s.titulo || s.texto || s.conclusoes.length ? s : false;
+  if (imagens.length) s._imagens = imagens;
+  return s.titulo || s.texto || s.conclusoes.length || imagens.length ? s : false;
 }
 
 // Sonhos que entraram com o cabeçalho do Notion grudado no relato
@@ -143,14 +148,32 @@ export function arrumarDoNotion(acervo) {
 }
 
 // Abre o .zip do Notion (que às vezes vem com outro .zip dentro).
-function abrirZip(bytes, saida = []) {
-  const arquivos = unzipSync(bytes);
+// As imagens das páginas ficam guardadas à parte, pelo caminho dentro do .zip.
+const TEXTO = /\.(md|csv|json|txt)$/i;
+function abrirZip(bytes, saida = [], imagens = new Map()) {
+  const arquivos = unzipSync(bytes, { filter: (f) => /\.zip$/i.test(f.name) || TEXTO.test(f.name) || EXT_IMAGEM.test(f.name) });
   for (const [nome, dados] of Object.entries(arquivos)) {
-    const n = nome.toLowerCase();
-    if (n.endsWith('.zip')) abrirZip(dados, saida);
-    else if (n.endsWith('.md') || n.endsWith('.csv') || n.endsWith('.json') || n.endsWith('.txt')) saida.push({ name: nome, doZip: true, text: async () => strFromU8(dados) });
+    if (/\.zip$/i.test(nome)) abrirZip(dados, saida, imagens);
+    else if (EXT_IMAGEM.test(nome)) imagens.set(nome, dados);
+    else saida.push({ name: nome, doZip: true, text: async () => strFromU8(dados) });
   }
-  return saida;
+  return { arquivos: saida, imagens };
+}
+
+// Caminho da imagem a partir da página: relativo à pasta do .md, com %20 e afins.
+function acharImagem(imagens, paginaNome, src) {
+  if (/^(https?:|data:)/i.test(src)) return null;
+  let rel = src;
+  try { rel = decodeURIComponent(src); } catch { /* fica como está */ }
+  const pasta = paginaNome.includes('/') ? paginaNome.slice(0, paginaNome.lastIndexOf('/') + 1) : '';
+  const partes = [];
+  for (const p of (pasta + rel).split('/')) { if (p === '..') partes.pop(); else if (p && p !== '.') partes.push(p); }
+  const caminho = partes.join('/');
+  if (imagens.has(caminho)) return caminho;
+  // Às vezes o caminho vem sem a pasta de cima do export: procura pelo final.
+  const fim = '/' + rel.replace(/^\.?\//, '');
+  for (const k of imagens.keys()) if (k.endsWith(fim) || k === rel) return k;
+  return null;
 }
 
 export function deKeepJSON(obj, marcadoresAceitos) {
@@ -179,10 +202,12 @@ export function deTexto(texto) {
 
 export async function lerArquivos(entrada) {
   const arquivos = [];
+  const imagensZip = new Map();
   for (const f of entrada) {
-    if (f.name.toLowerCase().endsWith('.zip')) arquivos.push(...abrirZip(new Uint8Array(await f.arrayBuffer())));
+    if (f.name.toLowerCase().endsWith('.zip')) arquivos.push(...abrirZip(new Uint8Array(await f.arrayBuffer()), [], imagensZip).arquivos);
     else arquivos.push(f);
   }
+  let imagensFora = 0; // imagens de links externos ou que não vieram no .zip
   const sonhos = [];
   const doCSV = [];
   const paginas = [];
@@ -192,6 +217,16 @@ export async function lerArquivos(entrada) {
     const txt = await f.text();
     const n = f.name.toLowerCase();
     const pagina = n.endsWith('.md') ? deNotionPagina(txt) : null;
+    if (pagina?._imagens) {
+      const achadas = [];
+      for (const src of pagina._imagens) {
+        const caminho = f.doZip && acharImagem(imagensZip, f.name, src);
+        if (!caminho) { imagensFora++; continue; }
+        const dados = imagensZip.get(caminho);
+        achadas.push({ nome: caminho.split('/').pop(), arquivo: () => new File([dados], caminho.split('/').pop(), { type: tipoPorNome(caminho) }) });
+      }
+      if (achadas.length) pagina._imagens = achadas; else delete pagina._imagens;
+    }
     if (n.endsWith('.csv')) doCSV.push(...deNotionCSV(txt));
     else if (pagina) paginas.push(pagina);
     else if (pagina === false) continue; // página do Notion sem título nem relato
@@ -208,7 +243,7 @@ export async function lerArquivos(entrada) {
   const vistos = new Set();
   const unicos = doCSV.filter((x) => { const k = x.titulo + '|' + x.sonhado_em + '|' + x.temas.join(); return !vistos.has(k) && vistos.add(k); });
   sonhos.push(...(paginas.length ? paginas : unicos));
-  return { sonhos, keep, marcadores: [...marcadores].sort(), soCSV: !paginas.length && doCSV.length > 0 };
+  return { sonhos, keep, marcadores: [...marcadores].sort(), soCSV: !paginas.length && doCSV.length > 0, imagensFora };
 }
 
 // Compara o que vai entrar com o acervo, sem duplicar.
@@ -219,7 +254,12 @@ const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0
 const SEM = new Set(['', 'sem titulo', 'untitled']);
 const tituloNorm = (s) => (SEM.has(norm(s.titulo)) ? '' : norm(s.titulo));
 const dia = (s) => (s.sonhado_em || '').slice(0, 10);
-const comeco = (s) => norm(s.texto).slice(0, 80);
+const comeco = (s) => norm(semMarcasDeImagem(s.texto)).slice(0, 80);
+const comImagensNovas = (existente, s) => ({
+  ...existente,
+  texto: temMarcaDeImagem(existente.texto) ? semMarcasDeImagem(existente.texto) : existente.texto,
+  _imagens: s._imagens,
+});
 
 export function combinarComAcervo(entrando, acervo, pularRepetidos = true) {
   const porChave = new Map();
@@ -233,20 +273,30 @@ export function combinarComAcervo(entrando, acervo, pularRepetidos = true) {
   const completar = [];
   for (const s of entrando) {
     const candidatos = porChave.get(dia(s) + '|' + tituloNorm(s)) || [];
-    const igual = comeco(s) && candidatos.find((e) => comeco(e) === comeco(s));
-    if (igual) { usados.add(igual.id); if (!pularRepetidos) novos.push(s); continue; }
+    const igual = comeco(s) && candidatos.find((e) => !usados.has(e.id) && comeco(e) === comeco(s));
+    if (igual) {
+      usados.add(igual.id);
+      // Já está no acervo, mas sem as imagens da página: completa com elas.
+      if (s._imagens?.length && !(igual.imagens || []).length) completar.push(comImagensNovas(igual, s));
+      else if (!pularRepetidos) novos.push(s);
+      continue;
+    }
     if (comeco(s)) {
       const vazio = candidatos.find((e) => !usados.has(e.id) && !comeco(e));
       if (vazio) {
         usados.add(vazio.id);
-        completar.push({ ...vazio, texto: s.texto, temas: [...new Set([...(vazio.temas || []), ...(s.temas || [])])] });
+        completar.push({ ...vazio, texto: s.texto, temas: [...new Set([...(vazio.temas || []), ...(s.temas || [])])], ...(s._imagens?.length && !(vazio.imagens || []).length ? { _imagens: s._imagens } : {}) });
         continue;
       }
-    } else if (candidatos.length && pularRepetidos) continue;
+    } else if (candidatos.length && pularRepetidos) {
+      const semImagem = s._imagens?.length && candidatos.find((e) => !usados.has(e.id) && !(e.imagens || []).length);
+      if (semImagem) { usados.add(semImagem.id); completar.push(comImagensNovas(semImagem, s)); }
+      continue;
+    }
     novos.push(s);
   }
   return { novos, completar };
 }
 
 // Sonho sem nada dentro: sem título, relato, áudio, temas nem amplificações.
-export const ehVazio = (s) => !s.titulo?.trim() && !s.texto?.trim() && !s.audio && !(s.temas || []).length && !(s.conclusoes || []).length;
+export const ehVazio = (s) => !s.titulo?.trim() && !s.texto?.trim() && !s.audio && !(s.temas || []).length && !(s.conclusoes || []).length && !(s.imagens || []).length;

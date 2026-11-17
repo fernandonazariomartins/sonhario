@@ -16,6 +16,7 @@ Um caderno para lembrar, organizar e voltar aos seus sonhos. Mesmo padrão do To
 - **Contribuir com uma ideia** (menu ⋯, rodapé do app e da home): a mensagem vai para o e-mail do Fernando.
 - **Compartilhar com terapeuta ou amigos:** sempre um sonho por vez, nunca o caderno inteiro. Botão "Compartilhar" no sonho (escolhe a pessoa, com nome e foto do Google) e menu ⋯ › Pessoas com acesso. Quem foi convidado entra com Google e ganha a aba Pacientes/Amigos, só leitura. Também gera o **link de um sonho**: pode ir para várias pessoas, e cada uma que abrir e entrar com Google vira um pedido para aprovar. Precisa dos blocos 6 e 7 do `supabase/schema.sql`.
 - **Lembrete da manhã** (menu ⋯): notificação "Sonhou? Registre." na hora em que a pessoa acorda.
+- **Imagens nos sonhos:** até 12 por sonho (desenho, foto, print), por arquivo, câmera do celular ou colando (Ctrl+V). Cada imagem é reduzida antes de subir (lado maior de 1600 px, WebP/JPEG, cerca de 150 a 400 KB). A primeira vira capa no mural; quem recebe o sonho compartilhado também vê. Na importação do Notion, as imagens das páginas vêm junto; quem já importou envia o .zip de novo e os sonhos que já estão no acervo só ganham as imagens. Precisa do bloco 8 do `supabase/schema.sql`.
 
 ## Rodar no computador
 
@@ -86,7 +87,11 @@ Sem essa função, a janela mostra só os seus temas e os símbolos do dicionár
 
 No iPhone, notificações só funcionam com o Sonhário instalado na tela inicial (iOS 16.4 ou mais novo).
 
-### 8. Links da Amazon
+### 8. Imagens nos sonhos (≈ 1 min)
+1. No SQL Editor, rode o `supabase/schema.sql` inteiro de novo (ou só o bloco 8). Ele cria a coluna `imagens`, o bucket privado `imagens` e as regras de acesso.
+2. Para trazer as imagens do Notion: exporte de novo a tabela (Markdown e CSV, com subpáginas) e envie o .zip em **Importar**.
+
+### 9. Links da Amazon
 Quando a conta do Associados Amazon for aprovada, troque `SEU-ID-20` pelo seu ID em `src/pages/Home.jsx` (constante `AMAZON_TAG`).
 
 ## Estrutura
@@ -97,7 +102,8 @@ src/
   lib/supabase.js     cliente e login com Google
   lib/estado.jsx      sessão, modo sem conta e migração para a conta
   lib/armazem.js      onde os sonhos moram (aparelho ou Supabase)
-  lib/gravador.js     gravação de áudio e transcrição ao vivo
+  lib/gravador.js     gravação de áudio (48 kbps) e transcrição ao vivo
+  lib/imagens.js      redução das imagens antes de subir e endereços temporários
   lib/importar.js     Notion (CSV), Keep (JSON), texto/Markdown
   lib/insights.js     padrões do acervo (desbloqueiam com dados)
   lib/transcrever.js  transcrição no servidor depois de gravar
@@ -105,7 +111,7 @@ src/
   lib/contribuir.js   envio de ideias por e-mail
   lib/tipografia.js   sem viúvas nem palavras curtas no fim da linha
   pages/              Home, Entrar, Captura, Acervo, Sonho, Insights, Importar
-supabase/schema.sql   tabelas, regras de acesso (RLS), bucket de áudios e lembretes
+supabase/schema.sql   tabelas, regras de acesso (RLS), buckets de áudios e imagens, lembretes
 supabase/functions/   transcrever, lembrete-manha
 public/               manifest, ícones e service worker (instalação pelo site)
 ```

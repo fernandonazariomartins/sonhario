@@ -7,6 +7,8 @@ import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Nota, Status } from './Acervo.jsx';
+import { ImagensDoSonho } from '../components/Imagens.jsx';
+import { urlImagemRemota } from '../lib/armazem.js';
 import { Voltar, Avancar, Busca, Calendario, Pessoas } from '../components/Icones.jsx';
 
 function useSonhosDe(donoId) {
@@ -180,6 +182,7 @@ function SonhoLido({ c, id }) {
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>{duracao(s.audio.duracao)}</span>
           </div>
         )}
+        <ImagensDoSonho s={s} resolver={urlImagemRemota} />
         {s.texto ? s.texto.split(/\n{2,}/).map((p, k) => <p key={k} className="leitura" style={{ margin: 0, maxWidth: 680, fontSize: 19, lineHeight: 1.75, whiteSpace: 'pre-line' }}>{semViuvas(p)}</p>)
           : <p style={{ margin: 0, color: 'var(--muted)', fontStyle: 'italic' }}>Sem relato escrito.</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 18 }}>

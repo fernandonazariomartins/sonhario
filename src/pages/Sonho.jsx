@@ -10,12 +10,13 @@ import { quemVe, pessoa } from '../lib/compartilhar.js';
 import { CompartilharSonho } from '../components/Compartilhar.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Janela from '../components/Janela.jsx';
+import { ImagensDoSonho } from '../components/Imagens.jsx';
 
 export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio, usuario, avisar, compartilhamentos, temLogin } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, usuario, avisar, compartilhamentos, temLogin, salvarImagem, urlImagem, apagarImagens } = useEstado();
   const [compartilhando, setCompartilhando] = useState(false);
   const estiloTema = useCorTema();
   const original = sonhos.find((s) => s.id === id);
@@ -185,6 +186,8 @@ export default function Sonho() {
         <label className="sr" htmlFor="relato">Relato do sonho</label>
         <textarea id="relato" ref={relato} value={s.texto} onChange={(e) => mudar({ texto: e.target.value })} placeholder="O que você lembra do sonho…" rows={8}
           className="leitura" style={{ border: 0, padding: 0, resize: 'none', overflow: 'hidden', outline: 'none', width: '100%', maxWidth: 680, background: 'transparent', fontSize: 19, lineHeight: 1.75 }} />
+
+        <ImagensDoSonho s={s} mudar={mudar} salvarImagem={salvarImagem} apagarImagens={apagarImagens} resolver={urlImagem} avisar={avisar} />
 
         <section aria-labelledby="t-temas" style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
