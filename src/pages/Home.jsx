@@ -17,7 +17,7 @@ const CARTOES = [
   { n: '03', t: 'Organizar', d: 'temas e status em cada sonho', Ic: Tema, bg: '#0257AA', fg: '#FFFFFF' },
   { n: '04', t: 'Ver', d: 'mural, lista ou por tema', Ic: Mural, bg: '#0257AA', fg: '#FFFFFF' },
   { n: '05', t: 'Amplificar', d: 'imagens e associações, com data', Ic: Caneta, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '06', t: 'Importar', d: 'do Notion, do Keep ou de arquivos', Ic: Importar, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '06', t: 'Importar', d: 'traga os sonhos que você já anotou', Ic: Importar, bg: '#0257AA', fg: '#FFFFFF' },
 ];
 
 const PASSOS = [
