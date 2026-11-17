@@ -146,18 +146,16 @@ export default function Home() {
             ))}
           </ol>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>Adaptado de <em>O oráculo da noite</em>, de Sidarta&nbsp;Ribeiro.</p>
-          <figure className="depoimento">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none' }}>
-              <span style={{ fontSize: 56, lineHeight: 1, letterSpacing: '-0.05em' }}>1.000+</span>
-              <span className="rotulo" style={{ color: 'var(--azul-cinza)' }}>sonhos em 5 anos</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-              <blockquote style={{ margin: 0, fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.45 }}>“{n('Use esse método. Foi ele que me fez ter mais de mil sonhos anotados em cinco anos.')}”</blockquote>
-              <figcaption style={{ fontSize: 14, color: 'var(--azul-cinza)' }}><strong style={{ color: '#fff' }}>Fernando Martins</strong>, criador do&nbsp;Sonhário</figcaption>
-            </div>
-          </figure>
           </div>
         </div>
+      </section>
+
+      <section className="secao" style={{ background: 'var(--cinza)' }}>
+        <figure className="depoimento">
+          <Retrato />
+          <blockquote>“{n('Esse é o método que me ajudou a registrar mais de 1.000 sonhos nos últimos 6 anos.')}”</blockquote>
+          <figcaption><strong>Fernando Martins</strong>, criador do&nbsp;Sonhário</figcaption>
+        </figure>
       </section>
 
       <section className="secao" style={{ background: 'var(--azul)', color: '#fff' }}>
@@ -252,6 +250,12 @@ export default function Home() {
       {ideia && <Contribuir aoFechar={() => setIdeia(false)} />}
     </div>
   );
+}
+
+function Retrato() {
+  const [erro, setErro] = useState(false);
+  if (erro) return <span className="depoimento-foto" aria-hidden="true">FM</span>;
+  return <img className="depoimento-foto" src={import.meta.env.BASE_URL + 'fernando.jpg'} alt="Fernando Martins" loading="lazy" onError={() => setErro(true)} />;
 }
 
 function MiniCelular() {
