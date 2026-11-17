@@ -105,3 +105,11 @@ export function contarTemas(sonhos) {
   for (const s of sonhos) for (const t of s.temas || []) mapa.set(t, (mapa.get(t) || 0) + 1);
   return [...mapa.entries()].map(([nome, n]) => ({ nome, n })).sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome));
 }
+
+// Lixeira: o sonho apagado fica lá por 7 dias e depois some de vez.
+export const DIAS_LIXEIRA = 7;
+export const PRAZO_LIXEIRA = DIAS_LIXEIRA * 24 * 60 * 60 * 1000;
+export function diasRestantes(s) {
+  const fim = new Date(s.apagado_em).getTime() + PRAZO_LIXEIRA;
+  return Math.max(0, Math.ceil((fim - Date.now()) / (24 * 60 * 60 * 1000)));
+}

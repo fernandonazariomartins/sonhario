@@ -286,7 +286,7 @@ export default function Sonho() {
             <Compartilhar size={16} /> Compartilhar
           </button>}
           <button type="button" className="btn btn-linha" style={{ color: 'var(--danger)', borderColor: '#F1C4BF' }}
-            onClick={() => { if (confirm('Apagar este sonho? Não dá para desfazer.')) { apagar(s.id); navegar('/app/acervo'); } }}>
+            onClick={() => { apagar(s.id); navegar('/app/acervo'); }}>
             <Lixo size={16} /> Apagar sonho
           </button>
         </div>
