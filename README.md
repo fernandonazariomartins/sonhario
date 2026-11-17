@@ -71,6 +71,12 @@ No Chrome (Android e computador) a fala vira texto ao vivo, de graça. No iPhone
 
 Funciona para quem entrou com Google. Aparece também o botão "Transformar o áudio em texto" no sonho.
 
+### 6b. Temas sugeridos por IA (opcional, ≈ 2 min)
+Em "Temas automáticos", além dos seus temas e do dicionário de símbolos, uma IA propõe temas novos a partir do relato (custo de frações de centavo por sonho). Usa o mesmo `OPENAI_API_KEY` do item 6.
+1. `supabase functions deploy sugerir-temas`
+
+Sem essa função, a janela mostra só os seus temas e os símbolos do dicionário.
+
 ### 7. Lembrete da manhã (≈ 10 min)
 1. Gere as chaves: `npx web-push generate-vapid-keys`.
 2. `supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... LEMBRETE_SEGREDO=uma-senha-qualquer`
