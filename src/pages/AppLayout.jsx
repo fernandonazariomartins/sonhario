@@ -62,7 +62,7 @@ export default function AppLayout() {
   async function apagarTudo() {
     setMenu(false);
     const n = sonhos.length;
-    const r = prompt(`Isso apaga os ${n} sonhos do seu acervo, com áudios e conclusões. Não dá para desfazer.\n\nPara confirmar, digite APAGAR:`);
+    const r = prompt(`Isso apaga os ${n} sonhos do seu acervo, com áudios e amplificações. Não dá para desfazer.\n\nPara confirmar, digite APAGAR:`);
     if ((r || '').trim().toUpperCase() !== 'APAGAR') return;
     await apagarTodos();
     avisar(n === 1 ? '1 sonho apagado' : n + ' sonhos apagados');
