@@ -10,7 +10,7 @@ function Status({ s, cor }) {
   return <span className="status" style={{ color: cor }}><span className="ponto" style={{ background: st.cor }} />{st.rotulo}</span>;
 }
 
-function Nota({ s, comTemas = false }) {
+function Nota({ s, comTemas = true }) {
   const estiloTema = useCorTema();
   const c = CORES[s.cor] || CORES.branco;
   return (
@@ -103,25 +103,27 @@ export default function Acervo() {
 }
 
 function ListaSonhos({ sonhos }) {
+  const estiloTema = useCorTema();
   let mesAtual = '';
   return (
     <div className="painel" style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
+      <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
         <thead>
-          <tr>{['Data', 'Sonho', 'Status', 'Áudio'].map((h) => <th key={h} className="rotulo" style={{ textAlign: 'left', padding: '10px 14px', borderBottom: '1px solid var(--line)', background: '#F7F8FA' }}>{h}</th>)}</tr>
+          <tr>{['Data', 'Sonho', 'Temas', 'Status', 'Áudio'].map((h) => <th key={h} className="rotulo" style={{ textAlign: 'left', padding: '10px 14px', borderBottom: '1px solid var(--line)', background: '#F7F8FA' }}>{h}</th>)}</tr>
         </thead>
         <tbody>
           {sonhos.map((s) => {
             const m = mesAno(s.sonhado_em);
             const cab = m !== mesAtual ? (mesAtual = m) : null;
             return [
-              cab && <tr key={'m' + m}><td colSpan={4} className="rotulo" style={{ padding: '16px 14px 8px' }}>{m}</td></tr>,
+              cab && <tr key={'m' + m}><td colSpan={5} className="rotulo" style={{ padding: '16px 14px 8px' }}>{m}</td></tr>,
               <tr key={s.id} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
                 <td style={{ padding: '12px 14px' }}>
                   <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() || <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
                   {s.texto && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</div>}
                 </td>
+                <td style={{ padding: '12px 14px' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>{(s.temas || []).map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div></td>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Status s={s.status} cor="var(--ink)" /></td>
                 <td style={{ padding: '12px 14px', color: 'var(--muted)', fontSize: 13 }}>{s.audio ? duracao(s.audio.duracao) : '—'}</td>
               </tr>,
