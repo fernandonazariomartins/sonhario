@@ -1,9 +1,12 @@
 // Insights: padrões do acervo, com nomes da psicologia analítica.
 // Nada aqui interpreta sonhos: só conta o que se repete, some e volta.
-// Cada insight desbloqueia quando o acervo tem dados suficientes para ele.
+// Só aparece o insight que tem algo a mostrar no acervo de cada pessoa.
+import { normalizar, singular, ehSimbolo } from './coresTema.js';
 
 const DIA = 864e5;
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const SEMANA = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'];
+const SEMANA_CURTA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
 function tempo(ms) {
   const d = Math.round(ms / DIA);
@@ -14,67 +17,127 @@ function tempo(ms) {
   return a + (a === 1 ? ' ano' : ' anos');
 }
 const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+const dataDe = (ms) => { const d = new Date(ms); return d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + d.getFullYear(); };
+const mesAno = (ms) => { const d = new Date(ms); return MESES[d.getMonth()] + ' ' + d.getFullYear(); };
+const refSonho = (s) => ({ id: s.id, titulo: s.titulo?.trim() || '' });
+
+// Estações no hemisfério sul.
+const ESTACAO = (mes) => (mes === 11 || mes <= 1 ? 'verão' : mes <= 4 ? 'outono' : mes <= 7 ? 'inverno' : 'primavera');
+
+// Figuras e lugares que costumam aparecer nos relatos (sem acento, no singular).
+const FIGURAS = 'mae pai irma irmao avo filho filha crianca bebe menino menina homem mulher amigo amiga namorado namorada marido esposa ex chefe colega professor professora desconhecido estranho policial medico velho velha tio tia primo prima'.split(' ');
+const LUGARES = 'casa apartamento quarto sala cozinha banheiro porao sotao escada elevador predio escola faculdade universidade trabalho escritorio igreja hospital rua estrada avenida cidade praia mar rio lago piscina floresta mata montanha fazenda sitio aeroporto aviao carro onibus trem metro barco shopping loja mercado festa hotel cemiterio'.split(' ');
+
+function palavrasDe(s) {
+  const bruto = ((s.titulo || '') + ' ' + (s.texto || '')).toLowerCase().match(/[\p{L}]+/gu) || [];
+  const mapa = new Map(); // forma normalizada no singular -> forma original
+  for (const p of bruto) {
+    if (p.length < 2) continue;
+    const n = singular(normalizar(p));
+    if (!mapa.has(n)) mapa.set(n, p);
+  }
+  return mapa;
+}
 
 export function calcularInsights(sonhos, agora = Date.now()) {
-  const comTema = sonhos.filter((s) => s.temas?.length);
-  const ts = sonhos.map((s) => +new Date(s.sonhado_em));
-  const primeiro = ts.length ? Math.min(...ts) : agora;
+  const ordenados = [...sonhos].sort((a, b) => +new Date(a.sonhado_em) - +new Date(b.sonhado_em));
+  const comTema = ordenados.filter((s) => s.temas?.length);
+  const primeiro = ordenados.length ? +new Date(ordenados[0].sonhado_em) : agora;
   const diasDeAcervo = Math.max(0, Math.floor((agora - primeiro) / DIA));
 
   // tema -> datas em que apareceu (em ordem)
   const ocorre = new Map();
-  for (const s of comTema) for (const t of s.temas) {
+  for (const s of comTema) for (const t of new Set(s.temas)) {
     if (!ocorre.has(t)) ocorre.set(t, []);
     ocorre.get(t).push(+new Date(s.sonhado_em));
   }
-  for (const v of ocorre.values()) v.sort((a, b) => a - b);
+  const temasNorm = new Set([...ocorre.keys()].map((t) => singular(normalizar(t))));
+
+  // Palavras de cada relato, calculadas uma vez só.
+  const palavras = ordenados.map(palavrasDe);
+  const contarPalavras = (alvo) => {
+    const n = new Map(), forma = new Map();
+    palavras.forEach((m) => { for (const [k, orig] of m) if (alvo(k)) { n.set(k, (n.get(k) || 0) + 1); if (!forma.has(k)) forma.set(k, orig); } });
+    return [...n].map(([k, c]) => ({ k, n: c, forma: forma.get(k) })).sort((a, b) => b.n - a.n);
+  };
 
   const lista = [];
+  const add = (i) => { if ((i.itens && i.itens.length) || (i.barras && i.barras.some((b) => b.n))) lista.push(i); };
 
-  // 1. Circum-ambulação: o que está voltando agora.
-  {
-    const itens = [...ocorre]
+  // 1. Imagens primordiais: os temas que sustentam o acervo.
+  add({
+    id: 'primordiais', nome: 'Imagens primordiais', titulo: 'Os temas centrais do seu acervo',
+    termo: 'Jung chamava de imagens primordiais as figuras que voltam ao longo de uma vida inteira. Aqui, os temas que mais aparecem em todos os seus sonhos.',
+    itens: [...ocorre].filter(([, d]) => d.length >= 3).sort((a, b) => b[1].length - a[1].length).slice(0, 6)
+      .map(([tema, d]) => ({ tema, texto: plural(d.length, 'sonho', 'sonhos') + ' · ' + Math.round((d.length / comTema.length) * 100) + '% do acervo' })),
+  });
+
+  // 2. Circum-ambulação: o que está voltando agora.
+  add({
+    id: 'circum', nome: 'Circum-ambulação', titulo: 'O que está voltando agora',
+    termo: 'Para Jung, os sonhos andam em volta de um mesmo centro, como quem dá voltas num lugar até ele se mostrar.',
+    itens: [...ocorre]
       .map(([tema, d]) => ({ tema, n: d.filter((x) => agora - x <= 30 * DIA).length }))
-      .filter((x) => x.n >= 3).sort((a, b) => b.n - a.n).slice(0, 5)
-      .map((x) => ({ tema: x.tema, texto: plural(x.n, 'sonho', 'sonhos') + ' nos últimos 30 dias' }));
-    lista.push({
-      id: 'circum', nome: 'Circum-ambulação', titulo: 'O que está voltando agora',
-      termo: 'Para Jung, os sonhos andam em volta de um mesmo centro, como quem dá voltas num lugar até ele se mostrar.',
-      liberado: comTema.length >= 10, atual: comTema.length, meta: 10, falta: 'sonhos com tema',
-      itens, vazio: 'Nenhum tema apareceu 3 vezes nos últimos 30 dias.',
-    });
-  }
+      .filter((x) => x.n >= 2).sort((a, b) => b.n - a.n).slice(0, 5)
+      .map((x) => ({ tema: x.tema, texto: plural(x.n, 'sonho', 'sonhos') + ' nos últimos 30 dias' })),
+  });
 
-  // 2. Constelação: tema antigo que voltou depois de muito tempo.
-  {
-    const itens = [...ocorre]
-      .filter(([, d]) => d.length >= 2 && agora - d[d.length - 1] <= 30 * DIA)
+  // 3. Constelação: tema antigo que voltou depois de muito tempo.
+  add({
+    id: 'constelacao', nome: 'Constelação', titulo: 'Um tema antigo que voltou',
+    termo: 'Jung dizia que um complexo “se constela” quando é ativado de novo pela vida. Um tema que reaparece depois de muito tempo pode estar nesse ponto.',
+    itens: [...ocorre]
+      .filter(([, d]) => d.length >= 2 && agora - d[d.length - 1] <= 60 * DIA)
       .map(([tema, d]) => ({ tema, gap: d[d.length - 1] - d[d.length - 2] }))
       .filter((x) => x.gap >= 90 * DIA).sort((a, b) => b.gap - a.gap).slice(0, 5)
-      .map((x) => ({ tema: x.tema, texto: 'voltou depois de ' + tempo(x.gap) + ' sem aparecer' }));
-    lista.push({
-      id: 'constelacao', nome: 'Constelação', titulo: 'Um tema antigo que voltou',
-      termo: 'Jung dizia que um complexo “se constela” quando é ativado de novo pela vida. Um tema que reaparece depois de muito tempo pode estar nesse ponto.',
-      liberado: diasDeAcervo >= 120, atual: diasDeAcervo, meta: 120, falta: 'dias de acervo',
-      itens, vazio: 'Nenhum tema voltou depois de mais de 3 meses neste último mês.',
+      .map((x) => ({ tema: x.tema, texto: 'voltou depois de ' + tempo(x.gap) + ' sem aparecer' })),
+  });
+
+  // 4. Série: temas que ocuparam sonhos seguidos.
+  {
+    const melhor = new Map(); // tema -> { n, ini }
+    const corrente = new Map();
+    comTema.forEach((s) => {
+      const aqui = new Set(s.temas);
+      for (const t of corrente.keys()) if (!aqui.has(t)) corrente.delete(t);
+      for (const t of aqui) {
+        const c = corrente.get(t) || { n: 0, ini: +new Date(s.sonhado_em) };
+        c.n++; corrente.set(t, c);
+        if (!melhor.has(t) || c.n > melhor.get(t).n) melhor.set(t, { ...c });
+      }
+    });
+    add({
+      id: 'serie', nome: 'Série', titulo: 'Temas que tomaram sonhos seguidos',
+      termo: 'Jung preferia ler os sonhos em série, não um a um: o sentido aparece na sequência. Aqui, os temas que estiveram em vários sonhos em sequência.',
+      itens: [...melhor].filter(([, m]) => m.n >= 3).sort((a, b) => b[1].n - a[1].n).slice(0, 5)
+        .map(([tema, m]) => ({ tema, texto: m.n + ' sonhos seguidos · a partir de ' + mesAno(m.ini) })),
     });
   }
 
-  // 3. Latência: temas frequentes que estão em silêncio.
+  // 5. Motivo recorrente: o que atravessa os anos.
   {
-    const itens = [...ocorre]
+    const anoAtual = new Date(agora).getFullYear();
+    add({
+      id: 'recorrente', nome: 'Motivo recorrente', titulo: 'O que atravessa os anos',
+      termo: 'Os sonhos recorrentes eram, para Jung, sinal de uma questão que ainda pede resposta. Aqui, temas presentes em três anos diferentes ou mais.',
+      itens: [...ocorre]
+        .map(([tema, d]) => ({ tema, anos: new Set(d.map((x) => new Date(x).getFullYear())), d }))
+        .filter((x) => x.anos.size >= 3).sort((a, b) => b.anos.size - a.anos.size || b.d.length - a.d.length).slice(0, 5)
+        .map((x) => ({ tema: x.tema, texto: 'em ' + x.anos.size + ' anos diferentes, desde ' + Math.min(...x.anos) + (x.anos.has(anoAtual) ? ' · também este ano' : '') })),
+    });
+  }
+
+  // 6. Latência: temas frequentes que estão em silêncio.
+  add({
+    id: 'latencia', nome: 'Latência', titulo: 'O que está em silêncio',
+    termo: 'O que não aparece não desapareceu: fica latente no inconsciente. São temas que já foram frequentes e não voltam há mais de dois meses.',
+    itens: [...ocorre]
       .filter(([, d]) => d.length >= 3 && agora - d[d.length - 1] >= 60 * DIA)
       .sort((a, b) => b[1].length - a[1].length).slice(0, 5)
-      .map(([tema, d]) => ({ tema, texto: plural(d.length, 'sonho', 'sonhos') + ' · o último há ' + tempo(agora - d[d.length - 1]) }));
-    lista.push({
-      id: 'latencia', nome: 'Latência', titulo: 'O que está em silêncio',
-      termo: 'O que não aparece não desapareceu: fica latente no inconsciente. São temas que já foram frequentes e não voltam há mais de dois meses.',
-      liberado: diasDeAcervo >= 90 && comTema.length >= 15, atual: Math.min(diasDeAcervo, 90), meta: 90, falta: 'dias de acervo (e 15 sonhos com tema)',
-      itens, vazio: 'Todos os seus temas frequentes apareceram nos últimos 2 meses.',
-    });
-  }
+      .map(([tema, d]) => ({ tema, texto: plural(d.length, 'sonho', 'sonhos') + ' · o último há ' + tempo(agora - d[d.length - 1]) })),
+  });
 
-  // 4. Complexo: temas que andam juntos.
+  // 7. Complexo: temas que andam juntos.
   {
     const pares = new Map();
     for (const s of comTema) {
@@ -84,18 +147,15 @@ export function calcularInsights(sonhos, agora = Date.now()) {
         pares.set(k, (pares.get(k) || 0) + 1);
       }
     }
-    const itens = [...pares].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 5)
-      .map(([k, n]) => { const [a, b] = k.split('\u0000'); return { tema: a, par: b, texto: 'juntos em ' + plural(n, 'sonho', 'sonhos') }; });
-    const multi = comTema.filter((s) => s.temas.length >= 2).length;
-    lista.push({
+    add({
       id: 'complexo', nome: 'Complexo', titulo: 'Temas que andam juntos',
       termo: 'Na psicologia analítica, um complexo é um núcleo de imagens e emoções que se atraem. Aqui, os temas que costumam aparecer no mesmo sonho.',
-      liberado: multi >= 10, atual: multi, meta: 10, falta: 'sonhos com dois temas ou mais',
-      itens, vazio: 'Nenhum par de temas apareceu junto 3 vezes ainda.',
+      itens: [...pares].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([k, n]) => { const [a, b] = k.split('\u0000'); return { tema: a, par: b, texto: 'juntos em ' + plural(n, 'sonho', 'sonhos') }; }),
     });
   }
 
-  // 5. Enantiodromia: a virada entre um período e outro.
+  // 8. Enantiodromia: a virada entre um período e outro.
   {
     const recente = new Map(), anterior = new Map();
     for (const [tema, d] of ocorre) for (const x of d) {
@@ -105,42 +165,165 @@ export function calcularInsights(sonhos, agora = Date.now()) {
     }
     const cederam = [...anterior].filter(([t, n]) => n >= 3 && (recente.get(t) || 0) <= Math.floor(n / 3)).sort((a, b) => b[1] - a[1]);
     const surgiram = [...recente].filter(([t, n]) => n >= 3 && (anterior.get(t) || 0) <= Math.floor(n / 3)).sort((a, b) => b[1] - a[1]);
-    const itens = [
-      ...surgiram.slice(0, 3).map(([t, n]) => ({ tema: t, texto: 'cresceu: ' + (anterior.get(t) || 0) + ' → ' + n + ' sonhos' })),
-      ...cederam.slice(0, 3).map(([t, n]) => ({ tema: t, texto: 'recuou: ' + n + ' → ' + (recente.get(t) || 0) + ' sonhos' })),
-    ];
-    lista.push({
+    add({
       id: 'enantiodromia', nome: 'Enantiodromia', titulo: 'A virada dos últimos meses',
       termo: 'Termo que Jung tomou de Heráclito: tudo, levado ao extremo, tende a virar no seu contrário. Compara os últimos 3 meses com os 3 anteriores.',
-      liberado: diasDeAcervo >= 180, atual: diasDeAcervo, meta: 180, falta: 'dias de acervo',
-      itens, vazio: 'Seus temas seguiram parecidos nos dois períodos.',
+      itens: [
+        ...surgiram.slice(0, 3).map(([t, n]) => ({ tema: t, texto: 'cresceu: ' + (anterior.get(t) || 0) + ' → ' + n + ' sonhos' })),
+        ...cederam.slice(0, 3).map(([t, n]) => ({ tema: t, texto: 'recuou: ' + n + ' → ' + (recente.get(t) || 0) + ' sonhos' })),
+      ],
     });
   }
 
-  // 6. Energia psíquica: o ritmo de lembrar.
+  // 9. Personificação: quem aparece nos relatos.
   {
-    const meses = [];
+    const set = new Set(FIGURAS);
+    add({
+      id: 'figuras', nome: 'Personificação', titulo: 'Quem aparece nos seus sonhos',
+      termo: 'Jung notou que o inconsciente se apresenta em pessoas, conhecidas ou não. Aqui, as figuras mais citadas nos seus relatos, mesmo quando não viraram tema.',
+      itens: contarPalavras((k) => set.has(k)).filter((x) => x.n >= 3).slice(0, 6)
+        .map((x) => ({ palavra: x.forma, texto: 'em ' + plural(x.n, 'relato', 'relatos') })),
+    });
+  }
+
+  // 10. A casa da psique: os cenários.
+  {
+    const set = new Set(LUGARES);
+    add({
+      id: 'lugares', nome: 'Topografia', titulo: 'Os lugares onde você sonha',
+      termo: 'Num sonho famoso, Jung desceu pelos andares de uma casa até o porão e viu ali uma imagem da própria psique. Aqui, os cenários que mais voltam nos relatos.',
+      itens: contarPalavras((k) => set.has(k)).filter((x) => x.n >= 3).slice(0, 6)
+        .map((x) => ({ palavra: x.forma, texto: 'em ' + plural(x.n, 'relato', 'relatos') })),
+    });
+  }
+
+  // 11. Associação: símbolos que aparecem no texto e nunca viraram tema.
+  {
+    const ja = new Set([...FIGURAS, ...LUGARES, 'sonho', 'visao', 'presente', 'caminho', 'energia', 'alma', 'calma', 'brilho', 'frio', 'luz', 'medo', 'cair', 'velho']);
+    add({
+      id: 'associacao', nome: 'Associação', titulo: 'Escritos, mas nunca marcados',
+      termo: 'No teste de associação de Jung, o que importava era o que passava sem ser notado. Aqui, imagens frequentes nos relatos que ainda não viraram tema.',
+      itens: contarPalavras((k) => ehSimbolo(k) && !temasNorm.has(k) && !ja.has(k) && k.length > 2).filter((x) => x.n >= 4).slice(0, 6)
+        .map((x) => ({ palavra: x.forma, texto: 'em ' + plural(x.n, 'relato', 'relatos') + ', nunca como tema' })),
+    });
+  }
+
+  // 12. Sonho inicial: o primeiro do acervo.
+  if (ordenados.length >= 10) {
+    const s0 = ordenados[0];
+    const t0 = +new Date(s0.sonhado_em);
+    const itens = [{ sonho: refSonho(s0), texto: dataDe(t0) }];
+    for (const t of new Set(s0.temas || [])) {
+      const depois = (ocorre.get(t) || []).filter((x) => x > t0).length;
+      if (depois) itens.push({ tema: t, texto: 'voltou em ' + plural(depois, 'sonho', 'sonhos') + ' depois' });
+    }
+    add({
+      id: 'inicial', nome: 'Sonho inicial', titulo: 'Onde o seu acervo começou',
+      termo: 'Jung dava peso especial ao primeiro sonho de um processo: muitas vezes ele antecipa o caminho inteiro. Este é o primeiro do seu acervo.',
+      itens,
+    });
+  }
+
+  // 13. Ciclo: o que você sonhou nesta época em outros anos.
+  {
     const hoje = new Date(agora);
-    for (let i = 5; i >= 0; i--) {
+    const itens = ordenados.filter((s) => {
+      const d = new Date(s.sonhado_em);
+      if (d.getFullYear() >= hoje.getFullYear()) return false;
+      const mesmoDia = new Date(hoje.getFullYear(), d.getMonth(), d.getDate());
+      return Math.abs(mesmoDia - hoje) <= 3 * DIA;
+    }).reverse().slice(0, 5).map((s) => ({ sonho: refSonho(s), texto: 'há ' + plural(hoje.getFullYear() - new Date(s.sonhado_em).getFullYear(), 'ano', 'anos') + ' · ' + dataDe(+new Date(s.sonhado_em)) }));
+    add({
+      id: 'ciclo', nome: 'Ciclo', titulo: 'Nesta época, em outros anos',
+      termo: 'A psique tem o seu próprio calendário: datas e estações carregadas costumam voltar. Aqui, o que você sonhou nestes mesmos dias em anos anteriores.',
+      itens,
+    });
+  }
+
+  // 14. Ritmo das estações: temas que se concentram numa estação.
+  if (diasDeAcervo >= 365) {
+    const itens = [...ocorre].filter(([, d]) => d.length >= 6).map(([tema, d]) => {
+      const c = new Map();
+      for (const x of d) { const e = ESTACAO(new Date(x).getMonth()); c.set(e, (c.get(e) || 0) + 1); }
+      const [est, n] = [...c].sort((a, b) => b[1] - a[1])[0];
+      return { tema, est, n, total: d.length };
+    }).filter((x) => x.n / x.total >= 0.5).sort((a, b) => b.n / b.total - a.n / a.total).slice(0, 5)
+      .map((x) => ({ tema: x.tema, texto: x.n + ' de ' + x.total + ' aparições no ' + x.est }));
+    add({
+      id: 'estacoes', nome: 'Ritmo das estações', titulo: 'Temas que têm época',
+      termo: 'Jung via a psique ligada aos ciclos da natureza. Aqui, temas que se concentram numa mesma estação do ano.',
+      itens,
+    });
+  }
+
+  // 15. Confronto com o inconsciente: o que ainda pede elaboração.
+  {
+    const comConclusao = ordenados.filter((s) => s.conclusoes?.length).length;
+    const atencao = ordenados.filter((s) => s.status === 'dar_atencao' && !s.conclusoes?.length);
+    const sessao = ordenados.filter((s) => s.levar_sessao).length;
+    const itens = [
+      comConclusao ? { texto: plural(comConclusao, 'sonho já tem conclusão', 'sonhos já têm conclusão') + ' sua' } : null,
+      sessao ? { texto: plural(sessao, 'sonho marcado', 'sonhos marcados') + ' para levar à sessão' } : null,
+      ...atencao.slice(-4).reverse().map((s) => ({ sonho: refSonho(s), texto: 'pede atenção, sem conclusão' })),
+    ].filter(Boolean);
+    if (atencao.length || sessao) add({
+      id: 'confronto', nome: 'Confronto', titulo: 'O que ainda pede elaboração',
+      termo: 'Jung falava em confronto com o inconsciente: dar forma e resposta ao que o sonho trouxe. Aqui, o que você marcou e ainda está em aberto.',
+      itens,
+    });
+  }
+
+  // 16. Energia psíquica: o ritmo de lembrar.
+  if (ordenados.length >= 5) {
+    const hoje = new Date(agora);
+    const barras = [];
+    for (let i = 11; i >= 0; i--) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const n = sonhos.filter((s) => { const x = new Date(s.sonhado_em); return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth(); }).length;
-      meses.push({ rotulo: MESES[d.getMonth()], n });
+      const n = ordenados.filter((s) => { const x = new Date(s.sonhado_em); return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth(); }).length;
+      barras.push({ rotulo: MESES[d.getMonth()], n });
     }
     const dias = new Map();
-    for (const s of sonhos) { const k = new Date(s.sonhado_em).toDateString(); dias.set(k, (dias.get(k) || 0) + 1); }
+    for (const s of ordenados) { const k = new Date(s.sonhado_em).toDateString(); dias.set(k, (dias.get(k) || 0) + 1); }
     const varios = [...dias.values()].filter((n) => n >= 2).length;
-    const ult30 = sonhos.filter((s) => agora - +new Date(s.sonhado_em) <= 30 * DIA).length;
+    const ult30 = ordenados.filter((s) => agora - +new Date(s.sonhado_em) <= 30 * DIA).length;
+    // Maior sequência de noites seguidas com registro.
+    const noites = [...dias.keys()].map((k) => +new Date(k)).sort((a, b) => a - b);
+    let seq = noites.length ? 1 : 0, maior = seq, fimMaior = noites[0];
+    for (let i = 1; i < noites.length; i++) {
+      seq = Math.round((noites[i] - noites[i - 1]) / DIA) === 1 ? seq + 1 : 1;
+      if (seq > maior) { maior = seq; fimMaior = noites[i]; }
+    }
+    const meses = Math.max(1, diasDeAcervo / 30.4);
     const itens = [
       { texto: plural(ult30, 'sonho lembrado', 'sonhos lembrados') + ' nos últimos 30 dias' },
+      diasDeAcervo >= 60 ? { texto: 'média de ' + (ordenados.length / meses).toFixed(1).replace('.', ',') + ' sonhos por mês desde o início' } : null,
+      maior >= 3 ? { texto: 'maior sequência: ' + maior + ' noites seguidas, até ' + dataDe(fimMaior) } : null,
       varios ? { texto: plural(varios, 'noite', 'noites') + ' com mais de um sonho' } : null,
     ].filter(Boolean);
-    lista.push({
+    add({
       id: 'energia', nome: 'Energia psíquica', titulo: 'O ritmo de lembrar',
       termo: 'Jung via a energia psíquica fluindo e refluindo, ora para fora, ora para dentro. Aqui, quantos sonhos você lembrou a cada mês.',
-      liberado: diasDeAcervo >= 30 && sonhos.length >= 8, atual: Math.min(sonhos.length, 8), meta: 8, falta: 'sonhos em 30 dias de acervo',
-      itens, meses, vazio: '',
+      itens, barras,
     });
+
+    // 17. Os dias da semana em que você mais lembra.
+    if (ordenados.length >= 20) {
+      const sem = Array(7).fill(0);
+      for (const s of ordenados) sem[new Date(s.sonhado_em).getDay()]++;
+      const ordem = [1, 2, 3, 4, 5, 6, 0];
+      const top = sem.indexOf(Math.max(...sem));
+      const baixo = sem.indexOf(Math.min(...sem));
+      add({
+        id: 'semana', nome: 'Ritmo semanal', titulo: 'Os dias em que você mais lembra',
+        termo: 'A rotina mexe com o sono e com a lembrança. Fins de semana e dias de descanso costumam trazer mais sonhos, mas cada pessoa tem o seu ritmo.',
+        barras: ordem.map((i) => ({ rotulo: SEMANA_CURTA[i], n: sem[i], destaque: i === top })),
+        itens: [
+          { texto: 'mais sonhos nas ' + SEMANA[top] + ' (' + sem[top] + ')' },
+          top !== baixo ? { texto: 'menos nas ' + SEMANA[baixo] + ' (' + sem[baixo] + ')' } : null,
+        ].filter(Boolean),
+      });
+    }
   }
 
-  return { lista, total: sonhos.length, diasDeAcervo, liberados: lista.filter((i) => i.liberado).length };
+  return { lista, total: sonhos.length, diasDeAcervo };
 }
