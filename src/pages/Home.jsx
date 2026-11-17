@@ -211,7 +211,7 @@ export default function Home() {
 
       <section style={{ padding: '0 20px' }}>
         <div id="instalar" className="miolo" style={{ background: 'var(--azul)', color: '#fff', borderRadius: 16, padding: '72px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
-          <h2 className="titulo-l">{n('Deixe o caderno ao lado da cama.')}</h2>
+          <h2 className="titulo-l">{n('Acesse seu caderno digital de sonhos.')}</h2>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: '#E6EDF5' }}>{n('Abra o site no celular, instale com dois toques e deixe perto da cama. Amanhã, abra antes de levantar.')}</p>
           <div style={{ marginTop: 10, width: '100%', maxWidth: 560, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 12, padding: '18px 20px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span className="rotulo" style={{ color: 'var(--azul-cinza)' }}>Sem loja de aplicativos</span>
