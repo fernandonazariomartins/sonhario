@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Contribuir from '../components/Contribuir.jsx';
+import { Link, Navigate, useLocation } from 'react-router-dom';
+import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
-import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok } from '../components/Icones.jsx';
+import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem } from '../components/Icones.jsx';
 import { semViuvas as n } from '../lib/tipografia.js';
 
 // Troque pelo seu ID do Associados Amazon (termina em -20) quando a conta estiver aprovada.
@@ -44,6 +46,15 @@ const Checks = ({ itens, bg, fg, cor }) => (
 
 export default function Home() {
   const [livro, setLivro] = useState(0);
+  const [ideia, setIdeia] = useState(false);
+  const { pronto, usuario, temLogin, entrar } = useEstado();
+  const { state } = useLocation();
+  // Já logado e chegando pelo endereço do site: vai direto para o app.
+  if (pronto && usuario && !state?.ficar) return <Navigate to="/app" replace />;
+  // Sem login: os botões de entrar chamam o Google direto (na demo, sem login, abrem o app).
+  const Entrar = ({ children, ...p }) => (temLogin && !usuario
+    ? <button type="button" onClick={entrar} {...p}>{children}</button>
+    : <Link to="/app" {...p}>{children}</Link>);
   return (
     <div>
       <header className="topo">
@@ -51,7 +62,7 @@ export default function Home() {
         <nav aria-label="Seções" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, fontWeight: 600 }}>
           <a href="#recursos" className="esconde-celular" style={{ color: 'var(--ink)', textDecoration: 'none' }}>Recursos</a>
           <a href="#pratica" className="esconde-celular" style={{ color: 'var(--ink)', textDecoration: 'none' }}>Como fazer</a>
-          <Link to="/app" style={{ color: 'var(--ink)', textDecoration: 'none' }}>Entrar</Link>
+          <Entrar style={{ color: 'var(--ink)', textDecoration: 'none', background: 'none', border: 0, padding: 0, font: 'inherit', cursor: 'pointer' }}>{usuario ? 'Abrir o app' : 'Entrar'}</Entrar>
           <a href="#instalar" className="btn btn-azul" style={{ minHeight: 40 }}><Celular size={16} /> Instalar no celular</a>
         </nav>
       </header>
@@ -63,9 +74,9 @@ export default function Home() {
           <p style={{ margin: '28px 0 0', maxWidth: 560, fontSize: 18, lineHeight: 1.6, color: '#3A3F45' }}>{n('Um caderno para lembrar o que você sonhou, organizar com calma e voltar aos sonhos quando quiser entendê-los. Um apoio ao seu processo de individuação, no seu tempo.')}</p>
           <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             <a href="#instalar" className="btn btn-azul btn-grande"><Celular size={18} /> Instalar no celular</a>
-            <Link to="/app" className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)' }}>Usar no navegador</Link>
+            <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
-          <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site.')} Já tem conta? <Link to="/app" style={{ fontWeight: 700 }}>Entrar</Link></p>
+          <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site.')} </p>
 
           <div id="recursos" style={{ marginTop: 64, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             {CARTOES.map(({ n: num, t, d, Ic, bg, fg }) => (
@@ -135,6 +146,16 @@ export default function Home() {
             ))}
           </ol>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>Adaptado de <em>O oráculo da noite</em>, de Sidarta&nbsp;Ribeiro.</p>
+          <figure className="depoimento">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none' }}>
+              <span style={{ fontSize: 56, lineHeight: 1, letterSpacing: '-0.05em' }}>1.000+</span>
+              <span className="rotulo" style={{ color: 'var(--azul-cinza)' }}>sonhos em 5 anos</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+              <blockquote style={{ margin: 0, fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.45 }}>“{n('Use esse método. Foi ele que me fez ter mais de mil sonhos anotados em cinco anos.')}”</blockquote>
+              <figcaption style={{ fontSize: 14, color: 'var(--azul-cinza)' }}><strong style={{ color: '#fff' }}>Fernando Martins</strong>, criador do&nbsp;Sonhário</figcaption>
+            </div>
+          </figure>
           </div>
         </div>
       </section>
@@ -217,15 +238,18 @@ export default function Home() {
             <span className="rotulo" style={{ color: 'var(--azul-cinza)' }}>Sem loja de aplicativos</span>
             <span style={{ fontSize: 15, lineHeight: 1.5 }}>Abra o Sonhário no navegador do celular e toque em <strong>Adicionar à tela&nbsp;inicial</strong>. Ele passa a funcionar como um&nbsp;aplicativo.</span>
           </div>
-          <Link to="/app" className="btn btn-grande" style={{ marginTop: 6, background: '#fff', color: 'var(--azul)' }}>Abrir o Sonhário</Link>
+          <Entrar className="btn btn-grande" style={{ marginTop: 6, background: '#fff', color: 'var(--azul)', border: 0 }}>{usuario ? 'Abrir o Sonhário' : 'Entrar com Google'}</Entrar>
         </div>
       </section>
 
       <footer style={{ padding: '40px 20px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         <Logo />
         <Assinatura />
-        <Link to="/privacidade" style={{ fontSize: 13, color: 'var(--muted)' }}>Privacidade e termos</Link>
+        <button type="button" className="btn btn-linha" style={{ marginTop: 10 }} onClick={() => setIdeia(true)}><Mensagem size={16} /> Contribuir com uma ideia</button>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', textAlign: 'center', maxWidth: 360 }}>{n('Um projeto colaborativo: sua ideia pode virar a próxima função do app.')}</p>
+        <Link to="/privacidade" style={{ fontSize: 13, color: 'var(--muted)', marginTop: 6 }}>Privacidade e termos</Link>
       </footer>
+      {ideia && <Contribuir aoFechar={() => setIdeia(false)} />}
     </div>
   );
 }

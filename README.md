@@ -9,7 +9,12 @@ Um caderno para lembrar, organizar e voltar aos seus sonhos. Mesmo padrão do To
 - **Acervo:** mural (estilo Keep), lista (estilo Notion) e temas, com busca, filtro por tema e "só dar atenção".
 - **Sonho aberto:** título, relato, áudio, temas, status (não aberto, aberto, dar atenção), cor no mural, "Amplificações" (com data e "sozinho" ou "na sessão") e "levar para a próxima sessão". Salva sozinho.
 - **Importar:** CSV do Notion (reconhece o template Meu Sonhário), notas do Google Keep (Takeout, .json, escolhendo os marcadores) e texto/Markdown com datas.
-- **Home** em `/`, com a assinatura "Um projeto de Fernando Martins".
+- **Home** em `/`, com a assinatura "Um projeto de Fernando Martins" e o depoimento.
+- **Captura para quem está meio dormindo:** um toque grava (o botão inteiro é a área de toque). Tocar de novo para e guarda. Guarda sozinho depois de 10 s de silêncio ou quando a tela bloqueia. Data editável ("mudar") e título opcional, sem título automático. Depois de guardar, tela de confirmação com "Ir para o acervo", "Registrar outro sonho" e "Dar título e temas".
+- **Botão + flutuante** em todas as telas fora da captura.
+- **Insights** (`/app/insights`): Circum-ambulação, Constelação, Latência, Complexo, Enantiodromia e Energia psíquica. Cada um desbloqueia quando há dados suficientes.
+- **Contribuir com uma ideia** (menu ⋯, rodapé do app e da home): a mensagem vai para o e-mail do Fernando.
+- **Lembrete da manhã** (menu ⋯): notificação "Sonhou? Registre." na hora em que a pessoa acorda.
 
 ## Rodar no computador
 
@@ -50,7 +55,31 @@ O Sonhário tem projeto próprio no Google Cloud (**Sonhario**, ID `sonhario-515
 3. Em **Environment Variables**, adicione `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
 4. **Deploy**. O `vercel.json` já cuida das rotas `/app`.
 
-### 5. Links da Amazon
+### 5. Contribuir com uma ideia (≈ 1 min)
+1. Em https://web3forms.com, informe `fernandonazariomartins@outlook.com` e copie a **Access Key** que chega no e-mail.
+2. Na Vercel, adicione `VITE_WEB3FORMS_KEY` com essa chave e faça um novo deploy.
+
+Sem a chave, o botão abre o app de e-mail da pessoa com a mensagem pronta.
+
+### 6. Transcrever depois de gravar (opcional, ≈ 5 min)
+No Chrome (Android e computador) a fala vira texto ao vivo, de graça. No iPhone isso nem sempre funciona; a função `transcrever` resolve, usando a OpenAI (cerca de US$ 0,003 por minuto de áudio).
+1. Instale a CLI: `npm i -g supabase` e rode `supabase login` e `supabase link --project-ref sburmejkmlkmzijmrpqr`.
+2. `supabase secrets set OPENAI_API_KEY=sk-...`
+3. `supabase functions deploy transcrever`
+4. Na Vercel, adicione `VITE_TRANSCRICAO=1` e faça um novo deploy.
+
+Funciona para quem entrou com Google. Aparece também o botão "Transformar o áudio em texto" no sonho.
+
+### 7. Lembrete da manhã (≈ 10 min)
+1. Gere as chaves: `npx web-push generate-vapid-keys`.
+2. `supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... LEMBRETE_SEGREDO=uma-senha-qualquer`
+3. `supabase functions deploy lembrete-manha --no-verify-jwt`
+4. Rode de novo o `supabase/schema.sql` (cria a tabela `lembretes`). Depois, no SQL Editor, rode o bloco comentado do item 5 do arquivo, trocando `COLE_O_SEGREDO`.
+5. Na Vercel, adicione `VITE_VAPID_PUBLIC_KEY` (a chave pública) e faça um novo deploy.
+
+No iPhone, notificações só funcionam com o Sonhário instalado na tela inicial (iOS 16.4 ou mais novo).
+
+### 8. Links da Amazon
 Quando a conta do Associados Amazon for aprovada, troque `SEU-ID-20` pelo seu ID em `src/pages/Home.jsx` (constante `AMAZON_TAG`).
 
 ## Estrutura
@@ -63,9 +92,14 @@ src/
   lib/armazem.js      onde os sonhos moram (aparelho ou Supabase)
   lib/gravador.js     gravação de áudio e transcrição ao vivo
   lib/importar.js     Notion (CSV), Keep (JSON), texto/Markdown
+  lib/insights.js     padrões do acervo (desbloqueiam com dados)
+  lib/transcrever.js  transcrição no servidor depois de gravar
+  lib/lembrete.js     inscrição no push do lembrete da manhã
+  lib/contribuir.js   envio de ideias por e-mail
   lib/tipografia.js   sem viúvas nem palavras curtas no fim da linha
-  pages/              Home, Entrar, Captura, Acervo, Sonho, Importar
-supabase/schema.sql   tabelas, regras de acesso (RLS) e bucket de áudios
+  pages/              Home, Entrar, Captura, Acervo, Sonho, Insights, Importar
+supabase/schema.sql   tabelas, regras de acesso (RLS), bucket de áudios e lembretes
+supabase/functions/   transcrever, lembrete-manha
 public/               manifest, ícones e service worker (instalação pelo site)
 ```
 
