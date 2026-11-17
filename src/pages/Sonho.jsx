@@ -9,6 +9,7 @@ import { semViuvas } from '../lib/tipografia.js';
 import { quemVe, pessoa } from '../lib/compartilhar.js';
 import { CompartilharSonho } from '../components/Compartilhar.jsx';
 import Avatar from '../components/Avatar.jsx';
+import Janela from '../components/Janela.jsx';
 
 export default function Sonho() {
   const { id } = useParams();
@@ -25,6 +26,7 @@ export default function Sonho() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [editandoData, setEditandoData] = useState(false);
   const [transcrevendo, setTranscrevendo] = useState(false);
+  const [sugestao, setSugestao] = useState(null); // { temas, marcados } enquanto a janela dos temas automáticos está aberta
   const timer = useRef(null);
 
   // Troca de sonho, ou chegou uma versão mais nova (ex.: transcrição terminada depois de guardar).
@@ -58,9 +60,17 @@ export default function Sonho() {
   function temasAutomaticos() {
     const novos = sugerirTemas((s.titulo || '') + ' ' + (s.texto || ''), s.temas, contarTemas(sonhos).map((t) => t.nome));
     if (!novos.length) { avisar(s.texto?.trim() ? 'Não encontrei temas no relato. Dá para pôr à mão.' : 'Escreva o relato primeiro.'); return; }
-    mudar({ temas: [...s.temas, ...novos] }, true);
-    avisar(novos.length === 1 ? '1 tema adicionado. Toque no × para tirar.' : novos.length + ' temas adicionados. Toque no × para tirar.');
+    setSugestao({ temas: novos, marcados: novos });
   }
+  function aceitarSugestao() {
+    const escolhidos = sugestao.marcados.filter((t) => !s.temas.includes(t));
+    if (escolhidos.length) {
+      mudar({ temas: [...s.temas, ...escolhidos] }, true);
+      avisar(escolhidos.length === 1 ? '1 tema adicionado.' : escolhidos.length + ' temas adicionados.');
+    }
+    setSugestao(null);
+  }
+  const alternarSugestao = (t) => setSugestao((x) => ({ ...x, marcados: x.marcados.includes(t) ? x.marcados.filter((m) => m !== t) : [...x.marcados, t] }));
   const addTema = (t) => { const nome = t.trim(); if (nome && !s.temas.includes(nome)) mudar({ temas: [...s.temas, nome] }, true); setNovoTema(''); };
   async function transcrever() {
     setTranscrevendo(true);
@@ -92,6 +102,25 @@ export default function Sonho() {
         </button>}
       </div>
       {compartilhando && <CompartilharSonho s={s} mudar={mudar} aoFechar={() => setCompartilhando(false)} />}
+      {sugestao && (
+        <Janela titulo="Temas sugeridos" aoFechar={() => setSugestao(null)}>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Encontrei estes temas no relato. Desmarque os que não fazem sentido para você.')}</p>
+          <div role="group" aria-label="Temas sugeridos" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {sugestao.temas.map((t) => { const on = sugestao.marcados.includes(t); return (
+              <button key={t} type="button" aria-pressed={on} onClick={() => alternarSugestao(t)}
+                style={{ ...estiloTema(t), height: 34, padding: '0 12px 0 8px', borderRadius: 6, border: 0, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: on ? 1 : 0.4, textDecoration: on ? 'none' : 'line-through' }}>
+                <span style={{ width: 18, height: 18, borderRadius: 4, border: '1.5px solid currentColor', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{on && <Ok size={12} />}</span>
+                {t}
+              </button>); })}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-linha" onClick={() => setSugestao(null)}>Agora não</button>
+            <button type="button" className="btn btn-azul" onClick={aceitarSugestao} disabled={!sugestao.marcados.length}>
+              <Ok size={16} /> {sugestao.marcados.length === 1 ? 'Adicionar 1 tema' : sugestao.marcados.length ? 'Adicionar ' + sugestao.marcados.length + ' temas' : 'Nenhum marcado'}
+            </button>
+          </div>
+        </Janela>
+      )}
 
       <article className="painel" style={{ flex: '999 1 560px', minWidth: 0, padding: 'clamp(20px, 4vw, 36px)', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {editandoData ? (
