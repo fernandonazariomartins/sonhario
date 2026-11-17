@@ -28,7 +28,8 @@ export async function listarCompartilhamentos(usuario) {
   const { data: ps } = await supabase.rpc('perfis_conectados');
   return {
     meus: data.filter((c) => c.dono_id === usuario.id && !c.pendente),
-    pedidos: data.filter((c) => c.dono_id === usuario.id && c.pendente),
+    // Pedido: pessoa ainda não aprovada, ou já aprovada que pediu um sonho por um link com aprovação.
+    pedidos: data.filter((c) => c.dono_id === usuario.id && (c.pendente || c.sonhos_pedidos?.length)),
     comigo: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id && !c.pendente),
     aguardando: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id && c.pendente),
     perfis: Object.fromEntries((ps || []).map((p) => [p.email, p])),
@@ -112,10 +113,11 @@ function novoToken() {
 }
 
 // Cria um link. Pode ir para várias pessoas: cada uma vira um pedido para aprovar.
-export async function criarLink(usuario, { sonhoId, papel, ver_amplificacoes }) {
+// aprovar: true, cada pessoa vira um pedido; false, entra direto (mas sempre com login).
+export async function criarLink(usuario, { sonhoId, papel, ver_amplificacoes, aprovar = true }) {
   const token = novoToken();
   const { error } = await supabase.from('convites').insert({
-    token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '', sonho_id: sonhoId, papel, ver_amplificacoes,
+    token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '', sonho_id: sonhoId, papel, ver_amplificacoes, aprovar,
   });
   if (error) throw error;
   return location.origin + '/convite/' + token;
@@ -138,6 +140,13 @@ export async function mandarLink(url, avisar) {
   try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); }
   catch { prompt('Copie o link:', url); }
+}
+
+// Recusar: quem não foi aprovada sai; quem já via outros sonhos só perde os pedidos.
+export async function recusarPedido(c) {
+  if (c.pendente) return desfazer(c.id);
+  const { error } = await supabase.from('compartilhamentos').update({ sonhos_pedidos: [] }).eq('id', c.id);
+  if (error) throw error;
 }
 
 export async function aprovarPedido(id) {

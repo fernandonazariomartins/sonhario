@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Janela from './Janela.jsx';
 import Avatar from './Avatar.jsx';
 import { useEstado } from '../lib/estado.jsx';
-import { PAPEIS, convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink, aprovarPedido } from '../lib/compartilhar.js';
+import { PAPEIS, convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink, aprovarPedido, recusarPedido } from '../lib/compartilhar.js';
 import { tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Copiar, Lixo, Mais, Ok, Link as IconeLink } from './Icones.jsx';
@@ -64,7 +64,7 @@ function Pedidos({ pedidos, perfis, sonhoId }) {
     try { await aprovarPedido(c.id); await recarregarCompartilhamentos(); avisar(nome + ' agora vê ' + (sonhoId ? 'este sonho' : 'o sonho')); } catch (e) { avisar('Não deu para aprovar: ' + e.message); }
   }
   async function recusar(c) {
-    try { await desfazer(c.id); await recarregarCompartilhamentos(); avisar('Pedido recusado'); } catch (e) { avisar('Não deu: ' + e.message); }
+    try { await recusarPedido(c); await recarregarCompartilhamentos(); avisar('Pedido recusado'); } catch (e) { avisar('Não deu: ' + e.message); }
   }
   return (
     <section aria-label="Pedidos para ver" style={{ background: 'var(--warn-bg)', borderRadius: 14, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -88,12 +88,14 @@ function LinkConvite({ s }) {
   const { usuario, avisar } = useEstado();
   const [papel, setPapel] = useState('amigo');
   const [amp, setAmp] = useState(false);
+  const [aprovar, setAprovar] = useState(true);
   const [url, setUrl] = useState('');
+  const [comAprovacao, setComAprovacao] = useState(true); // do link já criado
   const [ocupado, setOcupado] = useState(false);
 
   async function gerar() {
     setOcupado(true);
-    try { const u = await criarLink(usuario, { sonhoId: s.id, papel, ver_amplificacoes: amp }); setUrl(u); mandarLink(u, avisar); }
+    try { const u = await criarLink(usuario, { sonhoId: s.id, papel, ver_amplificacoes: amp, aprovar }); setUrl(u); setComAprovacao(aprovar); mandarLink(u, avisar); }
     catch (e) { avisar('Não deu para criar o link: ' + e.message); }
     setOcupado(false);
   }
@@ -134,7 +136,9 @@ function LinkConvite({ s }) {
   return (
     <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Quem abrir o link entra com a conta Google e pede para ver este sonho. Você aprova cada pessoa.')}</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas((url ? comAprovacao : aprovar)
+        ? 'Quem abrir o link entra com a conta Google e pede para ver este sonho. Você aprova cada pessoa.'
+        : 'Quem abrir o link entra com a conta Google e já vê este sonho, sem esperar a sua aprovação.')}</p>
       {url ? (
         <>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -154,6 +158,11 @@ function LinkConvite({ s }) {
           <div role="radiogroup" aria-label="Para quem" className="abas" style={{ background: '#fff', alignSelf: 'flex-start' }}>
             {Object.entries(QUEM).map(([k, r]) => (
               <button key={k} type="button" role="radio" aria-checked={papel === k} className={'aba' + (papel === k ? ' ativa' : '')} style={papel === k ? { background: 'var(--cinza)' } : undefined} onClick={() => setPapel(k)}>{r}</button>
+            ))}
+          </div>
+          <div role="radiogroup" aria-label="Quem abre o link" className="abas" style={{ background: '#fff', alignSelf: 'flex-start' }}>
+            {[[true, 'Eu aprovo cada pessoa'], [false, 'Entra direto']].map(([v, r]) => (
+              <button key={r} type="button" role="radio" aria-checked={aprovar === v} className={'aba' + (aprovar === v ? ' ativa' : '')} style={aprovar === v ? { background: 'var(--cinza)' } : undefined} onClick={() => setAprovar(v)}>{r}</button>
             ))}
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
