@@ -6,6 +6,8 @@ import { mapaDeCores, corDoTema } from './coresTema.js';
 import { PRAZO_LIXEIRA as PRAZO } from './sonhos.js';
 import { listarCompartilhamentos, salvarMeuPerfil } from './compartilhar.js';
 import { sonhosDeExemplo } from './exemplos.js';
+import { usaBotaoGoogle } from './googleLogin.js';
+import EntrarGoogle from '../components/EntrarGoogle.jsx';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -23,6 +25,7 @@ export function EstadoProvider({ children }) {
   const lixeira = useMemo(() => todos.filter((s) => s.apagado_em).sort((a, b) => b.apagado_em.localeCompare(a.apagado_em)), [todos]);
   const [carregado, setCarregado] = useState(false);
   const [semExemplos, setSemExemplos] = useState(() => localStorage.getItem(SEM_EXEMPLOS) === '1');
+  const [janelaLogin, setJanelaLogin] = useState(false);
   const [aviso, setAviso] = useState(null); // { msg, acao?: { rotulo, fn } }
   const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} });
   const sonhosRef = useRef([]);
@@ -141,6 +144,16 @@ export function EstadoProvider({ children }) {
   // Exemplos só na tela, nunca no banco. Esperam a lista carregar para não piscar para quem já tem sonhos.
   const exemplos = useMemo(() => (carregado && !semExemplos ? sonhosDeExemplo(sonhos.length) : []), [carregado, semExemplos, sonhos.length]);
 
+  const fecharLogin = useCallback(() => setJanelaLogin(false), []);
+  // Na home, depois de entrar, segue para o app (como fazia o login antigo).
+  const depoisDeEntrar = useCallback(() => {
+    setJanelaLogin(false);
+    if (location.pathname === '/') {
+      history.pushState({}, '', '/app');
+      dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, []);
+
   const valor = {
     pronto, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
     esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
@@ -148,11 +161,22 @@ export function EstadoProvider({ children }) {
     urlAudio: (ref) => loja.urlAudio(ref),
     temLogin: !!supabase,
     semConta,
-    entrar: () => entrarComGoogle(),
+    entrar: () => (usaBotaoGoogle() ? setJanelaLogin(true) : entrarComGoogle()),
     pularLogin: () => { localStorage.setItem(PULOU, '1'); setSemConta(true); },
     sair: async () => { await sair(); localStorage.removeItem(PULOU); setSemConta(false); setSonhos([]); setCarregado(false); },
   };
-  return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={valor}>
+      {children}
+      {janelaLogin && (
+        <EntrarGoogle
+          aoFechar={fecharLogin}
+          aoEntrar={depoisDeEntrar}
+          aoFalhar={() => { setJanelaLogin(false); entrarComGoogle(); }}
+        />
+      )}
+    </Ctx.Provider>
+  );
 }
 
 export const useEstado = () => useContext(Ctx);
