@@ -60,3 +60,36 @@ create policy "audios: trocar os meus" on storage.objects
 drop policy if exists "audios: apagar os meus" on storage.objects;
 create policy "audios: apagar os meus" on storage.objects
   for delete using (bucket_id = 'audios' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- 4. Lembrete da manhã ("Sonhou? Registre.") --------------------------------
+-- Uma linha por aparelho inscrito nas notificações.
+create table if not exists public.lembretes (
+  endpoint      text primary key,
+  user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  assinatura    jsonb not null,                 -- PushSubscription.toJSON()
+  hora          text not null default '06:30',  -- 'HH:MM', na hora local da pessoa
+  fuso          text not null default 'America/Sao_Paulo',
+  ativo         boolean not null default true,
+  ultimo_envio  date,
+  criado_em     timestamptz not null default now()
+);
+
+alter table public.lembretes enable row level security;
+
+drop policy if exists "lembretes: os meus" on public.lembretes;
+create policy "lembretes: os meus" on public.lembretes
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- 5. Agendar a função do lembrete a cada 5 minutos ---------------------------
+-- Rode este bloco DEPOIS de publicar a função "lembrete-manha" (veja o README).
+-- Troque COLE_O_SEGREDO pelo mesmo valor do segredo LEMBRETE_SEGREDO.
+--
+-- create extension if not exists pg_cron;
+-- create extension if not exists pg_net;
+-- select cron.schedule('sonhario-lembrete', '*/5 * * * *', $$
+--   select net.http_post(
+--     url := 'https://sburmejkmlkmzijmrpqr.supabase.co/functions/v1/lembrete-manha',
+--     headers := '{"Content-Type": "application/json", "x-segredo": "COLE_O_SEGREDO"}'::jsonb,
+--     body := '{}'::jsonb
+--   );
+-- $$);

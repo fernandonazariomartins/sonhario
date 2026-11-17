@@ -12,6 +12,7 @@ import Captura from './pages/Captura.jsx';
 import Acervo from './pages/Acervo.jsx';
 import Sonho from './pages/Sonho.jsx';
 import Importar from './pages/Importar.jsx';
+import Insights from './pages/Insights.jsx';
 import Privacidade from './pages/Privacidade.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="acervo" element={<Acervo />} />
             <Route path="sonho/:id" element={<Sonho />} />
             <Route path="importar" element={<Importar />} />
+            <Route path="insights" element={<Insights />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

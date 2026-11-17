@@ -1,5 +1,5 @@
 // Estado do app: sessão, modo (com ou sem conta) e a lista de sonhos.
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase, entrarComGoogle, sair } from './supabase.js';
 import { local, remoto, levarParaConta } from './armazem.js';
 
@@ -12,6 +12,8 @@ export function EstadoProvider({ children }) {
   const [semConta, setSemConta] = useState(() => localStorage.getItem(PULOU) === '1' || !supabase);
   const [sonhos, setSonhos] = useState([]);
   const [aviso, setAviso] = useState('');
+  const sonhosRef = useRef([]);
+  useEffect(() => { sonhosRef.current = sonhos; }, [sonhos]);
 
   const usuario = sessao?.user || null;
   const loja = useMemo(() => (usuario ? remoto(usuario.id) : local), [usuario]);
@@ -54,6 +56,13 @@ export function EstadoProvider({ children }) {
     return s;
   }, [loja, avisar]);
 
+  // Muda só alguns campos do sonho mais recente (ex.: a transcrição que chega depois de guardar).
+  const atualizar = useCallback(async (id, parcial) => {
+    const atual = sonhosRef.current.find((x) => x.id === id);
+    if (!atual) return null;
+    return salvar({ ...atual, ...parcial });
+  }, [salvar]);
+
   const apagar = useCallback(async (id) => {
     const s = sonhos.find((x) => x.id === id);
     setSonhos((lista) => lista.filter((x) => x.id !== id));
@@ -72,7 +81,7 @@ export function EstadoProvider({ children }) {
   }, [loja, avisar, recarregar]);
 
   const valor = {
-    pronto, usuario, sonhos, aviso, avisar, recarregar, salvar, apagar, salvarVarios, apagarTodos,
+    pronto, usuario, sonhos, aviso, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),
     temLogin: !!supabase,

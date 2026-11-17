@@ -1,24 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
-import { STATUS, CORES, dataLonga, dataCurta, tituloDe, tituloSugerido, contarTemas, novoId, duracao } from '../lib/sonhos.js';
-import { Voltar, Fechar, Mais, Lixo, Ok } from '../components/Icones.jsx';
+import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
+import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
+import { Voltar, Fechar, Mais, Lixo, Ok, Calendario } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 
 export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, usuario, avisar } = useEstado();
   const original = sonhos.find((s) => s.id === id);
   const [s, setS] = useState(original);
   const [novoTema, setNovoTema] = useState('');
   const [conclusao, setConclusao] = useState('');
   const [origem, setOrigem] = useState('sozinho');
   const [audioUrl, setAudioUrl] = useState(null);
+  const [editandoData, setEditandoData] = useState(false);
+  const [transcrevendo, setTranscrevendo] = useState(false);
   const timer = useRef(null);
 
-  useEffect(() => { if (original && (!s || s.id !== original.id)) setS(original); }, [original]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Troca de sonho, ou chegou uma versão mais nova (ex.: transcrição terminada depois de guardar).
+  useEffect(() => {
+    if (!original) return;
+    setS((atual) => (!atual || atual.id !== original.id || original.atualizado_em > atual.atualizado_em ? original : atual));
+  }, [original]);
   useEffect(() => {
     let vivo = true;
     if (s?.audio?.ref) urlAudio(s.audio.ref).then((u) => vivo && setAudioUrl(u));
@@ -43,6 +50,17 @@ export default function Sonho() {
     if (imediato) salvar(prox); else timer.current = setTimeout(() => salvar(prox), 500);
   }
   const addTema = (t) => { const nome = t.trim(); if (nome && !s.temas.includes(nome)) mudar({ temas: [...s.temas, nome] }, true); setNovoTema(''); };
+  async function transcrever() {
+    setTranscrevendo(true);
+    try {
+      const url = audioUrl || await urlAudio(s.audio.ref);
+      const blob = await (await fetch(url)).blob();
+      const txt = await transcreverAudio(blob);
+      if (txt) mudar({ texto: [s.texto, txt].filter(Boolean).join('\n\n') }, true);
+      else avisar('Não encontrei fala no áudio.');
+    } catch { avisar('Não deu para transcrever agora.'); }
+    setTranscrevendo(false);
+  }
   const addConclusao = () => {
     if (!conclusao.trim()) return;
     mudar({ conclusoes: [{ id: novoId(), em: new Date().toISOString(), origem, texto: conclusao.trim() }, ...(s.conclusoes || [])], status: s.status === 'nao_aberto' ? 'aberto' : s.status }, true);
@@ -57,9 +75,21 @@ export default function Sonho() {
       </div>
 
       <article className="painel" style={{ flex: '999 1 560px', minWidth: 0, padding: 'clamp(20px, 4vw, 36px)', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <span className="rotulo">{dataLonga(s.sonhado_em)}</span>
+        {editandoData ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <label htmlFor="quando" className="rotulo">Quando sonhou</label>
+            <input id="quando" type="datetime-local" value={paraCampoData(s.sonhado_em)}
+              onChange={(e) => { const iso = deCampoData(e.target.value); if (iso) mudar({ sonhado_em: iso }); }}
+              style={{ height: 40, padding: '0 10px', border: '1px solid var(--line-strong)', borderRadius: 10, fontSize: 15 }} />
+            <button type="button" className="btn btn-linha" style={{ minHeight: 40 }} onClick={() => setEditandoData(false)}><Ok size={16} /> ok</button>
+          </div>
+        ) : (
+          <button type="button" className="data-editavel" onClick={() => setEditandoData(true)} aria-label={'Data do sonho: ' + dataLonga(s.sonhado_em) + '. Mudar a data'}>
+            <Calendario size={14} /> {dataLonga(s.sonhado_em)} <span className="data-mudar">mudar</span>
+          </button>
+        )}
         <label className="sr" htmlFor="titulo">Título</label>
-        <input id="titulo" value={s.titulo} onChange={(e) => mudar({ titulo: e.target.value })} placeholder={tituloSugerido(s.texto) || 'Dê um título ao sonho'}
+        <input id="titulo" value={s.titulo} onChange={(e) => mudar({ titulo: e.target.value })} placeholder={'Sem título'}
           className="titulo-m" style={{ border: 0, padding: 0, outline: 'none', width: '100%', background: 'transparent', fontFamily: 'var(--sans)' }} />
 
         {s.audio && (
@@ -67,6 +97,11 @@ export default function Sonho() {
             {audioUrl ? <audio src={audioUrl} controls style={{ flex: 1, height: 40 }} /> : <span style={{ fontSize: 13, color: 'var(--muted)', padding: 8 }}>Carregando o áudio…</span>}
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>{duracao(s.audio.duracao)}</span>
           </div>
+        )}
+        {s.audio && transcricaoNoServidor && usuario && (
+          <button type="button" className="btn btn-tracejado" style={{ alignSelf: 'flex-start' }} onClick={transcrever} disabled={transcrevendo}>
+            {transcrevendo ? 'Transcrevendo o áudio…' : s.texto ? 'Transcrever o áudio de novo (soma ao texto)' : 'Transformar o áudio em texto'}
+          </button>
         )}
 
         <label className="sr" htmlFor="relato">Relato do sonho</label>

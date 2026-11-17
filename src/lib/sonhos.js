@@ -84,8 +84,20 @@ export function tituloSugerido(texto) {
   return palavras.charAt(0).toUpperCase() + palavras.slice(1) + (frase.split(' ').length > 7 ? '…' : '');
 }
 
+// O título nunca é preenchido sozinho: fica em branco até a pessoa dar um.
 export function tituloDe(s) {
-  return s.titulo || tituloSugerido(s.texto) || 'Sem título';
+  return (s.titulo || '').trim() || 'Sem título';
+}
+
+// Para o campo <input type="datetime-local"> (hora local do aparelho).
+export function paraCampoData(iso) {
+  const d = new Date(iso);
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+export function deCampoData(valor) {
+  const d = new Date(valor);
+  return isNaN(d) ? null : d.toISOString();
 }
 
 export function contarTemas(sonhos) {
