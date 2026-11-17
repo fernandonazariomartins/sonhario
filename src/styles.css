@@ -118,7 +118,11 @@ mark.achado { background: #FFE58A; color: inherit; border-radius: 3px; padding: 
 .janela { width: 100%; max-width: 480px; max-height: calc(100dvh - 32px); overflow: auto; background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-pop); }
 @media (min-width: 641px) { .fundo-janela { align-items: center; } }
 
-.depoimento { margin: 4px 0 0; background: var(--preto); color: #fff; border-radius: 16px; padding: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; }
+.depoimento { margin: 0 auto; max-width: 620px; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.depoimento-foto { width: 104px; height: 104px; border-radius: 999px; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; background: var(--azul); color: #fff; font-weight: 800; font-size: 28px; letter-spacing: -0.02em; }
+.depoimento blockquote { margin: 0; font-family: var(--serif); font-size: 18px; line-height: 1.55; color: var(--ink); }
+.depoimento figcaption { font-size: 14px; color: var(--muted); }
+.depoimento figcaption strong { color: var(--ink); }
 
 /* insights */
 .insights { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
