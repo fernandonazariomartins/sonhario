@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
-import { Voltar, Fechar, Mais, Lixo, Ok, Calendario } from '../components/Icones.jsx';
+import { sugerirTemas } from '../lib/temasAuto.js';
+import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 
 export default function Sonho() {
@@ -49,6 +50,12 @@ export default function Sonho() {
     setS(prox);
     clearTimeout(timer.current);
     if (imediato) salvar(prox); else timer.current = setTimeout(() => salvar(prox), 500);
+  }
+  function temasAutomaticos() {
+    const novos = sugerirTemas((s.titulo || '') + ' ' + (s.texto || ''), s.temas, contarTemas(sonhos).map((t) => t.nome));
+    if (!novos.length) { avisar(s.texto?.trim() ? 'Não encontrei temas no relato. Dá para pôr à mão.' : 'Escreva o relato primeiro.'); return; }
+    mudar({ temas: [...s.temas, ...novos] }, true);
+    avisar(novos.length === 1 ? '1 tema adicionado. Toque no × para tirar.' : novos.length + ' temas adicionados. Toque no × para tirar.');
   }
   const addTema = (t) => { const nome = t.trim(); if (nome && !s.temas.includes(nome)) mudar({ temas: [...s.temas, nome] }, true); setNovoTema(''); };
   async function transcrever() {
@@ -110,7 +117,10 @@ export default function Sonho() {
           className="leitura" style={{ border: 0, padding: 0, resize: 'vertical', outline: 'none', width: '100%', maxWidth: 680, background: 'transparent', fontSize: 19, lineHeight: 1.75 }} />
 
         <section aria-labelledby="t-temas" style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 18 }}>
-          <h2 id="t-temas" className="rotulo">Temas</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h2 id="t-temas" className="rotulo" style={{ marginRight: 'auto' }}>Temas</h2>
+            <button type="button" className="btn btn-linha" style={{ minHeight: 34, fontSize: 13 }} onClick={temasAutomaticos}><Faisca size={14} /> Temas automáticos</button>
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             {s.temas.map((t) => (
               <span key={t} style={{ ...estiloTema(t), height: 30, padding: '0 2px 0 10px', borderRadius: 6, fontSize: 13.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2 }}>{t}
