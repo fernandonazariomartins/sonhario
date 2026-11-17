@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
-import { sugerirTemas } from '../lib/temasAuto.js';
+import { sugerirTemas, sugerirTemasIA, juntarIA } from '../lib/temasAuto.js';
 import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca, Compartilhar } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { quemVe, pessoa } from '../lib/compartilhar.js';
@@ -26,7 +26,7 @@ export default function Sonho() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [editandoData, setEditandoData] = useState(false);
   const [transcrevendo, setTranscrevendo] = useState(false);
-  const [sugestao, setSugestao] = useState(null); // { temas, marcados } enquanto a janela dos temas automáticos está aberta
+  const [sugestao, setSugestao] = useState(null); // { doAcervo, novos, ia, marcados, buscando } enquanto a janela dos temas automáticos está aberta
   const timer = useRef(null);
 
   // Troca de sonho, ou chegou uma versão mais nova (ex.: transcrição terminada depois de guardar).
@@ -57,10 +57,21 @@ export default function Sonho() {
     clearTimeout(timer.current);
     if (imediato) salvar(prox); else timer.current = setTimeout(() => salvar(prox), 500);
   }
-  function temasAutomaticos() {
-    const novos = sugerirTemas((s.titulo || '') + ' ' + (s.texto || ''), s.temas, contarTemas(sonhos).map((t) => t.nome));
-    if (!novos.length) { avisar(s.texto?.trim() ? 'Não encontrei temas no relato. Dá para pôr à mão.' : 'Escreva o relato primeiro.'); return; }
-    setSugestao({ temas: novos, marcados: novos });
+  async function temasAutomaticos() {
+    const texto = (s.titulo || '') + ' ' + (s.texto || '');
+    if (!s.texto?.trim()) { avisar('Escreva o relato primeiro.'); return; }
+    const acervo = contarTemas(sonhos).map((t) => t.nome);
+    const grupos = sugerirTemas(texto, s.temas, acervo);
+    const comIA = !!usuario;
+    if (!comIA && !grupos.doAcervo.length && !grupos.novos.length) { avisar('Não encontrei temas no relato. Dá para pôr à mão.'); return; }
+    // Os do seu acervo já vêm marcados; as sugestões novas, só se você marcar.
+    setSugestao({ ...grupos, ia: [], marcados: grupos.doAcervo, buscando: comIA });
+    if (!comIA) return;
+    const daIA = await sugerirTemasIA(s.texto, [...s.temas, ...grupos.doAcervo, ...grupos.novos]);
+    const { doAcervo, ia } = juntarIA(grupos, daIA, s.temas, acervo);
+    const extrasAcervo = doAcervo.filter((t) => !grupos.doAcervo.includes(t));
+    if (!doAcervo.length && !grupos.novos.length && !ia.length) { setSugestao(null); avisar('Não encontrei temas no relato. Dá para pôr à mão.'); return; }
+    setSugestao((x) => x && { ...x, doAcervo, ia, marcados: [...x.marcados, ...extrasAcervo], buscando: false });
   }
   function aceitarSugestao() {
     const escolhidos = sugestao.marcados.filter((t) => !s.temas.includes(t));
@@ -71,6 +82,12 @@ export default function Sonho() {
     setSugestao(null);
   }
   const alternarSugestao = (t) => setSugestao((x) => ({ ...x, marcados: x.marcados.includes(t) ? x.marcados.filter((m) => m !== t) : [...x.marcados, t] }));
+  const chipSugestao = (t) => { const on = sugestao.marcados.includes(t); return (
+    <button key={t} type="button" aria-pressed={on} onClick={() => alternarSugestao(t)}
+      style={{ ...estiloTema(t), height: 34, padding: '0 12px 0 8px', borderRadius: 6, border: 0, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: on ? 1 : 0.55 }}>
+      <span style={{ width: 18, height: 18, borderRadius: 4, border: '1.5px solid currentColor', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{on && <Ok size={12} />}</span>
+      {t}
+    </button>); };
   const addTema = (t) => { const nome = t.trim(); if (nome && !s.temas.includes(nome)) mudar({ temas: [...s.temas, nome] }, true); setNovoTema(''); };
   async function transcrever() {
     setTranscrevendo(true);
@@ -103,16 +120,22 @@ export default function Sonho() {
       </div>
       {compartilhando && <CompartilharSonho s={s} mudar={mudar} aoFechar={() => setCompartilhando(false)} />}
       {sugestao && (
-        <Janela titulo="Temas sugeridos" aoFechar={() => setSugestao(null)}>
-          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Encontrei estes temas no relato. Desmarque os que não fazem sentido para você.')}</p>
-          <div role="group" aria-label="Temas sugeridos" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {sugestao.temas.map((t) => { const on = sugestao.marcados.includes(t); return (
-              <button key={t} type="button" aria-pressed={on} onClick={() => alternarSugestao(t)}
-                style={{ ...estiloTema(t), height: 34, padding: '0 12px 0 8px', borderRadius: 6, border: 0, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: on ? 1 : 0.4, textDecoration: on ? 'none' : 'line-through' }}>
-                <span style={{ width: 18, height: 18, borderRadius: 4, border: '1.5px solid currentColor', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{on && <Ok size={12} />}</span>
-                {t}
-              </button>); })}
-          </div>
+        <Janela titulo="Temas automáticos" aoFechar={() => setSugestao(null)}>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Marque o que faz sentido para você. Nada entra no sonho sem a sua confirmação.')}</p>
+          <section aria-labelledby="t-sug-acervo" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <h3 id="t-sug-acervo" className="rotulo">Dos seus temas</h3>
+            {sugestao.doAcervo.length
+              ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{sugestao.doAcervo.map(chipSugestao)}</div>
+              : <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>{semViuvas(sugestao.buscando ? 'Procurando…' : 'Nenhum tema que você já usa aparece neste relato.')}</p>}
+          </section>
+          <section aria-labelledby="t-sug-novos" style={{ display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+            <h3 id="t-sug-novos" className="rotulo">Sugestões novas</h3>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(usuario ? 'Símbolos comuns em sonhos e temas propostos por IA a partir do relato. A IA só nomeia o que está no sonho, não interpreta.' : 'Símbolos comuns em sonhos que aparecem no relato.')}</p>
+            {(sugestao.novos.length + sugestao.ia.length) > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{[...sugestao.novos, ...sugestao.ia].map(chipSugestao)}</div>}
+            {sugestao.buscando
+              ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}><Faisca size={14} /> Buscando mais sugestões…</p>
+              : !(sugestao.novos.length + sugestao.ia.length) && <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>Nenhuma sugestão nova.</p>}
+          </section>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" className="btn btn-linha" onClick={() => setSugestao(null)}>Agora não</button>
             <button type="button" className="btn btn-azul" onClick={aceitarSugestao} disabled={!sugestao.marcados.length}>
