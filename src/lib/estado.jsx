@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase, entrarComGoogle, sair } from './supabase.js';
 import { local, remoto, levarParaConta } from './armazem.js';
+import { mapaDeCores, corDoTema } from './coresTema.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -94,3 +95,10 @@ export function EstadoProvider({ children }) {
 }
 
 export const useEstado = () => useContext(Ctx);
+
+// Estilo da etiqueta de um tema (fundo e texto), com a cor fixa daquele tema no acervo.
+export function useCorTema() {
+  const { sonhos } = useEstado();
+  const mapa = useMemo(() => mapaDeCores(sonhos), [sonhos]);
+  return useCallback((nome) => { const c = corDoTema(nome, mapa); return { background: c.fundo, color: c.texto }; }, [mapa]);
+}

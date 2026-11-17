@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useEstado } from '../lib/estado.jsx';
+import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import { Mural, Lista, Tema, Busca, Mic } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
@@ -11,6 +11,7 @@ function Status({ s, cor }) {
 }
 
 function Nota({ s, comTemas = false }) {
+  const estiloTema = useCorTema();
   const c = CORES[s.cor] || CORES.branco;
   return (
     <Link to={'/app/sonho/' + s.id} className="nota" style={{ background: c.fundo }}>
@@ -20,7 +21,7 @@ function Nota({ s, comTemas = false }) {
       </div>
       {s.titulo?.trim() && <h3>{semViuvas(s.titulo)}</h3>}
       {s.texto ? <p>{semViuvas(s.texto)}</p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : 'Sem título'}</p>}
-      {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip">{t}</span>)}</div>}
+      {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
       <Status s={s.status} cor={c.rotulo} />
     </Link>
   );
@@ -133,6 +134,7 @@ function ListaSonhos({ sonhos }) {
 }
 
 function PorTema({ sonhos, temas }) {
+  const estiloTema = useCorTema();
   const [params] = useSearchParams();
   const alvo = params.get('t');
   useEffect(() => {
@@ -143,7 +145,7 @@ function PorTema({ sonhos, temas }) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <aside className="painel" style={{ flex: '1 1 220px', maxWidth: 280, padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span className="rotulo" style={{ margin: '0 8px 8px' }}>Temas por frequência</span>
-        {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} onClick={(e) => { e.preventDefault(); document.getElementById('tema-' + encodeURIComponent(t.nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>{t.nome}<span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
+        {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} onClick={(e) => { e.preventDefault(); document.getElementById('tema-' + encodeURIComponent(t.nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}><span className="chip" style={estiloTema(t.nome)}>{t.nome}</span><span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
         {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{semTema.length} sem tema.</strong> Abra o sonho para etiquetar.</div>}
       </aside>
       <div style={{ flex: '999 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -154,7 +156,7 @@ function PorTema({ sonhos, temas }) {
           return (
             <section key={t.nome} id={'tema-' + encodeURIComponent(t.nome)} className="painel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 84 }}>
               <div>
-                <h2 className="titulo-m" style={{ fontSize: 32 }}>{t.nome}</h2>
+                <h2 className="titulo-m" style={{ fontSize: 32 }}><span style={{ ...estiloTema(t.nome), padding: '0 10px', borderRadius: 6 }}>{t.nome}</span></h2>
                 <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>

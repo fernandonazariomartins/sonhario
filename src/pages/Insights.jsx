@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useEstado } from '../lib/estado.jsx';
+import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { calcularInsights } from '../lib/insights.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Cadeado } from '../components/Icones.jsx';
@@ -23,6 +23,7 @@ function Meses({ meses }) {
 }
 
 function Cartao({ i }) {
+  const estiloTema = useCorTema();
   if (!i.liberado) {
     const pct = Math.min(100, Math.round((i.atual / i.meta) * 100));
     return (
@@ -47,9 +48,9 @@ function Cartao({ i }) {
       {i.itens.length > 0 ? (
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {i.itens.map((x, k) => (
-            <li key={k} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 8px' }}>
-              {x.tema && <Link to={linkTema(x.tema)} style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>{x.tema}</Link>}
-              {x.par && <><span style={{ color: 'var(--muted)' }}>+</span><Link to={linkTema(x.par)} style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>{x.par}</Link></>}
+            <li key={k} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}>
+              {x.tema && <Link to={linkTema(x.tema)} className="chip" style={{ ...estiloTema(x.tema), height: 26, fontSize: 14 }}>{x.tema}</Link>}
+              {x.par && <><span style={{ color: 'var(--muted)' }}>+</span><Link to={linkTema(x.par)} className="chip" style={{ ...estiloTema(x.par), height: 26, fontSize: 14 }}>{x.par}</Link></>}
               <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{x.texto}</span>
             </li>
           ))}
