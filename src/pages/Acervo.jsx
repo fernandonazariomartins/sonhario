@@ -48,9 +48,15 @@ export default function Acervo() {
   const [soAtencao, setSoAtencao] = useState(false);
   const [soSemTitulo, setSoSemTitulo] = useState(false);
   const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
-  const POR_PAGINA = 50;
-  const [limite, setLimite] = useState(POR_PAGINA);
-  useEffect(() => { setLimite(POR_PAGINA); }, [busca, soAtencao, soSemTitulo, vista]);
+  const POR_PAGINA = 100;
+  const paginaUrl = Math.max(1, parseInt(params.get('p'), 10) || 1);
+  const irPara = (n) => {
+    const novo = new URLSearchParams(params);
+    if (n <= 1) novo.delete('p'); else novo.set('p', String(n));
+    setParams(novo);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const voltarPrimeira = () => { if (params.get('p')) { const novo = new URLSearchParams(params); novo.delete('p'); setParams(novo, { replace: true }); } };
 
   const temas = useMemo(() => contarTemas(sonhos), [sonhos]);
   const filtrados = useMemo(() => {
@@ -60,6 +66,10 @@ export default function Acervo() {
       (vista === 'temas' || !soSemTitulo || !s.titulo?.trim()) &&
       (!q || [s.titulo, s.texto, ...(s.temas || []), ...(s.conclusoes || []).map((c) => c.texto)].join(' ').toLowerCase().includes(q)));
   }, [sonhos, busca, soAtencao, soSemTitulo, vista]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
+  const pagina = Math.min(paginaUrl, totalPaginas);
+  const daPagina = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
   const mudar = (v) => setParams(v === 'mural' ? {} : { v });
   const aba = (v, Icone, nome) => (
@@ -71,7 +81,7 @@ export default function Acervo() {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
         <label className="busca"><Busca size={18} /><span className="sr">Buscar nos sonhos</span>
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar: palavra, pessoa, lugar" />
+          <input value={busca} onChange={(e) => { setBusca(e.target.value); voltarPrimeira(); }} placeholder="Buscar: palavra, pessoa, lugar" />
         </label>
         <div className="abas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('temas', Tema, 'Temas')}</div>
       </div>
@@ -81,32 +91,58 @@ export default function Acervo() {
           {vista !== 'temas' && (semTitulo > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
               {semTitulo > 0 && (
-                <button type="button" className="btn btn-linha" onClick={() => setSoSemTitulo(!soSemTitulo)} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
+                <button type="button" className="btn btn-linha" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
                   sem título · {semTitulo}
                 </button>
               )}
-              {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha" onClick={() => setSoAtencao(!soAtencao)} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
+              {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha" onClick={() => { setSoAtencao(!soAtencao); voltarPrimeira(); }} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
                 <span className="ponto" style={{ background: STATUS.dar_atencao.cor }} />só “dar atenção”
               </button>}
             </div>
           )}
 
-          {vista === 'mural' && <div className="mural">{filtrados.slice(0, limite).map((s) => <Nota key={s.id} s={s} />)}</div>}
-          {vista === 'lista' && <ListaSonhos sonhos={filtrados.slice(0, limite)} />}
-          {vista !== 'temas' && filtrados.length > limite && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '8px 0 16px' }}>
-              <span style={{ fontSize: 13, color: 'var(--muted)' }}>Mostrando {limite} de {filtrados.length}</span>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <button type="button" className="btn btn-linha" onClick={() => setLimite(limite + POR_PAGINA)}>Mostrar mais {Math.min(POR_PAGINA, filtrados.length - limite)}</button>
-                <button type="button" className="btn" style={{ color: 'var(--muted)' }} onClick={() => setLimite(filtrados.length)}>Mostrar todos</button>
-              </div>
-            </div>
+          {vista === 'mural' && <div className="mural">{daPagina.map((s) => <Nota key={s.id} s={s} />)}</div>}
+          {vista === 'lista' && <ListaSonhos sonhos={daPagina} />}
+          {vista !== 'temas' && totalPaginas > 1 && (
+            <Paginacao pagina={pagina} total={totalPaginas} irPara={irPara}
+              legenda={`${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, filtrados.length)} de ${filtrados.length}`} />
           )}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} />}
           {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
         </>
       )}
     </div>
+  );
+}
+
+function numerosDePagina(atual, total) {
+  if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
+  const nums = new Set([1, total, atual - 1, atual, atual + 1]);
+  if (atual <= 4) [2, 3, 4, 5].forEach((n) => nums.add(n));
+  if (atual >= total - 3) [total - 4, total - 3, total - 2, total - 1].forEach((n) => nums.add(n));
+  const ordenados = [...nums].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const saida = [];
+  ordenados.forEach((n, i) => {
+    if (i > 0 && n - ordenados[i - 1] > 1) saida.push('…' + n);
+    saida.push(n);
+  });
+  return saida;
+}
+
+function Paginacao({ pagina, total, irPara, legenda }) {
+  const base = { minWidth: 44, minHeight: 44, padding: '0 10px' };
+  return (
+    <nav aria-label="Páginas" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '8px 0 16px' }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+        <button type="button" className="btn btn-linha" style={base} disabled={pagina === 1} onClick={() => irPara(pagina - 1)} aria-label="Página anterior">‹</button>
+        {numerosDePagina(pagina, total).map((n) => typeof n === 'string'
+          ? <span key={n} style={{ minWidth: 24, textAlign: 'center', color: 'var(--muted)' }}>…</span>
+          : <button key={n} type="button" className={'btn ' + (n === pagina ? 'btn-azul' : 'btn-linha')} style={base}
+              aria-current={n === pagina ? 'page' : undefined} onClick={() => n !== pagina && irPara(n)}>{n}</button>)}
+        <button type="button" className="btn btn-linha" style={base} disabled={pagina === total} onClick={() => irPara(pagina + 1)} aria-label="Próxima página">›</button>
+      </div>
+      <span style={{ fontSize: 13, color: 'var(--muted)' }}>{legenda}</span>
+    </nav>
   );
 }
 
