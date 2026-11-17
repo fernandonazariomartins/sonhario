@@ -107,10 +107,6 @@ export default function Sonho() {
       <div style={{ flexBasis: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Link to="/app/acervo" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Acervo</Link>
         {params.get('novo') && <span style={{ height: 28, padding: '0 10px', borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} /> guardado</span>}
-        {temLogin && <button type="button" className="btn btn-linha" style={{ minHeight: 40, marginLeft: 'auto' }} onClick={() => setCompartilhando(true)}>
-          {veem.length > 0 && <span style={{ display: 'inline-flex' }}>{veem.slice(0, 3).map((p, k) => <span key={p.email} style={{ marginLeft: k ? -8 : 0, border: '2px solid #fff', borderRadius: 999, display: 'inline-flex' }}><Avatar nome={p.nome} foto={p.foto} size={22} /></span>)}</span>}
-          <Compartilhar size={16} /> Compartilhar
-        </button>}
       </div>
       {compartilhando && <CompartilharSonho s={s} mudar={mudar} aoFechar={() => setCompartilhando(false)} />}
       {sugestao && (
@@ -227,11 +223,6 @@ export default function Sonho() {
             </div>
           </section>
         )}
-
-        <button type="button" className="btn btn-linha" style={{ alignSelf: 'flex-start', color: 'var(--danger)', borderColor: '#F1C4BF' }}
-          onClick={() => { if (confirm('Apagar este sonho? Não dá para desfazer.')) { apagar(s.id); navegar('/app/acervo'); } }}>
-          <Lixo size={16} /> Apagar sonho
-        </button>
       </article>
 
       <aside aria-labelledby="t-conc" style={{ flex: '1 1 340px', maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -266,6 +257,16 @@ export default function Sonho() {
           <span style={{ fontSize: 14, lineHeight: 1.45 }}><strong>Levar para a próxima sessão</strong><br /><span style={{ color: 'var(--muted)' }}>Fica marcado para você lembrar antes da análise.</span></span>
         </label>
         <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('As amplificações são suas. O Sonhário não interpreta sonhos e não substitui a sua análise.')}</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '4px 4px 0' }}>
+          {temLogin && <button type="button" className="btn btn-linha" onClick={() => setCompartilhando(true)}>
+            {veem.length > 0 && <span style={{ display: 'inline-flex' }}>{veem.slice(0, 3).map((p, k) => <span key={p.email} style={{ marginLeft: k ? -8 : 0, border: '2px solid #fff', borderRadius: 999, display: 'inline-flex' }}><Avatar nome={p.nome} foto={p.foto} size={22} /></span>)}</span>}
+            <Compartilhar size={16} /> Compartilhar
+          </button>}
+          <button type="button" className="btn btn-linha" style={{ color: 'var(--danger)', borderColor: '#F1C4BF' }}
+            onClick={() => { if (confirm('Apagar este sonho? Não dá para desfazer.')) { apagar(s.id); navegar('/app/acervo'); } }}>
+            <Lixo size={16} /> Apagar sonho
+          </button>
+        </div>
       </aside>
     </div>
   );
