@@ -1,27 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import { Mural, Lista, Tema, Busca, Mic } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { interpretar, casar } from '../lib/busca.js';
+import Realce from '../components/Realce.jsx';
 
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
   return <span className="status" style={{ color: cor }}><span className="ponto" style={{ background: st.cor }} />{st.rotulo}</span>;
 }
 
-export function Nota({ s, comTemas = true, para }) {
+export function Nota({ s, comTemas = true, para, achado }) {
   const estiloTema = useCorTema();
   const c = CORES[s.cor] || CORES.branco;
+  const termos = achado?.termos;
   return (
     <Link to={para || '/app/sonho/' + s.id} className="nota" style={{ background: c.fundo }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
-        {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {achado?.ocorrencias > 0 && <span className="contagem-achados" title="Vezes que a busca aparece neste sonho">{achado.ocorrencias}×</span>}
+          {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
+        </span>
       </div>
-      {s.titulo?.trim() && <h3>{semViuvas(s.titulo)}</h3>}
-      {s.texto ? <p>{semViuvas(s.texto)}</p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : 'Sem título'}</p>}
-      {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
+      {s.titulo?.trim() && <h3><Realce texto={s.titulo} termos={termos} /></h3>}
+      {achado?.trecho
+        ? <p>{achado.onde === 'amplificacoes' && <span className="rotulo-forte" style={{ display: 'block', color: c.rotulo, fontFamily: 'var(--sans, inherit)', fontStyle: 'normal' }}>Nas amplificações</span>}<Realce texto={achado.trecho} termos={termos} /></p>
+        : s.texto ? <p><Realce texto={s.texto} termos={termos} /></p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : 'Sem título'}</p>}
+      {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}><Realce texto={t} termos={termos} viuvas={false} /></span>)}</div>}
       <Status s={s.status} cor={c.rotulo} />
     </Link>
   );
@@ -44,7 +52,24 @@ export default function Acervo() {
   const { sonhos } = useEstado();
   const [params, setParams] = useSearchParams();
   const vista = params.get('v') || 'mural';
-  const [busca, setBusca] = useState('');
+  const [busca, setBuscaLocal] = useState(() => params.get('q') || '');
+  const campoBusca = useRef(null);
+  const setBusca = (q) => {
+    setBuscaLocal(q);
+    const novo = new URLSearchParams(params);
+    if (q) novo.set('q', q); else novo.delete('q');
+    novo.delete('p');
+    setParams(novo, { replace: true });
+  };
+  useEffect(() => {
+    const tecla = (e) => {
+      const alvo = e.target;
+      const digitando = alvo instanceof HTMLElement && (alvo.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName));
+      if (e.key === '/' && !digitando && !e.metaKey && !e.ctrlKey) { e.preventDefault(); campoBusca.current?.focus(); }
+    };
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, []);
   const [soAtencao, setSoAtencao] = useState(false);
   const [soSemTitulo, setSoSemTitulo] = useState(false);
   const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
@@ -59,19 +84,33 @@ export default function Acervo() {
   const voltarPrimeira = () => { if (params.get('p')) { const novo = new URLSearchParams(params); novo.delete('p'); setParams(novo, { replace: true }); } };
 
   const temas = useMemo(() => contarTemas(sonhos), [sonhos]);
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    return sonhos.filter((s) =>
-      (vista === 'temas' || !soAtencao || s.status === 'dar_atencao') &&
-      (vista === 'temas' || !soSemTitulo || !s.titulo?.trim()) &&
-      (!q || [s.titulo, s.texto, ...(s.temas || []), ...(s.conclusoes || []).map((c) => c.texto)].join(' ').toLowerCase().includes(q)));
-  }, [sonhos, busca, soAtencao, soSemTitulo, vista]);
+  const consulta = useMemo(() => interpretar(busca), [busca]);
+  const { filtrados, achados, totalOcorrencias } = useMemo(() => {
+    const achados = new Map();
+    let totalOcorrencias = 0;
+    const filtrados = sonhos.filter((s) => {
+      if (vista !== 'temas' && soAtencao && s.status !== 'dar_atencao') return false;
+      if (vista !== 'temas' && soSemTitulo && s.titulo?.trim()) return false;
+      if (consulta.vazia) return true;
+      const r = casar(s, consulta);
+      if (!r) return false;
+      totalOcorrencias += r.ocorrencias;
+      achados.set(s.id, { ...r, termos: consulta.termos });
+      return true;
+    });
+    return { filtrados, achados, totalOcorrencias };
+  }, [sonhos, consulta, soAtencao, soSemTitulo, vista]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const pagina = Math.min(paginaUrl, totalPaginas);
   const daPagina = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
-  const mudar = (v) => setParams(v === 'mural' ? {} : { v });
+  const mudar = (v) => {
+    const novo = {};
+    if (v !== 'mural') novo.v = v;
+    if (busca) novo.q = busca;
+    setParams(novo);
+  };
   const aba = (v, Icone, nome) => (
     <button type="button" className={'aba' + (vista === v ? ' ativa' : '')} aria-pressed={vista === v} onClick={() => mudar(v)}><Icone size={16} />{nome}</button>
   );
@@ -81,13 +120,28 @@ export default function Acervo() {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
         <label className="busca"><Busca size={18} /><span className="sr">Buscar nos sonhos</span>
-          <input value={busca} onChange={(e) => { setBusca(e.target.value); voltarPrimeira(); }} placeholder="Buscar: palavra, pessoa, lugar" />
+          <input ref={campoBusca} type="search" value={busca} onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') { setBusca(''); e.currentTarget.blur(); } }}
+            placeholder="Buscar: palavra, pessoa, lugar" enterKeyHint="search" autoComplete="off" spellCheck={false} />
+          {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label="Limpar busca">×</button>
+            : <kbd className="busca-atalho" aria-hidden="true">/</kbd>}
         </label>
         <div className="abas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('temas', Tema, 'Temas')}</div>
       </div>
 
       {sonhos.length === 0 ? <Vazio /> : (
         <>
+          {!consulta.vazia && (
+            <div className="busca-resumo" role="status">
+              <span>
+                <strong>{filtrados.length === 1 ? '1 sonho' : filtrados.length + ' sonhos'}</strong>
+                {consulta.termos.length > 0 && <> com {consulta.termos.map((t, i) => <span key={t}>{i > 0 && (i === consulta.termos.length - 1 ? ' e ' : ', ')}<mark className="achado">{t}</mark></span>)}</>}
+                {consulta.excluir.length > 0 && <> sem {consulta.excluir.join(', ')}</>}
+                {totalOcorrencias > 0 && <span style={{ color: 'var(--muted)' }}> · {totalOcorrencias === 1 ? '1 ocorrência' : totalOcorrencias + ' ocorrências'}</span>}
+              </span>
+              <span className="busca-dica">{semViuvas('"entre aspas" acha a expressão exata; -palavra tira da busca')}</span>
+            </div>
+          )}
           {vista !== 'temas' && (semTitulo > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
               {semTitulo > 0 && (
@@ -101,14 +155,14 @@ export default function Acervo() {
             </div>
           )}
 
-          {vista === 'mural' && <div className="mural">{daPagina.map((s) => <Nota key={s.id} s={s} />)}</div>}
-          {vista === 'lista' && <ListaSonhos sonhos={daPagina} />}
+          {vista === 'mural' && <div className="mural">{daPagina.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</div>}
+          {vista === 'lista' && <ListaSonhos sonhos={daPagina} achados={achados} />}
           {vista !== 'temas' && totalPaginas > 1 && (
             <Paginacao pagina={pagina} total={totalPaginas} irPara={irPara}
               legenda={`${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, filtrados.length)} de ${filtrados.length}`} />
           )}
-          {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} />}
-          {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
+          {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} achados={achados} />}
+          {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? 'Nenhum sonho com esse filtro.' : semViuvas('Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras.')}</p>}
         </>
       )}
     </div>
@@ -146,7 +200,7 @@ function Paginacao({ pagina, total, irPara, legenda }) {
   );
 }
 
-function ListaSonhos({ sonhos }) {
+function ListaSonhos({ sonhos, achados }) {
   const estiloTema = useCorTema();
   let mesAtual = '';
   return (
@@ -159,15 +213,21 @@ function ListaSonhos({ sonhos }) {
           {sonhos.map((s) => {
             const m = mesAno(s.sonhado_em);
             const cab = m !== mesAtual ? (mesAtual = m) : null;
+            const a = achados?.get(s.id);
+            const termos = a?.termos;
             return [
               cab && <tr key={'m' + m}><td colSpan={5} className="rotulo" style={{ padding: '16px 14px 8px' }}>{m}</td></tr>,
               <tr key={s.id} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
                 <td style={{ padding: '12px 14px' }}>
-                  <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() || <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
-                  {s.texto && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</div>}
+                  <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
+                  {a?.ocorrencias > 0 && <span className="contagem-achados" style={{ marginLeft: 8 }}>{a.ocorrencias}×</span>}
+                  {(a?.trecho || s.texto) && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, ...(a?.trecho ? { lineHeight: 1.5 } : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }) }}>
+                    {a?.onde === 'amplificacoes' && <strong style={{ fontFamily: 'inherit' }}>Nas amplificações: </strong>}
+                    <Realce texto={a?.trecho || s.texto} termos={termos} viuvas={false} />
+                  </div>}
                 </td>
-                <td style={{ padding: '12px 14px' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>{(s.temas || []).map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div></td>
+                <td style={{ padding: '12px 14px' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>{(s.temas || []).map((t) => <span key={t} className="chip" style={estiloTema(t)}><Realce texto={t} termos={termos} viuvas={false} /></span>)}</div></td>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}><Status s={s.status} cor="var(--ink)" /></td>
                 <td style={{ padding: '12px 14px', color: 'var(--muted)', fontSize: 13 }}>{s.audio ? duracao(s.audio.duracao) : '—'}</td>
               </tr>,
@@ -179,7 +239,7 @@ function ListaSonhos({ sonhos }) {
   );
 }
 
-function PorTema({ sonhos, temas }) {
+function PorTema({ sonhos, temas, achados }) {
   const estiloTema = useCorTema();
   const [params] = useSearchParams();
   const alvo = params.get('t');
@@ -206,7 +266,7 @@ function PorTema({ sonhos, temas }) {
                 <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-                {lista.slice(0, 8).map((s) => <Nota key={s.id} s={s} comTemas />)}
+                {lista.slice(0, achados?.size ? 24 : 8).map((s) => <Nota key={s.id} s={s} comTemas achado={achados?.get(s.id)} />)}
               </div>
             </section>
           );
