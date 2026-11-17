@@ -45,6 +45,9 @@ export default function Acervo() {
   const vista = params.get('v') || 'mural';
   const [busca, setBusca] = useState('');
   const [soAtencao, setSoAtencao] = useState(false);
+  const POR_PAGINA = 50;
+  const [limite, setLimite] = useState(POR_PAGINA);
+  useEffect(() => { setLimite(POR_PAGINA); }, [busca, soAtencao, vista]);
 
   const temas = useMemo(() => contarTemas(sonhos), [sonhos]);
   const filtrados = useMemo(() => {
@@ -79,8 +82,17 @@ export default function Acervo() {
             </div>
           )}
 
-          {vista === 'mural' && <div className="mural">{filtrados.map((s) => <Nota key={s.id} s={s} />)}</div>}
-          {vista === 'lista' && <ListaSonhos sonhos={filtrados} />}
+          {vista === 'mural' && <div className="mural">{filtrados.slice(0, limite).map((s) => <Nota key={s.id} s={s} />)}</div>}
+          {vista === 'lista' && <ListaSonhos sonhos={filtrados.slice(0, limite)} />}
+          {vista !== 'temas' && filtrados.length > limite && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '8px 0 16px' }}>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>Mostrando {limite} de {filtrados.length}</span>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button type="button" className="btn btn-linha" onClick={() => setLimite(limite + POR_PAGINA)}>Mostrar mais {Math.min(POR_PAGINA, filtrados.length - limite)}</button>
+                <button type="button" className="btn" style={{ color: 'var(--muted)' }} onClick={() => setLimite(filtrados.length)}>Mostrar todos</button>
+              </div>
+            </div>
+          )}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} />}
           {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
         </>
