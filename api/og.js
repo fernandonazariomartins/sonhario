@@ -1,11 +1,12 @@
+/* global Buffer */
 // Imagem da prévia do link de convite: foto de quem convidou, a frase e a marca do Sonhário.
 // GET /api/og?token=… → PNG 1200×630.
+// Roda no Node, não no edge: no edge a função dava erro na Vercel e a prévia saía sem imagem.
+import { readFile } from 'node:fs/promises';
 import { ImageResponse } from '@vercel/og';
 import { buscarConvite, fotoGrande, LOGO_SVG } from './_convite.js';
 
-export const config = { runtime: 'edge' };
-
-const fonte = (arq) => fetch(new URL('./_fontes/' + arq, import.meta.url)).then((r) => r.arrayBuffer());
+const fonte = (arq) => readFile(new URL('./_fontes/' + arq, import.meta.url));
 
 // Monta os elementos sem JSX (este arquivo não passa pelo Vite).
 const h = (type, style, ...children) => ({ type, props: { style, children: children.length === 1 ? children[0] : children } });
@@ -17,16 +18,25 @@ async function comoDataUrl(url) {
     const r = await fetch(url);
     if (!r.ok) return '';
     const tipo = r.headers.get('content-type') || 'image/jpeg';
-    const bytes = new Uint8Array(await r.arrayBuffer());
-    let bin = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return `data:${tipo};base64,${btoa(bin)}`;
+    return `data:${tipo};base64,${Buffer.from(await r.arrayBuffer()).toString('base64')}`;
   } catch {
     return '';
   }
 }
 
-export default async function handler(req) {
+// Se algo der errado, a prévia ainda mostra o ícone do Sonhário em vez de nada.
+export async function GET(req) {
+  try {
+    const resposta = await desenhar(req);
+    await resposta.clone().arrayBuffer(); // força o desenho aqui, para pegar erro
+    return resposta;
+  } catch (e) {
+    console.error('og:', e);
+    return Response.redirect(new URL('/icon-512.png', req.url), 302);
+  }
+}
+
+async function desenhar(req) {
   const token = new URL(req.url).searchParams.get('token') || '';
   const [convite, manrope400, manrope800, literataItalico] = await Promise.all([
     buscarConvite(token),
@@ -37,7 +47,7 @@ export default async function handler(req) {
 
   const nome = (convite?.dono_nome || '').trim() || 'Alguém';
   const foto = await comoDataUrl(fotoGrande(convite?.dono_foto));
-  const logo = 'data:image/svg+xml;base64,' + btoa(LOGO_SVG);
+  const logo = 'data:image/svg+xml;base64,' + Buffer.from(LOGO_SVG).toString('base64');
   const tamNome = nome.length > 26 ? 52 : nome.length > 20 ? 60 : 68;
 
   const rosto = foto
