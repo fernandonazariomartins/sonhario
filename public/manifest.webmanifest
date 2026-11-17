@@ -1,0 +1,16 @@
+{
+  "name": "Sonhário",
+  "short_name": "Sonhário",
+  "description": "Um caderno para lembrar, organizar e voltar aos seus sonhos.",
+  "lang": "pt-BR",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0257AA",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
