@@ -23,7 +23,7 @@ export default function Importar() {
 
   const doKeep = lido ? lido.keep.map((o) => deKeepJSON(o, marcados.length ? marcados : null)).filter(Boolean) : [];
   const todos = lido ? [...lido.sonhos, ...doKeep] : [];
-  const chave = (s) => (tituloDe(s) + '|' + s.sonhado_em.slice(0, 10)).toLowerCase();
+  const chave = (s) => ((s.titulo?.trim() || (s.texto || '').trim().slice(0, 80)) + '|' + s.sonhado_em.slice(0, 10)).toLowerCase();
   const existentes = new Map(sonhos.map((s) => [chave(s), s]));
   // Sonho que já está no Sonhário, mas sem o relato (ex.: veio só do CSV): completa em vez de duplicar.
   const completar = todos.flatMap((s) => {

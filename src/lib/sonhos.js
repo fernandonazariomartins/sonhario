@@ -84,8 +84,9 @@ export function tituloSugerido(texto) {
   return palavras.charAt(0).toUpperCase() + palavras.slice(1) + (frase.split(' ').length > 7 ? '…' : '');
 }
 
+// Sonho sem título aparece como "Sem título" até a pessoa dar um nome a ele.
 export function tituloDe(s) {
-  return s.titulo || tituloSugerido(s.texto) || 'Sem título';
+  return s.titulo?.trim() || 'Sem título';
 }
 
 export function contarTemas(sonhos) {

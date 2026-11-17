@@ -18,7 +18,7 @@ function Nota({ s }) {
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
         {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
       </div>
-      <h3>{semViuvas(tituloDe(s))}</h3>
+      <h3 style={s.titulo?.trim() ? undefined : { opacity: 0.45, fontStyle: 'italic' }}>{semViuvas(tituloDe(s))}</h3>
       {s.texto && <p>{semViuvas(s.texto)}</p>}
       {s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip">{t}</span>)}</div>}
       <Status s={s.status} cor={c.rotulo} />
@@ -57,6 +57,8 @@ export default function Acervo() {
   const [busca, setBusca] = useState('');
   const [tema, setTema] = useState('');
   const [soAtencao, setSoAtencao] = useState(false);
+  const [soSemTitulo, setSoSemTitulo] = useState(false);
+  const semTitulo = sonhos.filter((s) => !s.titulo?.trim()).length;
 
   const temas = useMemo(() => contarTemas(sonhos), [sonhos]);
   const filtrados = useMemo(() => {
@@ -64,8 +66,9 @@ export default function Acervo() {
     return sonhos.filter((s) =>
       (!tema || s.temas?.includes(tema)) &&
       (!soAtencao || s.status === 'dar_atencao') &&
+      (!soSemTitulo || !s.titulo?.trim()) &&
       (!q || [s.titulo, s.texto, ...(s.temas || []), ...(s.conclusoes || []).map((c) => c.texto)].join(' ').toLowerCase().includes(q)));
-  }, [sonhos, busca, tema, soAtencao]);
+  }, [sonhos, busca, tema, soAtencao, soSemTitulo]);
 
   const mudar = (v) => setParams(v === 'mural' ? {} : { v });
   const aba = (v, Icone, nome) => (
@@ -94,7 +97,12 @@ export default function Acervo() {
                   {t.nome} <span style={{ opacity: 0.7 }}>{t.n}</span>
                 </button>
               ))}
-              <button type="button" className="btn btn-linha" onClick={() => setSoAtencao(!soAtencao)} aria-pressed={soAtencao} style={{ minHeight: 36, marginLeft: 'auto', background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
+              {semTitulo > 0 && (
+                <button type="button" className="btn btn-linha" onClick={() => setSoSemTitulo(!soSemTitulo)} aria-pressed={soSemTitulo} style={{ minHeight: 36, marginLeft: 'auto', background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
+                  sem título · {semTitulo}
+                </button>
+              )}
+              <button type="button" className="btn btn-linha" onClick={() => setSoAtencao(!soAtencao)} aria-pressed={soAtencao} style={{ minHeight: 36, marginLeft: semTitulo > 0 ? 0 : 'auto', background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
                 <span className="ponto" style={{ background: STATUS.dar_atencao.cor }} />só “dar atenção”
               </button>
             </div>
@@ -133,7 +141,7 @@ function ListaSonhos({ sonhos }) {
               <tr key={s.id} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
                 <td style={{ padding: '12px 14px' }}>
-                  <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{tituloDe(s)}</Link>
+                  <Link to={'/app/sonho/' + s.id} style={{ color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)', fontStyle: s.titulo?.trim() ? 'normal' : 'italic', fontWeight: 800, textDecoration: 'none' }}>{tituloDe(s)}</Link>
                   {s.texto && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</div>}
                 </td>
                 <td style={{ padding: '12px 14px' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{(s.temas || []).map((t) => <span key={t} className="chip" style={{ background: 'var(--cinza)' }}>{t}</span>)}</div></td>
