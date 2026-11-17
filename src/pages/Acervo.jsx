@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
-import { STATUS, CORES, dataCurta, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
+import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
+import Janela from '../components/Janela.jsx';
 import { Mural, Lista, Tema, Busca, Mic } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 
@@ -27,6 +28,73 @@ export function Nota({ s, comTemas = true, para }) {
   );
 }
 
+// Sonho de exemplo: tracejado, com selo, e abre só para leitura (não existe no banco).
+function NotaExemplo({ s, aoAbrir }) {
+  const estiloTema = useCorTema();
+  const c = CORES[s.cor] || CORES.branco;
+  return (
+    <button type="button" className="nota exemplo" style={{ background: c.fundo }} onClick={() => aoAbrir(s)}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
+        <span className="selo-exemplo">exemplo</span>
+      </div>
+      {s.titulo?.trim() && <h3>{semViuvas(s.titulo)}</h3>}
+      <p>{semViuvas(s.texto)}</p>
+      {s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
+      <Status s={s.status} cor={c.rotulo} />
+    </button>
+  );
+}
+
+function SonhoExemplo({ s, aoFechar }) {
+  const estiloTema = useCorTema();
+  return (
+    <Janela titulo={s.titulo?.trim() || 'Sem título'} aoFechar={aoFechar}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <span className="selo-exemplo">exemplo</span>
+        <span className="rotulo">{dataLonga(s.sonhado_em)}</span>
+      </div>
+      {s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
+      <p className="leitura" style={{ margin: 0 }}>{semViuvas(s.texto)}</p>
+      {s.conclusoes?.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="rotulo">Amplificações</span>
+          {s.conclusoes.map((c) => (
+            <div key={c.id} style={{ background: 'var(--cinza)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{c.origem === 'sessao' ? 'depois da sessão' : 'sozinho'}</span>
+              <span style={{ fontSize: 14.5, lineHeight: 1.55 }}>{semViuvas(c.texto)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="aviso" style={{ background: 'var(--cinza)', color: 'var(--ink)' }}>{semViuvas('Este sonho é um exemplo. Ele não está salvo no seu acervo e some sozinho conforme você registra os seus.')}</div>
+      <Link className="btn btn-azul" to="/app">Registrar um sonho meu</Link>
+    </Janela>
+  );
+}
+
+function FaixaExemplos({ n, semSonhos, aoEsconder }) {
+  const faltam = n === 1 ? 'mais 1 sonho seu' : 'mais ' + n + ' sonhos seus';
+  return (
+    <div className="faixa-exemplos">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: '1 1 320px', minWidth: 0 }}>
+        <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{semSonhos ? 'Seu acervo ainda está vazio' : (n === 1 ? 'Resta 1 exemplo' : 'Restam ' + n + ' exemplos')}</span>
+        <h2 style={{ fontSize: 22, fontWeight: 400, letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+          {semViuvas(semSonhos ? `Estes ${n} sonhos são exemplos, não são seus` : 'Os exemplos estão saindo para dar lugar aos seus sonhos')}
+        </h2>
+        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: 'var(--muted)', maxWidth: 620 }}>
+          {semViuvas(`Eles servem para mostrar como o acervo fica. Não estão salvos na sua conta e saem um a um: a cada sonho que você registra, um exemplo some. Com ${faltam}, não sobra nenhum.`)}
+        </p>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <Link className="btn btn-azul" to="/app">Registrar um sonho</Link>
+        {semSonhos && <Link className="btn btn-linha" to="/app/importar">Importar do Notion ou do Keep</Link>}
+        <button type="button" className="btn" onClick={aoEsconder} style={{ background: 'transparent', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: 3, padding: '0 8px' }}>Esconder exemplos</button>
+      </div>
+    </div>
+  );
+}
+
 function Vazio() {
   return (
     <div className="painel" style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -41,7 +109,8 @@ function Vazio() {
 }
 
 export default function Acervo() {
-  const { sonhos } = useEstado();
+  const { sonhos, exemplos, esconderExemplos } = useEstado();
+  const [exemploAberto, setExemploAberto] = useState(null);
   const [params, setParams] = useSearchParams();
   const vista = params.get('v') || 'mural';
   const [busca, setBusca] = useState('');
@@ -67,6 +136,9 @@ export default function Acervo() {
       (!q || [s.titulo, s.texto, ...(s.temas || []), ...(s.conclusoes || []).map((c) => c.texto)].join(' ').toLowerCase().includes(q)));
   }, [sonhos, busca, soAtencao, soSemTitulo, vista]);
 
+  const comFiltro = !!busca.trim() || soAtencao || soSemTitulo;
+  const mostrarExemplos = exemplos.length > 0 && !comFiltro && (pagina0(params) || sonhos.length === 0);
+
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const pagina = Math.min(paginaUrl, totalPaginas);
   const daPagina = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
@@ -79,14 +151,14 @@ export default function Acervo() {
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
+        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 0 ? 'Seu acervo' : sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
         <label className="busca"><Busca size={18} /><span className="sr">Buscar nos sonhos</span>
           <input value={busca} onChange={(e) => { setBusca(e.target.value); voltarPrimeira(); }} placeholder="Buscar: palavra, pessoa, lugar" />
         </label>
         <div className="abas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('temas', Tema, 'Temas')}</div>
       </div>
 
-      {sonhos.length === 0 ? <Vazio /> : (
+      {sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
         <>
           {vista !== 'temas' && (semTitulo > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
@@ -111,9 +183,19 @@ export default function Acervo() {
           {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
         </>
       )}
+
+      {mostrarExemplos && (
+        <section aria-label="Sonhos de exemplo" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: sonhos.length ? 12 : 0 }}>
+          <FaixaExemplos n={exemplos.length} semSonhos={sonhos.length === 0} aoEsconder={esconderExemplos} />
+          <div className="mural">{exemplos.map((s) => <NotaExemplo key={s.id} s={s} aoAbrir={setExemploAberto} />)}</div>
+        </section>
+      )}
+      {exemploAberto && <SonhoExemplo s={exemploAberto} aoFechar={() => setExemploAberto(null)} />}
     </div>
   );
 }
+
+const pagina0 = (params) => !params.get('p') || params.get('p') === '1';
 
 function numerosDePagina(atual, total) {
   if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);

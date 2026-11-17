@@ -141,3 +141,17 @@ input, textarea, select { font-family: inherit; color: var(--ink); }
 }
 
 @media (max-width: 420px) { .esconde-pequeno { display: none !important; } }
+
+/* exemplos: nunca salvos, somem conforme a pessoa registra */
+button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
+.nota.exemplo { position: relative; box-shadow: none; outline: 1.5px dashed rgba(31,35,40,.32); outline-offset: -1.5px; }
+.nota.exemplo:hover { box-shadow: var(--shadow-card); }
+.nota.exemplo > * { opacity: .82; }
+.nota.exemplo > div:first-child { opacity: 1; }
+.selo-exemplo { height: 20px; padding: 0 8px; border-radius: 999px; background: var(--preto); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: inline-flex; align-items: center; flex: none; }
+.faixa-exemplos { border-radius: 16px; padding: 20px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 24px; border: 1.5px dashed var(--node); background: repeating-linear-gradient(-45deg, #fff 0 10px, #F5F7F9 10px 20px); }
+.insight.exemplo { border: 1.5px dashed var(--node); background: repeating-linear-gradient(-45deg, #fff 0 10px, #F8F9FB 10px 20px); }
+.embacado-caixa { position: relative; flex: 1; min-height: 96px; }
+.embacado { filter: blur(6px); opacity: .7; pointer-events: none; user-select: none; display: flex; flex-direction: column; gap: 12px; }
+.trava { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.4; color: var(--ink); }
+.trava svg { color: var(--muted); }
