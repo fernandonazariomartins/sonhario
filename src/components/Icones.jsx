@@ -36,3 +36,4 @@ export const Pessoas = (p) => <I {...p}><circle cx="9" cy="8" r="3.5" /><path d=
 export const Copiar = (p) => <I {...p}><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" /></I>;
 export const Compartilhar = (p) => <I {...p}><circle cx="18" cy="5.5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="18.5" r="2.5" /><path d="M8.2 10.8l7.6-4.1M8.2 13.2l7.6 4.1" /></I>;
 export const Link = (p) => <I {...p} d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />;
+export const Restaurar = (p) => <I {...p} d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />;

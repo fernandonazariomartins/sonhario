@@ -1,0 +1,59 @@
+import { Link } from 'react-router-dom';
+import { useEstado } from '../lib/estado.jsx';
+import { dataCurta, tituloDe, diasRestantes, DIAS_LIXEIRA } from '../lib/sonhos.js';
+import { Lixo, Restaurar } from '../components/Icones.jsx';
+import { semViuvas } from '../lib/tipografia.js';
+
+function prazo(s) {
+  const d = diasRestantes(s);
+  return d <= 1 ? 'some amanhã' : `some em ${d} dias`;
+}
+
+export default function Lixeira() {
+  const { lixeira, restaurar, apagarDeVez } = useEstado();
+
+  function esvaziar() {
+    const n = lixeira.length;
+    if (!confirm(`Apagar de vez ${n === 1 ? '1 sonho' : n + ' sonhos'}, com áudios e amplificações? Não dá para desfazer.`)) return;
+    apagarDeVez(lixeira.map((s) => s.id));
+  }
+
+  return (
+    <div style={{ width: '100%', maxWidth: 880, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>Lixeira</h1>
+        {lixeira.length > 1 && <button type="button" className="btn btn-linha" onClick={() => restaurar(lixeira.map((s) => s.id))}><Restaurar size={16} /> Restaurar todos</button>}
+        {lixeira.length > 0 && <button type="button" className="btn btn-linha" style={{ color: 'var(--danger)', borderColor: '#F1C4BF' }} onClick={esvaziar}><Lixo size={16} /> Esvaziar lixeira</button>}
+      </div>
+      <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 560 }}>
+        {semViuvas(`Os sonhos apagados ficam aqui por ${DIAS_LIXEIRA} dias. Depois disso somem de vez, com o áudio e as amplificações.`)}
+      </p>
+
+      {lixeira.length === 0 ? (
+        <div className="painel" style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <p style={{ margin: 0, color: 'var(--muted)' }}>A lixeira está vazia.</p>
+          <Link className="btn btn-linha" to="/app/acervo">Voltar ao acervo</Link>
+        </div>
+      ) : (
+        <div className="painel" style={{ overflow: 'hidden' }}>
+          {lixeira.map((s, i) => {
+            return (
+              <div key={s.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '14px 16px', borderTop: i ? '1px solid var(--line)' : 0 }}>
+                <div style={{ flex: '1 1 260px', minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</div>
+                  {s.texto && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</div>}
+                  <div className="rotulo" style={{ marginTop: 6, fontSize: 11 }}>sonhado {dataCurta(s.sonhado_em)} · {prazo(s)}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => restaurar([s.id])}><Restaurar size={16} /> Restaurar</button>
+                  <button type="button" className="btn-icone" style={{ width: 36, height: 36, color: 'var(--danger)' }} aria-label="Apagar de vez"
+                    onClick={() => { if (confirm('Apagar este sonho de vez? Não dá para desfazer.')) apagarDeVez([s.id]); }}><Lixo size={16} /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

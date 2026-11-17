@@ -13,7 +13,7 @@ import { instalado } from '../lib/lembrete.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, apagarTodos, apagarVarios, salvarVarios, avisar, compartilhamentos } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarTodos, apagarVarios, salvarVarios, avisar, compartilhamentos } = useEstado();
   const navegar = useNavigate();
   const comigoTodos = [...compartilhamentos.comigo, ...compartilhamentos.aguardando];
   const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
@@ -73,17 +73,15 @@ export default function AppLayout() {
   async function apagarVazios() {
     setMenu(false);
     const n = vazios.length;
-    if (!confirm(`Apagar ${n === 1 ? '1 sonho vazio' : n + ' sonhos vazios'}? São os que não têm título, relato, áudio, temas nem amplificações.`)) return;
-    await apagarVarios(vazios.map((s) => s.id));
-    avisar(n === 1 ? '1 sonho vazio apagado' : n + ' sonhos vazios apagados');
+    if (!confirm(`Mandar ${n === 1 ? '1 sonho vazio' : n + ' sonhos vazios'} para a lixeira? São os que não têm título, relato, áudio, temas nem amplificações. Ficam lá por 7 dias.`)) return;
+    await apagarVarios(vazios.map((s) => s.id), n === 1 ? '1 sonho vazio na lixeira' : n + ' sonhos vazios na lixeira');
   }
   async function apagarTudo() {
     setMenu(false);
     const n = sonhos.length;
-    const r = prompt(`Isso apaga os ${n} sonhos do seu acervo, com áudios e amplificações. Não dá para desfazer.\n\nPara confirmar, digite APAGAR:`);
+    const r = prompt(`Isso manda os ${n} sonhos do seu acervo para a lixeira. Ficam lá por 7 dias e depois somem de vez, com áudios e amplificações.\n\nPara confirmar, digite APAGAR:`);
     if ((r || '').trim().toUpperCase() !== 'APAGAR') return;
     await apagarTodos();
-    avisar(n === 1 ? '1 sonho apagado' : n + ' sonhos apagados');
   }
 
   return (
@@ -110,6 +108,7 @@ export default function AppLayout() {
               {doNotion.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={arrumarNotion}><Importar size={18} /> Arrumar sonhos vindos do Notion ({doNotion.length})</button>}
               {vazios.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={apagarVazios}><Lixo size={18} /> Apagar sonhos vazios ({vazios.length})</button>}
               {sonhos.length > 0 && <button role="menuitem" type="button" className="menu-item" style={{ color: '#B42318' }} onClick={apagarTudo}><Lixo size={18} /> Apagar todos os sonhos</button>}
+              <Link role="menuitem" className="menu-item" to="/app/lixeira"><Lixo size={18} /> Lixeira{lixeira.length > 0 && <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)' }}>{lixeira.length}</span>}</Link>
               {usuario ? (
                 <button role="menuitem" type="button" className="menu-item" onClick={sair}><Sair size={18} /> <span>Sair<br /><span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{usuario.email}</span></span></button>
               ) : temLogin ? (
@@ -142,7 +141,12 @@ export default function AppLayout() {
       {janela === 'contribuir' && <Contribuir aoFechar={() => setJanela('')} />}
       {janela === 'lembrete' && <Lembrete aoFechar={() => setJanela('')} />}
       {janela === 'compartilhar' && <Compartilhar aoFechar={() => setJanela('')} />}
-      {aviso && <div className="toast" role="status" style={naCaptura ? undefined : { bottom: 100 }}>{aviso}</div>}
+      {aviso && (
+        <div className="toast" role="status" style={{ ...(naCaptura ? null : { bottom: 100 }), display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span>{aviso.msg}</span>
+          {aviso.acao && <button type="button" onClick={aviso.acao.fn} style={{ border: 0, background: 'transparent', color: '#9CC8F5', fontSize: 14, fontWeight: 800, padding: 0, whiteSpace: 'nowrap' }}>{aviso.acao.rotulo}</button>}
+        </div>
+      )}
     </div>
   );
 }

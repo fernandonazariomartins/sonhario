@@ -325,3 +325,39 @@ language sql stable security definer set search_path = public as $$
       and c.convidado_email = any (s.compartilhado_com)
   );
 $$;
+
+-- 8. Lixeira -----------------------------------------------------------------
+-- Apagar manda o sonho para a lixeira (apagado_em preenchido). Ele fica lá por
+-- 7 dias e dá para restaurar; depois disso o próprio app apaga de vez.
+-- Enquanto estiver na lixeira, ninguém com quem foi compartilhado vê o sonho.
+alter table public.sonhos add column if not exists apagado_em timestamptz;
+create index if not exists sonhos_lixeira on public.sonhos (user_id, apagado_em) where apagado_em is not null;
+
+create or replace function public.sonhos_compartilhados(dono uuid)
+returns table (
+  id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
+  temas text[], status text, cor text, conclusoes jsonb, levar_sessao boolean, audio jsonb
+)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.sonhado_em, s.atualizado_em, s.titulo, s.texto, s.temas, s.status, s.cor,
+         case when c.ver_amplificacoes then s.conclusoes else '[]'::jsonb end,
+         s.levar_sessao, s.audio
+  from public.sonhos s
+  join public.compartilhamentos c on c.dono_id = s.user_id
+  where s.user_id = dono and not c.pendente and s.apagado_em is null
+    and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+    and c.convidado_email = any (s.compartilhado_com)
+  order by s.sonhado_em desc;
+$$;
+
+create or replace function public.posso_ouvir(caminho text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.sonhos s
+    join public.compartilhamentos c on c.dono_id = s.user_id
+    where s.audio ->> 'ref' = caminho and not c.pendente and s.apagado_em is null
+      and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+      and c.convidado_email = any (s.compartilhado_com)
+  );
+$$;
