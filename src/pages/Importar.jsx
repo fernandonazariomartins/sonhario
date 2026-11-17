@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
-import { lerArquivos, deKeepJSON } from '../lib/importar.js';
+import { lerArquivos, deKeepJSON, combinarComAcervo } from '../lib/importar.js';
 import { tituloDe, dataCurta } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 
@@ -23,16 +23,7 @@ export default function Importar() {
 
   const doKeep = lido ? lido.keep.map((o) => deKeepJSON(o, marcados.length ? marcados : null)).filter(Boolean) : [];
   const todos = lido ? [...lido.sonhos, ...doKeep] : [];
-  const chave = (s) => (tituloDe(s) + '|' + s.sonhado_em.slice(0, 10)).toLowerCase();
-  const existentes = new Map(sonhos.map((s) => [chave(s), s]));
-  // Sonho que já está no Sonhário, mas sem o relato (ex.: veio só do CSV): completa em vez de duplicar.
-  const completar = todos.flatMap((s) => {
-    const e = existentes.get(chave(s));
-    return e && !e.texto?.trim() && s.texto?.trim()
-      ? [{ ...e, texto: s.texto, temas: [...new Set([...(e.temas || []), ...s.temas])] }]
-      : [];
-  });
-  const novos = pularRepetidos ? todos.filter((s) => !existentes.has(chave(s))) : todos;
+  const { novos, completar } = combinarComAcervo(todos, sonhos, pularRepetidos);
   const finais = [...novos, ...completar];
 
   async function importar() {

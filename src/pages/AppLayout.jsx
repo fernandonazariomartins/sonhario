@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ehVazio } from '../lib/importar.js';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
@@ -10,7 +11,8 @@ import { instalado } from '../lib/lembrete.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, apagarTodos, avisar } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, apagarTodos, apagarVarios, avisar } = useEstado();
+  const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
   const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete'
@@ -35,6 +37,13 @@ export default function AppLayout() {
   const naCaptura = pathname === '/app' || pathname === '/app/';
   const aba = ({ isActive }) => 'aba' + (isActive ? ' ativa' : '');
   const abrir = (j) => { setMenu(false); setJanela(j); };
+  async function apagarVazios() {
+    setMenu(false);
+    const n = vazios.length;
+    if (!confirm(`Apagar ${n === 1 ? '1 sonho vazio' : n + ' sonhos vazios'}? São os que não têm título, relato, áudio, temas nem amplificações.`)) return;
+    await apagarVarios(vazios.map((s) => s.id));
+    avisar(n === 1 ? '1 sonho vazio apagado' : n + ' sonhos vazios apagados');
+  }
   async function apagarTudo() {
     setMenu(false);
     const n = sonhos.length;
@@ -62,6 +71,7 @@ export default function AppLayout() {
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
+              {vazios.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={apagarVazios}><Lixo size={18} /> Apagar sonhos vazios ({vazios.length})</button>}
               {sonhos.length > 0 && <button role="menuitem" type="button" className="menu-item" style={{ color: '#B42318' }} onClick={apagarTudo}><Lixo size={18} /> Apagar todos os sonhos</button>}
               {usuario ? (
                 <button role="menuitem" type="button" className="menu-item" onClick={sair}><Sair size={18} /> <span>Sair<br /><span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{usuario.email}</span></span></button>
