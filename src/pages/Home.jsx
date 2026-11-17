@@ -4,7 +4,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
-import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem } from '../components/Icones.jsx';
+import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar } from '../components/Icones.jsx';
 import { semViuvas as n } from '../lib/tipografia.js';
 
 // Troque pelo seu ID do Associados Amazon (termina em -20) quando a conta estiver aprovada.
@@ -13,9 +13,11 @@ const amazon = (asin) => `https://www.amazon.com.br/dp/${asin}/?tag=${AMAZON_TAG
 
 const CARTOES = [
   { n: '01', t: 'Gravar', d: 'o app abre pronto para falar', Ic: Mic, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '02', t: 'Organizar', d: 'temas e status em cada sonho', Ic: Tema, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '03', t: 'Ver', d: 'mural, lista ou por tema', Ic: Mural, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '04', t: 'Amplificar', d: 'imagens e associações, com data', Ic: Caneta, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '02', t: 'Compartilhar', d: 'um sonho por vez, com quem você escolher', Ic: Compartilhar, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '03', t: 'Organizar', d: 'temas e status em cada sonho', Ic: Tema, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '04', t: 'Ver', d: 'mural, lista ou por tema', Ic: Mural, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '05', t: 'Amplificar', d: 'imagens e associações, com data', Ic: Caneta, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '06', t: 'Importar', d: 'do Notion, do Keep ou de arquivos', Ic: Importar, bg: '#0257AA', fg: '#FFFFFF' },
 ];
 
 const PASSOS = [
@@ -78,7 +80,7 @@ export default function Home() {
           </div>
           <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site.')} </p>
 
-          <div id="recursos" style={{ marginTop: 64, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          <div id="recursos" style={{ marginTop: 64, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 12 }}>
             {CARTOES.map(({ n: num, t, d, Ic, bg, fg }) => (
               <div key={num} className="cartao-azul" style={{ '--hov-bg': bg, '--hov-fg': fg }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -105,9 +107,21 @@ export default function Home() {
         </div>
       </section>
 
+      <section id="compartilhar" className="secao">
+        <div className="miolo" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 48 }}>
+          <div style={{ flex: '1 1 420px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Rotulo>02 — Compartilhar</Rotulo>
+            <h2 className="titulo-l">{n('Leve um sonho para a sessão. Só aquele.')}</h2>
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Escolha um sonho e mande para o seu analista ou para alguém de confiança. A pessoa entra com a própria conta e encontra o sonho numa aba separada, com o seu nome e a sua foto. O resto do caderno continua só seu.')}</p>
+            <Checks itens={['Sempre um sonho por vez, nunca o caderno inteiro', 'Você decide se as amplificações vão junto', 'Convite por link, e você aprova cada pessoa', 'Pare de compartilhar quando quiser']} bg="var(--azul)" fg="#fff" />
+          </div>
+          <MiniCompartilhar />
+        </div>
+      </section>
+
       <section className="secao" style={{ background: 'var(--cinza)' }}>
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 760, marginLeft: 'auto', marginRight: 'auto' }}>
-          <Rotulo cor="var(--ink)">02 — Acervo</Rotulo>
+          <Rotulo cor="var(--ink)">03 — Acervo</Rotulo>
           <h2 className="titulo-l">{n('Mural, lista ou por tema. Do jeito que você procura.')}</h2>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7 }}>{n('No computador, seus sonhos aparecem como um mural de notas. Quer algo mais de tabela? Troque para a lista. Quer ver o que se repete? Agrupe por tema.')}</p>
           <Checks itens={['Mural de notas coloridas, como no Keep', 'Lista em tabela, como no Notion', 'Temas com a frequência de cada um']} bg="var(--preto)" fg="#fff" />
@@ -116,7 +130,7 @@ export default function Home() {
 
       <section className="secao" style={{ backgroundColor: 'var(--preto)', backgroundImage: 'linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '40px 40px', color: '#fff' }}>
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 760, marginLeft: 'auto', marginRight: 'auto' }}>
-          <Rotulo cor="var(--azul-cinza)">03 — Amplificações</Rotulo>
+          <Rotulo cor="var(--azul-cinza)">04 — Amplificações</Rotulo>
           <h2 className="titulo-l">{n('Um caderno, não um intérprete. Quem amplia o sonho é você.')}</h2>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--areia)' }}>{n('O Sonhário não diz o que o seu sonho significa. Ele guarda o que você sonhou e o que você foi ampliando, para acompanhar seu processo de individuação ao longo do tempo.')}</p>
           <Checks itens={['Amplificações com data, sozinho ou depois da sessão', 'Marque o que levar para a próxima sessão', 'Nenhuma interpretação automática']} bg="rgba(255,255,255,0.16)" fg="#fff" cor="#fff" />
@@ -132,7 +146,7 @@ export default function Home() {
           </figure>
           <div style={{ flex: '1 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
-            <Rotulo>04 — A prática</Rotulo>
+            <Rotulo>05 — A prática</Rotulo>
             <h2 className="titulo-l">Como fazer um sonhário</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Anotar sonhos é um hábito antigo: na Antiguidade, Macróbio já defendia registrá-los com fidelidade. O neurocientista Sidarta Ribeiro retoma a ideia e descreve um caminho simples, que trouxemos para o Sonhário.')}</p>
           </div>
@@ -163,7 +177,7 @@ export default function Home() {
       <section className="secao" style={{ background: 'var(--azul)', color: '#fff' }}>
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
-            <Rotulo cor="var(--azul-cinza)">05 — Pesquisas</Rotulo>
+            <Rotulo cor="var(--azul-cinza)">06 — Pesquisas</Rotulo>
             <h2 className="titulo-l">O que diz a ciência</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: '#E6EDF5' }}>{n('Alguns estudos sobre lembrar, registrar e conversar sobre os sonhos. Sem exagero: cada um mostra uma parte, e a ciência dos sonhos ainda está em construção.')}</p>
           </div>
@@ -185,7 +199,7 @@ export default function Home() {
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720, marginRight: 'auto' }}>
-              <Rotulo>06 — Leituras</Rotulo>
+              <Rotulo>07 — Leituras</Rotulo>
               <h2 className="titulo-l">Para ir mais fundo</h2>
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Quatro livros para quem quer entender melhor os próprios sonhos, da neurociência à psicologia analítica.')}</p>
             </div>
@@ -216,7 +230,7 @@ export default function Home() {
       <section className="secao" style={{ borderTop: '1px solid var(--line)' }}>
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
-            <Rotulo>07 — Seu acervo vem junto</Rotulo>
+            <Rotulo>08 — Seu acervo vem junto</Rotulo>
             <h2 className="titulo-l">{n('Traga os sonhos que você já anotou.')}</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
@@ -270,6 +284,30 @@ function MiniCelular() {
         </div>
         <span style={{ height: 40, borderRadius: 10, background: 'var(--azul)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Guardar no sonhário</span>
       </div>
+    </figure>
+  );
+}
+
+function MiniCompartilhar() {
+  const Pessoa = ({ ini, nome, papel, cor }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <span style={{ width: 38, height: 38, borderRadius: 999, background: cor, color: '#fff', fontSize: 14, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{ini}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <strong style={{ fontSize: 14 }}>{nome}</strong>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{papel}</span>
+      </div>
+    </div>
+  );
+  return (
+    <figure aria-label="Exemplo de compartilhamento de um sonho" className="painel" style={{ margin: '0 auto', width: '100%', maxWidth: 360, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, boxShadow: '0 12px 30px rgba(20,30,40,0.10)', flex: 'none' }}>
+      <span className="rotulo" style={{ color: 'var(--muted)' }}>Compartilhar sonho</span>
+      <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <span style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><Ok size={14} /></span>
+        <span style={{ fontSize: 13.5, lineHeight: 1.5 }}><strong>Só este sonho:</strong> “O ônibus que passava direto pelo&nbsp;ponto”.<br /><span style={{ color: 'var(--muted)' }}>Seus outros sonhos continuam só&nbsp;seus.</span></span>
+      </div>
+      <Pessoa ini="A" nome="Ana Souza" papel="terapeuta · vê as amplificações" cor="var(--azul)" />
+      <Pessoa ini="L" nome="Lucas Prado" papel="amigo · só o relato" cor="var(--preto)" />
+      <span style={{ height: 40, borderRadius: 10, background: 'var(--azul)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Compartilhar size={16} /> Enviar convite</span>
     </figure>
   );
 }
