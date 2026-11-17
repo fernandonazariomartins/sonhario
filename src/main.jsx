@@ -12,6 +12,7 @@ import Captura from './pages/Captura.jsx';
 import Acervo from './pages/Acervo.jsx';
 import Sonho from './pages/Sonho.jsx';
 import Importar from './pages/Importar.jsx';
+import Privacidade from './pages/Privacidade.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Roteador>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Captura />} />
             <Route path="acervo" element={<Acervo />} />
