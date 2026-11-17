@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
@@ -28,6 +28,17 @@ export default function Sonho() {
   const [transcrevendo, setTranscrevendo] = useState(false);
   const [sugestao, setSugestao] = useState(null); // { temas, marcados } enquanto a janela dos temas automáticos está aberta
   const timer = useRef(null);
+  const relato = useRef(null);
+
+  // O relato cresce com o texto: o sonho inteiro fica visível, sem barra de rolagem dentro da caixa.
+  useLayoutEffect(() => {
+    const el = relato.current;
+    if (!el) return;
+    const ajustar = () => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+    ajustar();
+    window.addEventListener('resize', ajustar);
+    return () => window.removeEventListener('resize', ajustar);
+  }, [s?.texto, s?.id]);
 
   // Troca de sonho, ou chegou uma versão mais nova (ex.: transcrição terminada depois de guardar).
   useEffect(() => {
@@ -153,8 +164,8 @@ export default function Sonho() {
         )}
 
         <label className="sr" htmlFor="relato">Relato do sonho</label>
-        <textarea id="relato" value={s.texto} onChange={(e) => mudar({ texto: e.target.value })} placeholder="O que você lembra do sonho…" rows={8}
-          className="leitura" style={{ border: 0, padding: 0, resize: 'vertical', outline: 'none', width: '100%', maxWidth: 680, background: 'transparent', fontSize: 19, lineHeight: 1.75 }} />
+        <textarea id="relato" ref={relato} value={s.texto} onChange={(e) => mudar({ texto: e.target.value })} placeholder="O que você lembra do sonho…" rows={8}
+          className="leitura" style={{ border: 0, padding: 0, resize: 'none', overflow: 'hidden', outline: 'none', width: '100%', maxWidth: 680, background: 'transparent', fontSize: 19, lineHeight: 1.75 }} />
 
         <section aria-labelledby="t-temas" style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

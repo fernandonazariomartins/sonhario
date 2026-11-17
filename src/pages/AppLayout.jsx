@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ehVazio } from '../lib/importar.js';
-import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
@@ -23,6 +23,10 @@ export default function AppLayout() {
   const caixaMenu = useRef(null);
 
   useEffect(() => { setMenu(false); setJanela(''); }, [pathname]);
+
+  // Página nova abre no topo; só o botão voltar do navegador devolve a rolagem de antes.
+  const tipoNavegacao = useNavigationType();
+  useEffect(() => { if (tipoNavegacao !== 'POP') window.scrollTo(0, 0); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Convite aberto sem login: guarda o endereço e volta para ele depois de entrar com Google.
   const DESTINO = 'sonhario:depois-de-entrar';
