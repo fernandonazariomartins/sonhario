@@ -40,18 +40,7 @@ function Vazio() {
 }
 
 export default function Acervo() {
-  const { sonhos, apagarTodos, avisar } = useEstado();
-  const [apagando, setApagando] = useState(false);
-
-  async function apagarTudo() {
-    const n = sonhos.length;
-    const r = prompt(`Isso apaga os ${n} sonhos do seu acervo, com áudios e conclusões. Não dá para desfazer.\n\nPara confirmar, digite APAGAR:`);
-    if ((r || '').trim().toUpperCase() !== 'APAGAR') return;
-    setApagando(true);
-    await apagarTodos();
-    setApagando(false);
-    avisar(n === 1 ? '1 sonho apagado' : n + ' sonhos apagados');
-  }
+  const { sonhos } = useEstado();
   const [params, setParams] = useSearchParams();
   const vista = params.get('v') || 'mural';
   const [busca, setBusca] = useState('');
@@ -94,12 +83,6 @@ export default function Acervo() {
           {vista === 'lista' && <ListaSonhos sonhos={filtrados} />}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} />}
           {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '24px 0 8px', borderTop: '1px solid var(--line)', marginTop: 12 }}>
-            <button type="button" onClick={apagarTudo} disabled={apagando}
-              style={{ border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: 8, cursor: 'pointer' }}>
-              {apagando ? 'Apagando…' : 'Apagar todos os sonhos'}
-            </button>
-          </div>
         </>
       )}
     </div>
