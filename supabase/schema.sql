@@ -97,7 +97,22 @@ create policy "lembretes: os meus" on public.lembretes
 -- 6. Compartilhar com o terapeuta ou com amigos -----------------------------
 -- A pessoa convida pelo e-mail. Quem foi convidado entra com Google usando esse
 -- e-mail e vê os sonhos numa aba própria, só para leitura.
-alter table public.sonhos add column if not exists compartilhado boolean not null default false;
+
+-- Com quem cada sonho foi compartilhado (e-mails), para quem vê "só os escolhidos".
+alter table public.sonhos add column if not exists compartilhado_com text[] not null default '{}';
+
+-- Nome e foto da conta Google, para aparecerem na hora de escolher a pessoa.
+create table if not exists public.perfis (
+  id            uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  email         text not null unique check (email = lower(email)),
+  nome          text not null default '',
+  foto          text not null default '',
+  atualizado_em timestamptz not null default now()
+);
+alter table public.perfis enable row level security;
+drop policy if exists "perfis: o meu" on public.perfis;
+create policy "perfis: o meu" on public.perfis
+  for all using (auth.uid() = id) with check (auth.uid() = id);
 
 create table if not exists public.compartilhamentos (
   id                uuid primary key default gen_random_uuid(),
@@ -129,8 +144,28 @@ drop policy if exists "compartilhamentos: sair" on public.compartilhamentos;
 create policy "compartilhamentos: sair" on public.compartilhamentos
   for delete using (convidado_email = lower(coalesce(auth.jwt() ->> 'email', '')));
 
+-- Nome e foto das pessoas ligadas a mim (convidei ou me convidaram).
+create or replace function public.perfis_conectados()
+returns table (email text, nome text, foto text)
+language sql stable security definer set search_path = public as $$
+  select p.email, p.nome, p.foto from public.perfis p
+  where p.email in (select c.convidado_email from public.compartilhamentos c where c.dono_id = auth.uid())
+     or p.id in (select c.dono_id from public.compartilhamentos c where c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', '')));
+$$;
+revoke all on function public.perfis_conectados() from public, anon;
+grant execute on function public.perfis_conectados() to authenticated;
+
+-- Ao digitar o e-mail exato de quem já usa o Sonhário, mostra o nome e a foto.
+create or replace function public.perfil_por_email(procurado text)
+returns table (email text, nome text, foto text)
+language sql stable security definer set search_path = public as $$
+  select p.email, p.nome, p.foto from public.perfis p where p.email = lower(trim(procurado)) limit 1;
+$$;
+revoke all on function public.perfil_por_email(text) from public, anon;
+grant execute on function public.perfil_por_email(text) to authenticated;
+
 -- Os sonhos de alguém que compartilhou comigo. Só os que a pessoa liberou
--- (todos, ou os marcados como "compartilhado"), e as amplificações só se ela permitiu.
+-- (todos, ou os escolhidos para mim), e as amplificações só se ela permitiu.
 create or replace function public.sonhos_compartilhados(dono uuid)
 returns table (
   id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
@@ -144,7 +179,7 @@ language sql stable security definer set search_path = public as $$
   join public.compartilhamentos c on c.dono_id = s.user_id
   where s.user_id = dono
     and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
-    and (c.escopo = 'todos' or s.compartilhado)
+    and (c.escopo = 'todos' or c.convidado_email = any (s.compartilhado_com))
   order by s.sonhado_em desc;
 $$;
 revoke all on function public.sonhos_compartilhados(uuid) from public, anon;
@@ -159,7 +194,7 @@ language sql stable security definer set search_path = public as $$
     join public.compartilhamentos c on c.dono_id = s.user_id
     where s.audio ->> 'ref' = caminho
       and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
-      and (c.escopo = 'todos' or s.compartilhado)
+      and (c.escopo = 'todos' or c.convidado_email = any (s.compartilhado_com))
   );
 $$;
 revoke all on function public.posso_ouvir(text) from public, anon;

@@ -15,18 +15,44 @@ export const ESCOPOS = {
 export const nomeDe = (u) => u?.user_metadata?.full_name || u?.user_metadata?.name || (u?.email || '').split('@')[0];
 const emailValido = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-// Os dois lados de uma vez: os convites que eu fiz e os que recebi.
+export const fotoDe = (u) => u?.user_metadata?.avatar_url || u?.user_metadata?.picture || '';
+
+// Guarda o meu nome e a minha foto do Google, para quem compartilha comigo me reconhecer.
+export async function salvarMeuPerfil(usuario) {
+  if (!usuario?.email) return;
+  await supabase.from('perfis').upsert({
+    id: usuario.id, email: usuario.email.toLowerCase(), nome: nomeDe(usuario), foto: fotoDe(usuario), atualizado_em: new Date().toISOString(),
+  });
+}
+
+// Os dois lados de uma vez: os convites que eu fiz, os que recebi e o rosto de cada pessoa.
 export async function listarCompartilhamentos(usuario) {
   const { data, error } = await supabase.from('compartilhamentos').select('*').order('criado_em');
   if (error) throw error;
   const eu = (usuario.email || '').toLowerCase();
+  const { data: ps } = await supabase.rpc('perfis_conectados');
   return {
     meus: data.filter((c) => c.dono_id === usuario.id),
     comigo: data.filter((c) => c.convidado_email === eu && c.dono_id !== usuario.id),
+    perfis: Object.fromEntries((ps || []).map((p) => [p.email, p])),
   };
 }
 
-export async function convidar(usuario, { email, nome, papel, escopo, ver_amplificacoes }) {
+// Quem já usa o Sonhário com esse e-mail (só e-mail exato).
+export async function perfilPorEmail(email) {
+  const e = email.trim().toLowerCase();
+  if (!emailValido(e)) return null;
+  const { data } = await supabase.rpc('perfil_por_email', { procurado: e });
+  return data?.[0] || null;
+}
+
+// Nome e foto de uma pessoa: o do Google, se ela já entrou; senão o apelido dado no convite.
+export function pessoa(perfis, email, apelido = '') {
+  const p = perfis?.[email];
+  return { email, nome: p?.nome || apelido || email, foto: p?.foto || '', temConta: !!p };
+}
+
+export async function convidar(usuario, { email, nome = '', papel, escopo, ver_amplificacoes }) {
   const e = email.trim().toLowerCase();
   if (!emailValido(e)) throw new Error('Confira o e-mail.');
   if (e === (usuario.email || '').toLowerCase()) throw new Error('Esse é o seu próprio e-mail.');
@@ -68,7 +94,7 @@ export function textoConvite(c) {
 
 // Quem pode ver um sonho meu.
 export function quemVe(meus, sonho) {
-  return meus.filter((c) => c.escopo === 'todos' || sonho.compartilhado);
+  return meus.filter((c) => c.escopo === 'todos' || (sonho.compartilhado_com || []).includes(c.convidado_email));
 }
 
 // Rótulo da aba: "Pacientes", "Amigos" ou "Compartilhados" quando há dos dois.

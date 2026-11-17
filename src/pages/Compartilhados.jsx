@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
-import { PAPEIS, sonhosDe, urlAudioCompartilhado, desfazer } from '../lib/compartilhar.js';
+import { PAPEIS, sonhosDe, urlAudioCompartilhado, desfazer, pessoa } from '../lib/compartilhar.js';
+import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Nota, Status } from './Acervo.jsx';
@@ -59,7 +60,7 @@ function Pessoas_() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
             {lista.map((c) => (
               <Link key={c.id} to={'/app/compartilhados/' + c.dono_id} className="painel" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)', textDecoration: 'none' }}>
-                <span style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--preto)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 17, flex: 'none' }}>{(c.dono_nome || c.dono_email || '?').charAt(0).toUpperCase()}</span>
+                <Avatar nome={c.dono_nome || c.dono_email} foto={pessoa(compartilhamentos.perfis, c.dono_email).foto} size={48} />
                 <span style={{ minWidth: 0, marginRight: 'auto' }}>
                   <strong style={{ display: 'block', fontSize: 16 }}>{c.dono_nome || c.dono_email}</strong>
                   <span style={{ fontSize: 13, color: 'var(--muted)' }}>{c.escopo === 'todos' ? 'todos os sonhos' : 'sonhos escolhidos'}{c.ver_amplificacoes ? ' · com amplificações' : ''}</span>
@@ -76,7 +77,8 @@ function Pessoas_() {
 
 function SonhosDaPessoa({ c }) {
   const { carregando, sonhos, erro } = useSonhosDe(c.dono_id);
-  const { recarregarCompartilhamentos, avisar } = useEstado();
+  const { recarregarCompartilhamentos, avisar, compartilhamentos } = useEstado();
+  const foto = pessoa(compartilhamentos.perfis, c.dono_email).foto;
   const navegar = useNavigate();
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState(''); // '' | 'sessao' | 'atencao'
@@ -100,6 +102,7 @@ function SonhosDaPessoa({ c }) {
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div><Link to="/app/compartilhados" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Compartilhados</Link></div>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+        <Avatar nome={nome} foto={foto} size={56} />
         <div style={{ marginRight: 'auto' }}>
           <span className="rotulo">{c.papel === 'terapeuta' ? 'Paciente' : 'Amigo ou amiga'} · só leitura</span>
           <h1 className="titulo-m">{nome}</h1>
