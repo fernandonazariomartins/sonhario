@@ -1,4 +1,5 @@
 // Importação de sonhos que a pessoa já tem: Notion (CSV), Google Keep (Takeout, JSON) e texto/Markdown.
+import { unzipSync, strFromU8 } from 'fflate';
 import { novoSonho } from './sonhos.js';
 
 const CORES_KEEP = { DEFAULT: 'branco', YELLOW: 'amarelo', GREEN: 'verde', TEAL: 'azul', BLUE: 'azul', CERULEAN: 'azul', ORANGE: 'coral', RED: 'coral', PINK: 'coral', PURPLE: 'lilas', BROWN: 'areia', GRAY: 'areia' };
@@ -60,6 +61,53 @@ export function deNotionCSV(texto) {
   }).filter((s) => s.titulo || s.conclusoes.length);
 }
 
+// Página do Notion exportada em Markdown: "# Título", depois as propriedades
+// ("Data : 30/09/2026", "Temas: A, B") e, por fim, o relato do sonho.
+const PROPS = { data: 'data', date: 'data', status: 'status', temas: 'temas', tags: 'temas', tema: 'temas', 'observações': 'obs', observacoes: 'obs', notas: 'obs', 'adicionado em': 'criado', 'created time': 'criado', 'criado em': 'criado' };
+const SEM_TITULO = ['untitled', 'sem título', 'sem titulo', 'new page', 'nova página'];
+
+export function deNotionPagina(texto) {
+  const linhas = texto.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n');
+  let i = 0;
+  while (i < linhas.length && !linhas[i].trim()) i++;
+  let titulo = '';
+  if (/^#\s+/.test(linhas[i] || '')) { titulo = linhas[i].replace(/^#\s+/, '').trim(); i++; }
+  while (i < linhas.length && !linhas[i].trim()) i++;
+  const props = {};
+  for (; i < linhas.length; i++) {
+    const m = linhas[i].match(/^([^:]{1,40}?)\s*:\s?(.*)$/);
+    const chave = m && PROPS[m[1].trim().toLowerCase()];
+    if (!chave) break;
+    props[chave] = m[2].trim();
+  }
+  if (!Object.keys(props).length) return null; // não é uma página da tabela de sonhos
+  const corpo = linhas.slice(i).join('\n').trim();
+  if (SEM_TITULO.includes(titulo.toLowerCase())) titulo = '';
+  const sonhado = lerData(props.data) || lerData(props.criado) || new Date().toISOString();
+  const obs = props.obs || '';
+  const s = novoSonho({
+    titulo,
+    texto: corpo,
+    sonhado_em: sonhado,
+    criado_em: sonhado,
+    temas: (props.temas || '').split(',').map((t) => t.trim()).filter(Boolean),
+    status: STATUS_NOTION[(props.status || '').toLowerCase()] || 'nao_aberto',
+    conclusoes: obs ? [{ id: 'imp-' + Math.random().toString(16).slice(2), em: sonhado, origem: 'sozinho', texto: obs }] : [],
+  });
+  return s.titulo || s.texto || s.conclusoes.length ? s : null;
+}
+
+// Abre o .zip do Notion (que às vezes vem com outro .zip dentro).
+function abrirZip(bytes, saida = []) {
+  const arquivos = unzipSync(bytes);
+  for (const [nome, dados] of Object.entries(arquivos)) {
+    const n = nome.toLowerCase();
+    if (n.endsWith('.zip')) abrirZip(dados, saida);
+    else if (n.endsWith('.md') || n.endsWith('.csv') || n.endsWith('.json') || n.endsWith('.txt')) saida.push({ name: nome, doZip: true, text: async () => strFromU8(dados) });
+  }
+  return saida;
+}
+
 export function deKeepJSON(obj, marcadoresAceitos) {
   if (obj.isTrashed) return null;
   const temas = (obj.labels || []).map((l) => l.name);
@@ -84,20 +132,35 @@ export function deTexto(texto) {
   }).filter(Boolean);
 }
 
-export async function lerArquivos(arquivos) {
+export async function lerArquivos(entrada) {
+  const arquivos = [];
+  for (const f of entrada) {
+    if (f.name.toLowerCase().endsWith('.zip')) arquivos.push(...abrirZip(new Uint8Array(await f.arrayBuffer())));
+    else arquivos.push(f);
+  }
   const sonhos = [];
+  const doCSV = [];
+  const paginas = [];
   const marcadores = new Set();
   const keep = [];
   for (const f of arquivos) {
     const txt = await f.text();
-    if (f.name.toLowerCase().endsWith('.csv')) sonhos.push(...deNotionCSV(txt));
+    const n = f.name.toLowerCase();
+    const pagina = n.endsWith('.md') ? deNotionPagina(txt) : null;
+    if (n.endsWith('.csv')) doCSV.push(...deNotionCSV(txt));
+    else if (pagina) paginas.push(pagina);
     else if (f.name.toLowerCase().endsWith('.json')) {
       try {
         const o = JSON.parse(txt);
         (o.labels || []).forEach((l) => marcadores.add(l.name));
         keep.push(o);
       } catch { /* não é uma nota do Keep */ }
-    } else sonhos.push(...deTexto(txt));
+    } else if (!f.doZip) sonhos.push(...deTexto(txt)); // outras páginas do export do Notion ficam de fora
   }
-  return { sonhos, keep, marcadores: [...marcadores].sort() };
+  // As páginas trazem o relato; o CSV só tem título e propriedades.
+  // Se vieram páginas, o CSV do mesmo export é dispensado.
+  const vistos = new Set();
+  const unicos = doCSV.filter((x) => { const k = x.titulo + '|' + x.sonhado_em + '|' + x.temas.join(); return !vistos.has(k) && vistos.add(k); });
+  sonhos.push(...(paginas.length ? paginas : unicos));
+  return { sonhos, keep, marcadores: [...marcadores].sort(), soCSV: !paginas.length && doCSV.length > 0 };
 }

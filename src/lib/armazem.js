@@ -50,6 +50,16 @@ export const local = {
     local.gravarTodos(local.listar().filter((x) => x.id !== id));
     if (s?.audio?.ref) await audioLocal.apagar(s.audio.ref).catch(() => {});
   },
+  async salvarVarios(sonhos) {
+    const ids = new Set(sonhos.map((s) => s.id));
+    const lista = [...sonhos, ...local.listar().filter((s) => !ids.has(s.id))];
+    lista.sort((a, b) => b.sonhado_em.localeCompare(a.sonhado_em));
+    local.gravarTodos(lista);
+  },
+  async apagarTodos() {
+    for (const s of local.listar()) if (s.audio?.ref) await audioLocal.apagar(s.audio.ref).catch(() => {});
+    local.gravarTodos([]);
+  },
   async salvarAudio(id, blob) {
     await audioLocal.salvar(id, blob);
     return id;
@@ -81,6 +91,18 @@ export function remoto(userId) {
     async apagar(id, sonho) {
       if (sonho?.audio?.ref) await supabase.storage.from(AUDIO_BUCKET).remove([sonho.audio.ref]);
       const { error } = await supabase.from('sonhos').delete().eq('id', id);
+      if (error) throw error;
+    },
+    async salvarVarios(sonhos) {
+      for (let i = 0; i < sonhos.length; i += 200) {
+        const { error } = await supabase.from('sonhos').upsert(sonhos.slice(i, i + 200).map((s) => linha(s, userId)));
+        if (error) throw error;
+      }
+    },
+    async apagarTodos() {
+      const { data: arquivos } = await supabase.storage.from(AUDIO_BUCKET).list(userId, { limit: 1000 });
+      if (arquivos?.length) await supabase.storage.from(AUDIO_BUCKET).remove(arquivos.map((a) => `${userId}/${a.name}`));
+      const { error } = await supabase.from('sonhos').delete().eq('user_id', userId);
       if (error) throw error;
     },
     async salvarAudio(id, blob) {
