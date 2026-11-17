@@ -1,6 +1,6 @@
 // Service worker simples: guarda a casca do app para abrir rápido e funcionar sem internet.
-const CACHE = 'sonhario-v1';
-const SHELL = ['/', '/app', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'sonhario-v2';
+const SHELL = ['/', '/app', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/maskable-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
