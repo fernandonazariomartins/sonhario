@@ -217,6 +217,11 @@ function SonhoLido({ c, id }) {
             )}
         </div>
         <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(`${nome.split(' ')[0]} compartilhou este sonho com você. Só quem compartilha pode editar ou tirar o acesso.`)}</p>
+        <div className="painel" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.55 }}>{semViuvas('O Sonhário é um caderno para registrar, organizar e voltar aos seus sonhos.')}</p>
+          {/* "ficar" mantém quem já está logado na home em vez de mandar direto para o app. */}
+          <Link className="btn btn-preto" to="/" state={{ ficar: true }}>Conheça mais sobre o Sonhário</Link>
+        </div>
       </aside>
     </div>
   );
