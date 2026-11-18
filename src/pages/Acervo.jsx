@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem, Mensagem } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario } from '../components/Icones.jsx';
+import { LinhaDoTempo, VizinhosNoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import Realce from '../components/Realce.jsx';
@@ -183,7 +184,8 @@ export default function Acervo() {
     setBuscaLocal(q);
     const novo = new URLSearchParams(params);
     if (q) novo.set('q', q); else novo.delete('q');
-    novo.delete('p');
+    // Buscar procura em todos os anos; apagar a busca volta para o ano mais recente.
+    novo.delete('ano'); novo.delete('mes');
     setParams(novo, { replace: true });
   };
   useEffect(() => {
@@ -200,18 +202,13 @@ export default function Acervo() {
   const nFavoritos = useMemo(() => sonhos.filter((s) => s.favorito).length, [sonhos]);
   // ?tema=X: só os sonhos com esse tema (é para onde vão as tags das Observações).
   const temaFiltro = params.get('tema') || '';
-  const tirarTema = () => { const novo = new URLSearchParams(params); novo.delete('tema'); novo.delete('p'); setParams(novo); };
+  const tirarTema = () => { const novo = new URLSearchParams(params); novo.delete('tema'); novo.delete('ano'); novo.delete('mes'); setParams(novo); };
   const [soSemTitulo, setSoSemTitulo] = useState(false);
   const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
-  const POR_PAGINA = 100;
-  const paginaUrl = Math.max(1, parseInt(params.get('p'), 10) || 1);
-  const irPara = (n) => {
-    const novo = new URLSearchParams(params);
-    if (n <= 1) novo.delete('p'); else novo.set('p', String(n));
-    setParams(novo);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  const voltarPrimeira = () => { if (params.get('p')) { const novo = new URLSearchParams(params); novo.delete('p'); setParams(novo, { replace: true }); } };
+  // Até 100 sonhos de uma vez; "Mostrar mais" vai somando.
+  const POR_VEZ = 100;
+  const [limite, setLimite] = useState(POR_VEZ);
+  const voltarPrimeira = () => setLimite(POR_VEZ);
 
   const temas = useMemo(() => contarTemas(sonhos), [sonhos]);
   const consulta = useMemo(() => interpretar(busca), [busca]);
@@ -234,16 +231,38 @@ export default function Acervo() {
   }, [sonhos, consulta, soAtencao, soSemTitulo, soFavoritos, temaFiltro, vista]);
 
   const comFiltro = !!busca.trim() || soAtencao || soSemTitulo || soFavoritos || !!temaFiltro;
-  const mostrarExemplos = exemplos.length > 0 && !comFiltro && (pagina0(params) || sonhos.length === 0);
 
-  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
-  const pagina = Math.min(paginaUrl, totalPaginas);
-  const daPagina = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  // Linha do tempo: com busca ou filtro, abre em "Todos"; sem, no ano mais recente.
+  const contagem = useMemo(() => contarPorAno(filtrados), [filtrados]);
+  const anos = Object.keys(contagem).map(Number).sort((a, b) => b - a);
+  const anoUrl = params.get('ano');
+  const mesUrl = parseInt(params.get('mes'), 10) || 0;
+  const ano = anoUrl === 'todos' ? 'todos' : anos.includes(Number(anoUrl)) ? Number(anoUrl) : (comFiltro && vista !== 'calendario' ? 'todos' : anos[0] ?? 'todos');
+  const mes = ano !== 'todos' && contagem[ano]?.meses[mesUrl - 1] ? mesUrl : 0;
+  const escolherPeriodo = (a, m) => {
+    const novo = new URLSearchParams(params);
+    novo.set('ano', String(a));
+    if (m) novo.set('mes', String(m)); else novo.delete('mes');
+    setParams(novo);
+    setLimite(POR_VEZ);
+  };
+  const doPeriodo = useMemo(() => noPeriodo(filtrados, ano, mes), [filtrados, ano, mes]);
+  const visiveis = doPeriodo.slice(0, limite);
+  const mostrarExemplos = exemplos.length > 0 && !comFiltro && (!anoUrl || anoUrl === String(anos[0]) || sonhos.length === 0);
+
+  // Calendário: o mês da URL (mesmo vazio) ou o mês do sonho mais recente.
+  const ultimoMes = (a) => (contagem[a]?.meses.findLastIndex((n) => n > 0) ?? -1) + 1 || 1;
+  const recente = filtrados[0] ? new Date(filtrados[0].sonhado_em) : new Date();
+  const calAno = Number(anoUrl) || recente.getFullYear();
+  const calMes = mesUrl || (Number(anoUrl) ? ultimoMes(calAno) : recente.getMonth() + 1);
+  const mudarMes = (a, m) => { const novo = new URLSearchParams(params); novo.set('ano', String(a)); novo.set('mes', String(m)); setParams(novo); };
 
   const mudar = (v) => {
     const novo = {};
     if (v !== 'mural') novo.v = v;
     if (busca) novo.q = busca;
+    if (params.get('ano')) novo.ano = params.get('ano');
+    if (params.get('mes')) novo.mes = params.get('mes');
     if (temaFiltro && v !== 'temas') novo.tema = temaFiltro;
     setParams(novo);
   };
@@ -262,7 +281,7 @@ export default function Acervo() {
           {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label="Limpar busca">×</button>
             : <kbd className="busca-atalho" aria-hidden="true">/</kbd>}
         </label>
-        <div className="abas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('temas', Tema, 'Temas')}</div>
+        <div className="abas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}</div>
       </div>
 
       {sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
@@ -305,12 +324,23 @@ export default function Acervo() {
             </div>
           )}
 
-          {vista === 'mural' && <MuralEmLinhas>{daPagina.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>}
-          {vista === 'lista' && <ListaSonhos sonhos={daPagina} achados={achados} />}
-          {vista !== 'temas' && totalPaginas > 1 && (
-            <Paginacao pagina={pagina} total={totalPaginas} irPara={irPara}
-              legenda={`${(pagina - 1) * POR_PAGINA + 1}–${Math.min(pagina * POR_PAGINA, filtrados.length)} de ${filtrados.length}`} />
+          {(vista === 'mural' || vista === 'lista') && filtrados.length > 0 && (anos.length > 1 || filtrados.length > POR_VEZ) && (
+            <LinhaDoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={escolherPeriodo} comTodos={comFiltro || anos.length > 1} />
           )}
+          {vista === 'calendario' && filtrados.length > 0 && (
+            <LinhaDoTempo contagem={contagem} ano={calAno} mes={calMes} aoEscolher={(a, m) => mudarMes(a, m || ultimoMes(a))} mesObrigatorio />
+          )}
+          {vista === 'mural' && <MuralEmLinhas>{visiveis.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>}
+          {vista === 'lista' && <ListaSonhos sonhos={visiveis} achados={achados} />}
+          {vista === 'calendario' && <Calendario sonhos={filtrados} ano={calAno} mes={calMes} aoMudarMes={mudarMes}
+            renderSonhos={(l) => <MuralEmLinhas>{l.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>} />}
+          {(vista === 'mural' || vista === 'lista') && doPeriodo.length > limite && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0 8px' }}>
+              <button type="button" className="btn btn-linha" onClick={() => setLimite((n) => n + POR_VEZ)}>Mostrar mais {Math.min(POR_VEZ, doPeriodo.length - limite)}</button>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>{limite} de {doPeriodo.length}</span>
+            </div>
+          )}
+          {(vista === 'mural' || vista === 'lista') && doPeriodo.length <= limite && <VizinhosNoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={escolherPeriodo} />}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} achados={achados} />}
           {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? 'Nenhum sonho com esse filtro.' : semViuvas('Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras.')}</p>}
         </>
@@ -324,39 +354,6 @@ export default function Acervo() {
       )}
       {exemploAberto && <SonhoExemplo s={exemploAberto} aoFechar={() => setExemploAberto(null)} />}
     </div>
-  );
-}
-
-const pagina0 = (params) => !params.get('p') || params.get('p') === '1';
-
-function numerosDePagina(atual, total) {
-  if (total <= 9) return Array.from({ length: total }, (_, i) => i + 1);
-  const nums = new Set([1, total, atual - 1, atual, atual + 1]);
-  if (atual <= 4) [2, 3, 4, 5].forEach((n) => nums.add(n));
-  if (atual >= total - 3) [total - 4, total - 3, total - 2, total - 1].forEach((n) => nums.add(n));
-  const ordenados = [...nums].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
-  const saida = [];
-  ordenados.forEach((n, i) => {
-    if (i > 0 && n - ordenados[i - 1] > 1) saida.push('…' + n);
-    saida.push(n);
-  });
-  return saida;
-}
-
-function Paginacao({ pagina, total, irPara, legenda }) {
-  const base = { minWidth: 44, minHeight: 44, padding: '0 10px' };
-  return (
-    <nav aria-label="Páginas" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '8px 0 16px' }}>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
-        <button type="button" className="btn btn-linha" style={base} disabled={pagina === 1} onClick={() => irPara(pagina - 1)} aria-label="Página anterior">‹</button>
-        {numerosDePagina(pagina, total).map((n) => typeof n === 'string'
-          ? <span key={n} style={{ minWidth: 24, textAlign: 'center', color: 'var(--muted)' }}>…</span>
-          : <button key={n} type="button" className={'btn ' + (n === pagina ? 'btn-azul' : 'btn-linha')} style={base}
-              aria-current={n === pagina ? 'page' : undefined} onClick={() => n !== pagina && irPara(n)}>{n}</button>)}
-        <button type="button" className="btn btn-linha" style={base} disabled={pagina === total} onClick={() => irPara(pagina + 1)} aria-label="Próxima página">›</button>
-      </div>
-      <span style={{ fontSize: 13, color: 'var(--muted)' }}>{legenda}</span>
-    </nav>
   );
 }
 
