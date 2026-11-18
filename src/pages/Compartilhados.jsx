@@ -7,6 +7,7 @@ import Imagens from '../components/Imagens.jsx';
 import Comentarios from '../components/Comentarios.jsx';
 import { resumoComentarios } from '../lib/comentarios.js';
 import Avatar from '../components/Avatar.jsx';
+import { LinhaPessoa } from '../components/Compartilhar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
@@ -68,21 +69,79 @@ function Pessoas_() {
       {grupos.map(([nome, lista]) => (
         <section key={nome} aria-label={nome} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h2 className="rotulo">{nome}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-            {lista.map((c) => (
-              <Link key={c.id} to={'/app/compartilhados/' + c.dono_id} className="painel" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)', textDecoration: 'none' }}>
-                <Avatar nome={c.dono_nome || c.dono_email} foto={pessoa(compartilhamentos.perfis, c.dono_email).foto} size={48} />
-                <span style={{ minWidth: 0, marginRight: 'auto' }}>
-                  <strong style={{ display: 'block', fontSize: 16 }}>{c.dono_nome || c.dono_email}</strong>
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>sonhos que {(c.dono_nome || 'a pessoa').split(' ')[0]} escolheu mostrar</span>
-                </span>
-                <Avancar size={18} />
-              </Link>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16, alignItems: 'start' }}>
+            {lista.map((c) => <CartaoPessoa key={c.id} c={c} />)}
           </div>
         </section>
       ))}
     </div>
+  );
+}
+
+const plural = (n, um, varios) => (n === 1 ? '1 ' + um : n + ' ' + varios);
+const VISIVEIS = 3;
+
+function Etiqueta({ children, fundo = 'var(--azul-claro)', cor = 'var(--azul-escuro)' }) {
+  return <span style={{ height: 24, padding: '0 10px', borderRadius: 999, background: fundo, color: cor, fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>{children}</span>;
+}
+
+// Uma pessoa que compartilhou comigo e o resumo dos sonhos que ela mostrou, como em "Pessoas com acesso".
+function CartaoPessoa({ c }) {
+  const { compartilhamentos, usuario } = useEstado();
+  const { carregando, sonhos, erro } = useSonhosDe(c.dono_id);
+  const [coment, setComent] = useState({});
+  useEffect(() => {
+    let vivo = true;
+    if (usuario) resumoComentarios({ donoId: c.dono_id, leitorEmail: (usuario.email || '').toLowerCase(), meuId: usuario.id }).then((r) => vivo && setComent(r));
+    return () => { vivo = false; };
+  }, [c.dono_id, usuario]);
+  const p = pessoa(compartilhamentos.perfis, c.dono_email, c.dono_nome);
+  const base = '/app/compartilhados/' + c.dono_id;
+  const lista = [...sonhos].sort((a, b) => (b.sonhado_em || '').localeCompare(a.sonhado_em || ''));
+  const sessao = lista.filter((s) => s.levar_sessao).length;
+  const comAmp = c.ver_amplificacoes ? lista.filter((s) => s.conclusoes?.length).length : 0;
+  const novos = Object.values(coment).reduce((t, x) => t + (x.novos || 0), 0);
+  const resumo = [plural(lista.length, 'sonho', 'sonhos'), sessao && plural(sessao, 'para a próxima sessão', 'para a próxima sessão'), comAmp && plural(comAmp, 'com amplificações', 'com amplificações')].filter(Boolean);
+
+  return (
+    <section aria-label={p.nome} className="painel" style={{ padding: '10px 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Link to={base} style={{ color: 'inherit', textDecoration: 'none' }}>
+        <LinhaPessoa p={p} sub={p.nome !== c.dono_email ? c.dono_email : ''}>
+          {novos > 0 && <Etiqueta>{plural(novos, 'comentário novo', 'comentários novos')}</Etiqueta>}
+          <Avancar size={18} />
+        </LinhaPessoa>
+      </Link>
+      {carregando ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>Carregando os sonhos…</p>
+        : erro ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>Não deu para carregar: {erro}</p>
+        : !lista.length ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>{semViuvas(`${p.nome.split(' ')[0]} ainda não escolheu nenhum sonho para mostrar.`)}</p>
+        : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span className="rotulo">{resumo.map((t) => t.replace(/ /g, '\u00a0')).join(' ·\u00a0')}</span>
+            <ul style={{ margin: 0, padding: 0, listStyle: 'none', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+              {lista.slice(0, VISIVEIS).map((s, i) => (
+                <li key={s.id} style={{ borderTop: i ? '1px solid var(--line)' : 0 }}>
+                  <Link to={base + '/' + s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px 10px 14px', color: 'inherit', textDecoration: 'none' }}>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}>
+                        <strong style={{ fontSize: 15, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</strong>
+                        {s.levar_sessao && <Etiqueta>Próxima sessão</Etiqueta>}
+                      </span>
+                      {s.texto && <span style={{ display: 'block', fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</span>}
+                      <span className="rotulo" style={{ display: 'block', marginTop: 4, fontSize: 11 }}>
+                        sonhado {dataCurta(s.sonhado_em)}{coment[s.id]?.total ? ' · ' + plural(coment[s.id].total, 'comentário', 'comentários') : ''}
+                      </span>
+                    </span>
+                    {coment[s.id]?.novos > 0 && <span className="ponto" style={{ background: 'var(--azul)' }} aria-label="comentário novo" />}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Link className="btn btn-linha" style={{ alignSelf: 'flex-start', minHeight: 36 }} to={base}>
+              {lista.length > VISIVEIS ? 'Ver os ' + lista.length + ' sonhos' : 'Abrir os sonhos de ' + p.nome.split(' ')[0]}
+            </Link>
+          </div>
+        )}
+    </section>
   );
 }
 
