@@ -96,7 +96,7 @@ export async function urlAudioCompartilhado(ref) {
 // Texto do convite pelo e-mail, para mandar por WhatsApp ou e-mail.
 export function textoConvite(c, sonho) {
   const app = location.origin + '/app/compartilhados';
-  return `Compartilhei com você um sonho que anotei no Sonhário${sonho?.titulo?.trim() ? ': “' + sonho.titulo.trim() + '”' : ''}.\n\nPara ver, entre com a sua conta Google (${c.convidado_email}) em:\n${app}`;
+  return `Compartilhei com você um sonho que anotei no Sonhário${sonho?.titulo?.trim() ? ': “' + sonho.titulo.trim() + '”' : ''}.\n\nPara ver, entre com a sua conta Google (${c.convidado_email}) em:\n${app}\n\nO sonho vai trancado: na primeira vez, o Sonhário pede para você criar uma frase-senha, e só com ela ele abre.`;
 }
 
 // Quem pode ver um sonho meu.
@@ -172,7 +172,7 @@ export async function aceitarConvite(token) {
 }
 
 export async function mandarLink(url, avisar) {
-  const texto = 'Quero te mostrar um sonho que anotei no Sonhário. Abra o link e entre com a sua conta Google:\n' + url;
+  const texto = 'Quero te mostrar um sonho que anotei no Sonhário. Abra o link e entre com a sua conta Google. O sonho vai trancado e só abre para você:\n' + url;
   try { if (navigator.share) { await navigator.share({ text: texto }); return true; } } catch (e) { if (e.name === 'AbortError') return false; }
   try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); return true; }
   catch { prompt('Copie o link:', url); return false; }

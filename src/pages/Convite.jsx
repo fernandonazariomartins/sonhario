@@ -92,8 +92,8 @@ export default function Convite() {
           </figure>
         )}
         <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(convite.aprovar === false
-          ? 'Entre com a sua conta Google para ver este sonho, e só ele. É de graça.'
-          : `Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça.`)}</p>
+          ? 'Entre com a sua conta Google para ver este sonho, e só ele. É de graça. Na primeira vez, você cria uma frase-senha: o sonho vem trancado e só abre com ela.'
+          : `Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça. Na primeira vez, você cria uma frase-senha: o sonho vem trancado e só abre com ela.`)}</p>
         <button type="button" className="btn btn-preto btn-grande" onClick={() => { convitePendente.guardar(token); entrar(); }}>Entrar com Google</button>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Você só lê: o sonho continua sendo de quem compartilhou.')}</p>
       </>

@@ -176,7 +176,7 @@ export default function Captura() {
           <Ok size={18} /> {salvando ? 'Guardando…' : 'Guardar o texto'}
         </button>
       )}
-      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas('Seus sonhos são privados. Só vê quem você escolher, um sonho por vez.')}</p>
+      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas(usuario ? 'Seus sonhos ficam trancados. Nem nós conseguimos ler. Só vê quem você escolher, um sonho por vez.' : 'Sem conta, seus sonhos ficam só neste aparelho.')}</p>
     </div>
   );
 }
@@ -196,7 +196,7 @@ function Guardado({ sonho, motivo, transcrevendo, outro }) {
         <button type="button" className="btn btn-linha btn-grande" onClick={outro}><Mais size={18} /> Registrar outro sonho</button>
         <Link className="btn btn-grande" style={{ color: 'var(--muted)' }} to={'/app/sonho/' + sonho.id}><Caneta size={16} /> Dar título e temas</Link>
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{semViuvas('Pode fechar o app e voltar a dormir. O sonho fica privado, só seu.')}</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{semViuvas(usuario ? 'Pode fechar o app e voltar a dormir. O sonho ficou trancado, só seu.' : 'Pode fechar o app e voltar a dormir. O sonho fica neste aparelho, só seu.')}</p>
     </div>
   );
 }
