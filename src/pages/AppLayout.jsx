@@ -7,7 +7,7 @@ import Assinatura from '../components/Assinatura.jsx';
 import Entrar from './Entrar.jsx';
 import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
-import { CriarFrase, MostrarCodigo, Destrancar, ErroCofre, TrocarFrase, TrancarAcervo } from '../components/Cofre.jsx';
+import { CriarFrase, MostrarCodigo, Destrancar, ErroCofre, TrocarFrase, TrancarAcervo, JanelaCriptografia } from '../components/Cofre.jsx';
 import JanelaIA from '../components/IA.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
@@ -113,7 +113,7 @@ export default function AppLayout() {
               {temLogin && <Link role="menuitem" className="menu-item" to="/app/pessoas"><Pessoas size={18} /> Pessoas com acesso{compartilhamentos.pedidos.length > 0 && <span style={{ marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 6px', borderRadius: 999, background: 'var(--azul)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{compartilhamentos.pedidos.length}</span>}</Link>}
               {temLogin && usuario && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
-              {usuario && cofre === 'aberto' && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('frase')}><Cadeado size={18} /> Trocar a frase-senha</button>}
+              {usuario && cofre === 'aberto' && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('cripto')}><Cadeado size={18} /> Criptografia</button>}
               {usuario && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('ia')}><Faisca size={18} /> Inteligência artificial</button>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
@@ -157,6 +157,7 @@ export default function AppLayout() {
       {janela === 'contribuir' && <Contribuir aoFechar={() => setJanela('')} />}
       {janela === 'lembrete' && <Lembrete aoFechar={() => setJanela('')} />}
       {janela === 'frase' && <TrocarFrase aoFechar={() => setJanela('')} />}
+      {janela === 'cripto' && <JanelaCriptografia aoFechar={() => setJanela('')} aoTrocarFrase={() => setJanela('frase')} />}
       {janela === 'trancar' && <TrancarAcervo aoFechar={() => setJanela('')} />}
       {janela === 'ia' && <JanelaIA aoFechar={() => setJanela('')} />}
       {aviso && (
