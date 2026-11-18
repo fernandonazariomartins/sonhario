@@ -221,3 +221,10 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 /* Janela de instalar */
 .instalar-p { margin: 0; font-size: 16px; line-height: 1.55; }
 .instalar-passos { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 1.5; }
+
+/* Link de um sonho: quem abre vê o começo, que vai desfocando até sumir.
+   Número fixo de linhas; o banco só manda os primeiros 400 caracteres. */
+.trecho-convite { position: relative; margin: 0; width: 100%; padding: 16px 18px 0; background: #fff; border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; max-height: calc(17px * 1.7 * 5 + 16px + 30px); }
+.trecho-convite strong { display: block; margin-bottom: 6px; font-size: 15px; }
+.trecho-convite p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 1.7; white-space: pre-line; -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 92%); mask-image: linear-gradient(to bottom, #000 30%, transparent 92%); }
+.trecho-veu { position: absolute; left: 0; right: 0; bottom: 0; height: 65%; pointer-events: none; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 70%); mask-image: linear-gradient(to bottom, transparent, #000 70%); }
