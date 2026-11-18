@@ -22,7 +22,6 @@ export default function Sonho() {
   const [s, setS] = useState(original);
   const [novoTema, setNovoTema] = useState('');
   const [conclusao, setConclusao] = useState('');
-  const [origem, setOrigem] = useState('sozinho');
   const [audioUrl, setAudioUrl] = useState(null);
   const [editandoData, setEditandoData] = useState(false);
   const [transcrevendo, setTranscrevendo] = useState(false);
@@ -113,7 +112,7 @@ export default function Sonho() {
   }
   const addConclusao = () => {
     if (!conclusao.trim()) return;
-    mudar({ conclusoes: [{ id: novoId(), em: new Date().toISOString(), origem, texto: conclusao.trim() }, ...(s.conclusoes || [])], status: s.status === 'nao_aberto' ? 'aberto' : s.status }, true);
+    mudar({ conclusoes: [{ id: novoId(), em: new Date().toISOString(), texto: conclusao.trim() }, ...(s.conclusoes || [])], status: s.status === 'nao_aberto' ? 'aberto' : s.status }, true);
     setConclusao('');
   };
 
@@ -125,6 +124,11 @@ export default function Sonho() {
         <Link to="/app/acervo" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Acervo</Link>
         {params.get('novo') && <span style={{ height: 28, padding: '0 10px', borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} /> guardado</span>}
       </div>
+      {temLogin && !compartilhando && (
+        <button type="button" className="fab fab-compartilhar so-celular" onClick={() => setCompartilhando(true)} aria-label="Compartilhar este sonho">
+          <Compartilhar size={24} />
+        </button>
+      )}
       {compartilhando && <CompartilharSonho s={s} mudar={mudar} aoFechar={() => setCompartilhando(false)} />}
       {sugestao && (
         <Janela titulo="Temas automáticos" aoFechar={() => setSugestao(null)}>
@@ -258,17 +262,12 @@ export default function Sonho() {
           <textarea id="conclusao" value={conclusao} onChange={(e) => setConclusao(e.target.value)} placeholder="Que imagens, lembranças ou mitos esse sonho evoca?" rows={4}
             className="leitura" style={{ border: '1px solid var(--line-strong)', borderRadius: 10, padding: '12px 14px', fontSize: 15, lineHeight: 1.6, resize: 'vertical' }} />
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-            <div role="radiogroup" aria-label="Quando foi" className="abas">
-              {[['sozinho', 'sozinho'], ['sessao', 'na sessão']].map(([k, r]) => (
-                <button key={k} type="button" role="radio" aria-checked={origem === k} className={'aba' + (origem === k ? ' ativa' : '')} onClick={() => setOrigem(k)}>{r}</button>
-              ))}
-            </div>
             <button type="button" className="btn btn-azul" style={{ marginLeft: 'auto' }} onClick={addConclusao}><Mais size={16} /> Guardar</button>
           </div>
           <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {(s.conclusoes || []).map((c) => (
               <li key={c.id} style={{ paddingLeft: 14, borderLeft: '2px solid var(--node)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(c.em)} · {c.origem === 'sessao' ? 'depois da sessão' : 'sozinho'}</span>
+                <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(c.em)}</span>
                 <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65 }}>{semViuvas(c.texto)}</p>
                 <button type="button" onClick={() => mudar({ conclusoes: s.conclusoes.filter((x) => x.id !== c.id) }, true)} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 12, padding: 0, textDecoration: 'underline' }}>apagar</button>
               </li>
