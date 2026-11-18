@@ -3,8 +3,9 @@
 import { supabase, AUDIO_BUCKET } from './supabase.js';
 
 export const PAPEIS = {
-  terapeuta: { rotulo: 'terapeuta', grupo: 'Pacientes' },
-  amigo: { rotulo: 'amigo ou amiga', grupo: 'Amigos' },
+  // Terapeuta e amigo funcionam igual: o papel fica guardado só por compatibilidade.
+  terapeuta: { rotulo: 'terapeuta ou amigo', grupo: 'Compartilhados' },
+  amigo: { rotulo: 'terapeuta ou amigo', grupo: 'Compartilhados' },
 };
 
 export const nomeDe = (u) => u?.user_metadata?.full_name || u?.user_metadata?.name || (u?.email || '').split('@')[0];
@@ -94,10 +95,9 @@ export function quemVe(meus, sonho) {
   return meus.filter((c) => (sonho.compartilhado_com || []).includes(c.convidado_email));
 }
 
-// Rótulo da aba: "Pacientes", "Amigos" ou "Compartilhados" quando há dos dois.
-export function rotuloAba(comigo) {
-  const papeis = new Set(comigo.map((c) => c.papel));
-  return papeis.size === 1 ? PAPEIS[[...papeis][0]].grupo : 'Compartilhados';
+// Rótulo da aba: sempre "Compartilhados" (terapeuta e amigo não se diferenciam).
+export function rotuloAba() {
+  return 'Compartilhados';
 }
 
 /* ---------- link de convite ---------- */

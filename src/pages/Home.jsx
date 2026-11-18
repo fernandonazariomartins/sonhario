@@ -4,7 +4,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
-import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar } from '../components/Icones.jsx';
+import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar, Cadeado } from '../components/Icones.jsx';
 import { semViuvas as n } from '../lib/tipografia.js';
 
 // Troque pelo seu ID do Associados Amazon (termina em -20) quando a conta estiver aprovada.
@@ -86,7 +86,8 @@ export default function Home() {
             <a href="#instalar" className="btn btn-azul btn-grande"><Celular size={18} /> Instalar no celular</a>
             <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
-          <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site.')} </p>
+          <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Registre seus sonhos em qualquer dispositivo. Sem loja de aplicativos: o Sonhário se instala direto pelo site.')}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos são privados. Só vê quem você escolher.')}</p>
 
           <div id="recursos" className="cartoes-3" style={{ marginTop: 64 }}>
             {CARTOES.map(({ n: num, t, d, Ic, bg, fg }) => (
@@ -148,7 +149,7 @@ export default function Home() {
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--areia)' }}>{n('O Sonhário não diz o que o seu sonho significa. Ele guarda o que você sonhou e o que você foi ampliando, para acompanhar seu processo de individuação ao longo do tempo.')}</p>
           </div>
           <div className="c-4 cabeca">
-          <Checks itens={['Amplificações com data, sozinho ou depois da sessão', 'Marque o que levar para a próxima sessão', 'Nenhuma interpretação automática']} bg="rgba(255,255,255,0.16)" fg="#fff" cor="#fff" />
+          <Checks itens={['Amplificações com data, feitas quando você quiser', 'Marque o que levar para a próxima sessão', 'Nenhuma interpretação automática']} bg="rgba(255,255,255,0.16)" fg="#fff" cor="#fff" />
           <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.6, border: '1px solid rgba(255,255,255,0.3)', borderRadius: 12, padding: '14px 16px' }}>{n('É um apoio para o seu trabalho com os sonhos, nunca um substituto da sua análise ou do seu terapeuta.')}</p>
           </div>
         </div>

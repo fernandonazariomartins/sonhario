@@ -3,21 +3,11 @@ import { useEffect, useState } from 'react';
 import Janela from './Janela.jsx';
 import Avatar from './Avatar.jsx';
 import { useEstado } from '../lib/estado.jsx';
-import { PAPEIS, convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink, aprovarPedido, recusarPedido } from '../lib/compartilhar.js';
+import { convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink, aprovarPedido, recusarPedido } from '../lib/compartilhar.js';
 import { tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Copiar, Lixo, Mais, Ok, Link as IconeLink } from './Icones.jsx';
 
-function Opcoes({ valor, opcoes, aoMudar, rotulo }) {
-  return (
-    <div role="radiogroup" aria-label={rotulo} className="abas" style={{ flexWrap: 'wrap', alignSelf: 'flex-start' }}>
-      {Object.entries(opcoes).map(([k, r]) => (
-        <button key={k} type="button" role="radio" aria-checked={valor === k} className={'aba' + (valor === k ? ' ativa' : '')} onClick={() => aoMudar(k)}>{r}</button>
-      ))}
-    </div>
-  );
-}
-const QUEM = { terapeuta: 'Meu terapeuta', amigo: 'Amigo ou amiga' };
 
 async function enviarConvite(c, sonho, avisar) {
   const texto = textoConvite(c, sonho);
@@ -73,7 +63,7 @@ function Pedidos({ pedidos, perfis, sonhoId }) {
         const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
         const n = c.sonhos_pedidos?.length || 0;
         return (
-          <LinhaPessoa key={c.id} p={p} sub={p.nome !== c.convidado_email ? c.convidado_email : (sonhoId ? PAPEIS[c.papel].rotulo : n === 1 ? '1 sonho' : n + ' sonhos')}>
+          <LinhaPessoa key={c.id} p={p} sub={p.nome !== c.convidado_email ? c.convidado_email : (sonhoId ? 'quer ver este sonho' : n === 1 ? '1 sonho' : n + ' sonhos')}>
             <button type="button" className="btn btn-linha" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => recusar(c)}>Recusar</button>
             <button type="button" className="btn btn-azul" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => aprovar(c, p.nome)}>Aprovar</button>
           </LinhaPessoa>
@@ -86,7 +76,7 @@ function Pedidos({ pedidos, perfis, sonhoId }) {
 // Link deste sonho: pode ir para várias pessoas, e cada uma vira um pedido para aprovar.
 function LinkConvite({ s }) {
   const { usuario, avisar } = useEstado();
-  const [papel, setPapel] = useState('amigo');
+  const papel = 'amigo';
   const [amp, setAmp] = useState(false);
   const [aprovar, setAprovar] = useState(true);
   const [url, setUrl] = useState('');
@@ -155,11 +145,6 @@ function LinkConvite({ s }) {
         </>
       ) : (
         <>
-          <div role="radiogroup" aria-label="Para quem" className="abas" style={{ background: '#fff', alignSelf: 'flex-start' }}>
-            {Object.entries(QUEM).map(([k, r]) => (
-              <button key={k} type="button" role="radio" aria-checked={papel === k} className={'aba' + (papel === k ? ' ativa' : '')} style={papel === k ? { background: 'var(--cinza)' } : undefined} onClick={() => setPapel(k)}>{r}</button>
-            ))}
-          </div>
           <div role="radiogroup" aria-label="Quem abre o link" className="abas" style={{ background: '#fff', alignSelf: 'flex-start' }}>
             {[[true, 'Eu aprovo cada pessoa'], [false, 'Entra direto']].map(([v, r]) => (
               <button key={r} type="button" role="radio" aria-checked={aprovar === v} className={'aba' + (aprovar === v ? ' ativa' : '')} style={aprovar === v ? { background: 'var(--cinza)' } : undefined} onClick={() => setAprovar(v)}>{r}</button>
@@ -179,7 +164,7 @@ function LinkConvite({ s }) {
 // Convite pelo e-mail, para este sonho. Ao digitar o e-mail de quem já usa o Sonhário, aparecem nome e foto.
 function FormConvite({ s, aoConvidar }) {
   const { usuario, avisar, recarregarCompartilhamentos } = useEstado();
-  const [form, setForm] = useState({ email: '', nome: '', papel: 'terapeuta', ver_amplificacoes: false });
+  const [form, setForm] = useState({ email: '', nome: '', papel: 'amigo', ver_amplificacoes: false });
   const [achado, setAchado] = useState(undefined); // undefined: nada digitado; null: não usa; objeto: perfil
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState('');
@@ -222,12 +207,10 @@ function FormConvite({ s, aoConvidar }) {
           <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Essa pessoa ainda não usa o Sonhário. Ela recebe um convite e, ao entrar com esse e-mail, já encontra este sonho.')}</p>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 700 }}>
             Nome (opcional)
-            <input className="campo" value={form.nome} onChange={(e) => campo('nome')(e.target.value)} placeholder={form.papel === 'terapeuta' ? 'Ex.: Dra. Ana' : 'Ex.: Júlia'} style={{ fontWeight: 400, fontSize: 16 }} />
+            <input className="campo" value={form.nome} onChange={(e) => campo('nome')(e.target.value)} placeholder="Ex.: Ana" style={{ fontWeight: 400, fontSize: 16 }} />
           </label>
         </>
       )}
-      <span className="rotulo">Quem é</span>
-      <Opcoes rotulo="Quem é" valor={form.papel} opcoes={QUEM} aoMudar={campo('papel')} />
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
         <input type="checkbox" checked={form.ver_amplificacoes} onChange={(e) => campo('ver_amplificacoes')(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
         Mostrar também as amplificações
@@ -261,6 +244,7 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
   return (
     <Janela titulo="Compartilhar este sonho" aoFechar={aoFechar}>
       <SoEsteSonho s={s} />
+      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('Pode ser o seu terapeuta, um amigo ou os dois. Cada pessoa entra com a própria conta Google e só lê.')}</p>
       <Pedidos pedidos={pedidos} perfis={perfis} sonhoId={s.id} />
       {meus.length > 0 && (
         <div role="group" aria-label="Com quem" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -270,7 +254,7 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
             const marcado = com.includes(c.convidado_email);
             return (
               <label key={c.id} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: '4px 0' }}>
-                <LinhaPessoa p={p} sub={PAPEIS[c.papel].rotulo + (marcado ? ' · vê este sonho' : '')}>
+                <LinhaPessoa p={p} sub={marcado ? 'vê este sonho' : c.convidado_email}>
                   <input type="checkbox" checked={marcado} onChange={(e) => alternar(c.convidado_email, e.target.checked)}
                     aria-label={(marcado ? 'Deixar de mostrar este sonho para ' : 'Mostrar este sonho para ') + p.nome} style={{ width: 22, height: 22, accentColor: 'var(--azul)' }} />
                 </LinhaPessoa>
@@ -312,7 +296,7 @@ export default function Compartilhar({ aoFechar }) {
         const n = sonhos.filter((x) => x.compartilhado_com?.includes(c.convidado_email)).length;
         return (
           <div key={c.id} className="painel" style={{ padding: '8px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <LinhaPessoa p={p} sub={PAPEIS[c.papel].rotulo + ' · ' + (n === 1 ? 'vê 1 sonho' : n ? 'vê ' + n + ' sonhos' : 'não vê nenhum sonho') + (p.temConta ? '' : ' · ainda não entrou')}>
+            <LinhaPessoa p={p} sub={(n === 1 ? 'vê 1 sonho' : n ? 'vê ' + n + ' sonhos' : 'não vê nenhum sonho') + (p.temConta ? '' : ' · ainda não entrou')}>
               <button type="button" className="btn-icone" style={{ width: 36, height: 36, color: 'var(--danger)' }} onClick={() => tirar(c, p.nome)} aria-label={'Tirar o acesso de ' + p.nome} title="Tirar o acesso"><Lixo size={16} /></button>
             </LinhaPessoa>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>

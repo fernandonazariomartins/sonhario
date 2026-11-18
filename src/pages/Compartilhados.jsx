@@ -2,12 +2,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
-import { PAPEIS, sonhosDe, urlAudioCompartilhado, desfazer, pessoa } from '../lib/compartilhar.js';
+import { sonhosDe, urlAudioCompartilhado, desfazer, pessoa } from '../lib/compartilhar.js';
 import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
-import { Nota, Status } from './Acervo.jsx';
+import { Nota, Status, MuralEmLinhas } from './Acervo.jsx';
 import { Voltar, Avancar, Busca, Calendario, Pessoas } from '../components/Icones.jsx';
 
 function useSonhosDe(donoId) {
@@ -53,8 +53,8 @@ function Pessoas_() {
       : `${aguardando.length} pedidos esperando aprovação.`)}</div>
   );
   if (!comigo.length && esperando) return <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>{esperando}</div>;
-  if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando um paciente ou amigo liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
-  const grupos = ['terapeuta', 'amigo'].map((p) => [PAPEIS[p].grupo, comigo.filter((c) => c.papel === p)]).filter(([, l]) => l.length);
+  if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando alguém (um paciente, um amigo) liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
+  const grupos = [['Pessoas', comigo]];
   return (
     <div style={{ width: '100%', maxWidth: 960, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
@@ -118,7 +118,7 @@ function SonhosDaPessoa({ c }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <Avatar nome={nome} foto={foto} size={56} />
         <div style={{ marginRight: 'auto' }}>
-          <span className="rotulo">{c.papel === 'terapeuta' ? 'Paciente' : 'Amigo ou amiga'} · só leitura</span>
+          <span className="rotulo">Compartilhou com você · só leitura</span>
           <h1 className="titulo-m">{nome}</h1>
           {!carregando && <span style={{ fontSize: 14, color: 'var(--muted)' }}>{sonhos.length === 1 ? '1 sonho compartilhado' : sonhos.length + ' sonhos compartilhados'}</span>}
         </div>
@@ -144,7 +144,7 @@ function SonhosDaPessoa({ c }) {
       {carregando ? <p style={{ color: 'var(--muted)' }}>Carregando os sonhos…</p>
         : erro ? <div className="aviso">Não deu para carregar: {erro}</div>
         : !sonhos.length ? <div className="painel" style={{ padding: 24, color: 'var(--muted)' }}>{semViuvas(`${nome} ainda não escolheu nenhum sonho para mostrar.`)}</div>
-        : <div className="mural">{filtrados.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} para={`/app/compartilhados/${c.dono_id}/${s.id}`} />)}</div>}
+        : <MuralEmLinhas>{filtrados.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} para={`/app/compartilhados/${c.dono_id}/${s.id}`} />)}</MuralEmLinhas>}
       {!carregando && sonhos.length > 0 && filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
 
       <button type="button" onClick={sair} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: '8px 0' }}>Deixar de ver os sonhos de {nome}</button>
@@ -209,7 +209,7 @@ function SonhoLido({ c, id }) {
               <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {s.conclusoes.map((x) => (
                   <li key={x.id} style={{ paddingLeft: 14, borderLeft: '2px solid var(--node)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(x.em)} · {x.origem === 'sessao' ? 'depois da sessão' : 'sozinho'}</span>
+                    <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(x.em)}</span>
                     <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65 }}>{semViuvas(x.texto)}</p>
                   </li>
                 ))}

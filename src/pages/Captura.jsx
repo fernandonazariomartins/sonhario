@@ -5,7 +5,7 @@ import { useEstado } from '../lib/estado.jsx';
 import { novoSonho, dataLonga, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { iniciarGravacao, suportaGravacao, suportaTranscricao } from '../lib/gravador.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
-import { Mic, Parar, Ok, Calendario, Mural, Mais, Caneta } from '../components/Icones.jsx';
+import { Mic, Parar, Ok, Calendario, Mural, Mais, Caneta, Cadeado } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 
 const RASCUNHO = 'sonhario:rascunho';
@@ -175,6 +175,7 @@ export default function Captura() {
           <Ok size={18} /> {salvando ? 'Guardando…' : 'Guardar o texto'}
         </button>
       )}
+      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas('Seus sonhos são privados. Só vê quem você escolher, um sonho por vez.')}</p>
     </div>
   );
 }
@@ -194,7 +195,7 @@ function Guardado({ sonho, motivo, transcrevendo, outro }) {
         <button type="button" className="btn btn-linha btn-grande" onClick={outro}><Mais size={18} /> Registrar outro sonho</button>
         <Link className="btn btn-grande" style={{ color: 'var(--muted)' }} to={'/app/sonho/' + sonho.id}><Caneta size={16} /> Dar título e temas</Link>
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{semViuvas('Pode fechar o app e voltar a dormir.')}</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{semViuvas('Pode fechar o app e voltar a dormir. O sonho fica privado, só seu.')}</p>
     </div>
   );
 }

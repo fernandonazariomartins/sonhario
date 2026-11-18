@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
@@ -11,6 +11,30 @@ import Realce from '../components/Realce.jsx';
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
   return <span className="status" style={{ color: cor }}><span className="ponto" style={{ background: st.cor }} />{st.rotulo}</span>;
+}
+
+// Mural em colunas, mas lido por linhas: o mais recente fica no topo à esquerda,
+// o segundo ao lado, e assim por diante (no column-width do CSS a ordem descia coluna abaixo).
+export function MuralEmLinhas({ children, largura = 250, vao = 16 }) {
+  const caixa = useRef(null);
+  const [cols, setCols] = useState(1);
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el) return;
+    const medir = () => setCols(Math.max(1, Math.floor((el.clientWidth + vao) / (largura + vao))));
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [largura, vao]);
+  const itens = Array.isArray(children) ? children.filter(Boolean) : [children];
+  const colunas = Array.from({ length: cols }, () => []);
+  itens.forEach((it, i) => colunas[i % cols].push(it));
+  return (
+    <div ref={caixa} className="mural-linhas" style={{ gap: vao }}>
+      {colunas.map((c, i) => <div key={i}>{c}</div>)}
+    </div>
+  );
 }
 
 export function Nota({ s, comTemas = true, para, achado }) {
@@ -69,7 +93,7 @@ function SonhoExemplo({ s, aoFechar }) {
           <span className="rotulo">Amplificações</span>
           {s.conclusoes.map((c) => (
             <div key={c.id} style={{ background: 'var(--cinza)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{c.origem === 'sessao' ? 'depois da sessão' : 'sozinho'}</span>
+              <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(c.em || s.sonhado_em)}</span>
               <span style={{ fontSize: 14.5, lineHeight: 1.55 }}>{semViuvas(c.texto)}</span>
             </div>
           ))}
@@ -227,7 +251,7 @@ export default function Acervo() {
             </div>
           )}
 
-          {vista === 'mural' && <div className="mural">{daPagina.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</div>}
+          {vista === 'mural' && <MuralEmLinhas>{daPagina.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>}
           {vista === 'lista' && <ListaSonhos sonhos={daPagina} achados={achados} />}
           {vista !== 'temas' && totalPaginas > 1 && (
             <Paginacao pagina={pagina} total={totalPaginas} irPara={irPara}
@@ -241,7 +265,7 @@ export default function Acervo() {
       {mostrarExemplos && (
         <section aria-label="Sonhos de exemplo" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: sonhos.length ? 12 : 0 }}>
           <FaixaExemplos n={exemplos.length} semSonhos={sonhos.length === 0} aoEsconder={esconderExemplos} />
-          <div className="mural">{exemplos.map((s) => <NotaExemplo key={s.id} s={s} aoAbrir={setExemploAberto} />)}</div>
+          <MuralEmLinhas>{exemplos.map((s) => <NotaExemplo key={s.id} s={s} aoAbrir={setExemploAberto} />)}</MuralEmLinhas>
         </section>
       )}
       {exemploAberto && <SonhoExemplo s={exemploAberto} aoFechar={() => setExemploAberto(null)} />}
@@ -284,6 +308,7 @@ function Paginacao({ pagina, total, irPara, legenda }) {
 
 function ListaSonhos({ sonhos, achados }) {
   const estiloTema = useCorTema();
+  const navegar = useNavigate();
   let mesAtual = '';
   return (
     <div className="painel" style={{ overflowX: 'auto' }}>
@@ -299,7 +324,7 @@ function ListaSonhos({ sonhos, achados }) {
             const termos = a?.termos;
             return [
               cab && <tr key={'m' + m}><td colSpan={5} className="rotulo" style={{ padding: '16px 14px 8px' }}>{m}</td></tr>,
-              <tr key={s.id} style={{ borderBottom: '1px solid var(--line)' }}>
+              <tr key={s.id} className="linha-clicavel" onClick={(e) => { if (!e.target.closest('a')) navegar('/app/sonho/' + s.id); }} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
                 <td style={{ padding: '12px 14px' }}>
                   <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
