@@ -36,7 +36,7 @@ export function noPeriodo(sonhos, ano, mes) {
 
 // Linha do tempo: os anos da esquerda (mais antigo) para a direita (mais recente).
 // Embaixo do ano escolhido, os 12 meses em barras: tocar num mês mostra só ele.
-export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false, mesObrigatorio = false }) {
+export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false, mesObrigatorio = false, semTotal = false }) {
   const anos = Object.keys(contagem).map(Number).sort((a, b) => a - b);
   const trilho = useRef(null);
   useEffect(() => {
@@ -52,33 +52,32 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
   return (
     <nav className="linha-tempo" aria-label="Linha do tempo">
       <div className="lt-anos" ref={trilho}>
-        {comTodos && <button type="button" className={'lt-ano' + (ano === 'todos' ? ' ativo' : '')} aria-current={ano === 'todos'} onClick={() => aoEscolher('todos', 0)}>
-          <strong>Todos</strong><span>{Object.values(contagem).reduce((n, x) => n + x.total, 0)}</span>
-        </button>}
+        {comTodos && <button type="button" className={'lt-ano' + (ano === 'todos' ? ' ativo' : '')} aria-current={ano === 'todos'} onClick={() => aoEscolher('todos', 0)}
+          title={Object.values(contagem).reduce((n, x) => n + x.total, 0) + ' sonhos'}>todos</button>}
         {anos.map((a) => (
-          <button key={a} type="button" className={'lt-ano' + (a === ano ? ' ativo' : '')} aria-current={a === ano} onClick={() => aoEscolher(a, 0)}>
-            <strong>{a}</strong><span>{contagem[a].total === 1 ? '1 sonho' : contagem[a].total + ' sonhos'}</span>
-          </button>
+          <button key={a} type="button" className={'lt-ano' + (a === ano ? ' ativo' : '')} aria-current={a === ano} onClick={() => aoEscolher(a, 0)}
+            title={contagem[a].total === 1 ? '1 sonho' : contagem[a].total + ' sonhos'}>{a}</button>
         ))}
       </div>
       {doAno && (
         <div className="lt-meses" role="group" aria-label={'Meses de ' + ano}>
-          {!mesObrigatorio && <button type="button" className={'lt-mes lt-ano-todo' + (!mes ? ' ativo' : '')} aria-pressed={!mes} onClick={() => aoEscolher(ano, 0)}>ano todo</button>}
           {doAno.meses.map((n, i) => {
             const futuro = ano === hoje.getFullYear() && i > hoje.getMonth();
+            if (futuro && !n) return null;
             return (
               <button key={i} type="button" className={'lt-mes' + (mes === i + 1 ? ' ativo' : '')} aria-pressed={mes === i + 1}
-                disabled={!n && !mesObrigatorio} style={futuro && !n ? { visibility: 'hidden' } : undefined}
+                disabled={!n && !mesObrigatorio}
                 title={MESES_LONGOS[i] + ': ' + (n === 1 ? '1 sonho' : n + ' sonhos')}
                 aria-label={MESES_LONGOS[i] + ' de ' + ano + ', ' + (n === 1 ? '1 sonho' : n + ' sonhos')}
                 onClick={() => aoEscolher(ano, mes === i + 1 && !mesObrigatorio ? 0 : i + 1)}>
-                <span className="lt-barra"><i style={{ height: n ? Math.max(12, (n / maior) * 100) + '%' : 0 }} /></span>
+                <span className="lt-barra"><i style={{ height: n ? Math.max(18, (n / maior) * 100) + '%' : 0 }} /></span>
                 <span className="lt-rotulo">{MESES[i]}</span>
               </button>
             );
           })}
         </div>
       )}
+      {!semTotal && <span className="lt-total">{ano === 'todos' ? '' : (mes ? doAno.meses[mes - 1] : doAno?.total || 0) + ((mes ? doAno.meses[mes - 1] : doAno?.total) === 1 ? ' sonho' : ' sonhos')}</span>}
     </nav>
   );
 }
