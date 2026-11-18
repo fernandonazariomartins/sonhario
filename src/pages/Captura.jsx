@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import { novoSonho, dataLonga, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { iniciarGravacao, suportaGravacao, suportaTranscricao } from '../lib/gravador.js';
+import { iaLigada } from '../lib/ia.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { Mic, Parar, Ok, Calendario, Mural, Mais, Caneta, Cadeado } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
@@ -106,7 +107,7 @@ export default function Captura() {
       setTexto(''); setTitulo(''); setDataMexida(false); setEditandoData(false); setQuando(new Date().toISOString());
 
       // Sem transcrição ao vivo (iPhone, por exemplo): transcreve no servidor depois de guardar.
-      const transcrever = audio && sonho.audio && !audio.transcreveu && transcricaoNoServidor && !!usuario;
+      const transcrever = audio && sonho.audio && !audio.transcreveu && transcricaoNoServidor && !!usuario && iaLigada();
       setGuardado({ sonho: salvo, motivo, transcrevendo: transcrever });
       if (transcrever) {
         transcreverAudio(audio.blob)

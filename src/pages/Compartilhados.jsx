@@ -14,17 +14,24 @@ import { interpretar, casar } from '../lib/busca.js';
 import { Nota, Status, MuralEmLinhas } from './Acervo.jsx';
 import { Voltar, Avancar, Busca, Calendario, Pessoas } from '../components/Icones.jsx';
 
+// Sonhos trancados que ainda não abrem aqui (a chave não chegou) ficam de fora, só contados.
 function useSonhosDe(donoId) {
-  const [estado, setEstado] = useState({ carregando: true, sonhos: [], erro: '' });
+  const { cofre } = useEstado();
+  const [estado, setEstado] = useState({ carregando: true, sonhos: [], trancados: 0, erro: '' });
   useEffect(() => {
     let vivo = true;
-    setEstado({ carregando: true, sonhos: [], erro: '' });
+    setEstado({ carregando: true, sonhos: [], trancados: 0, erro: '' });
     sonhosDe(donoId)
-      .then((sonhos) => vivo && setEstado({ carregando: false, sonhos, erro: '' }))
-      .catch((e) => vivo && setEstado({ carregando: false, sonhos: [], erro: e.message }));
+      .then((lista) => vivo && setEstado({ carregando: false, sonhos: lista.filter((s) => !s._trancado), trancados: lista.filter((s) => s._trancado).length, erro: '' }))
+      .catch((e) => vivo && setEstado({ carregando: false, sonhos: [], trancados: 0, erro: e.message }));
     return () => { vivo = false; };
-  }, [donoId]);
+  }, [donoId, cofre]);
   return estado;
+}
+
+function AvisoTrancados({ n, nome }) {
+  if (!n) return null;
+  return <div className="aviso">{semViuvas(`${n === 1 ? '1 sonho ainda está trancado' : n + ' sonhos ainda estão trancados'} para você. ${n === 1 ? 'Ele aparece' : 'Eles aparecem'} quando ${nome.split(' ')[0]} abrir o Sonhário de novo, que é quando a chave chega até você.`)}</div>;
 }
 
 export default function Compartilhados() {
@@ -88,7 +95,7 @@ function Etiqueta({ children, fundo = 'var(--azul-claro)', cor = 'var(--azul-esc
 // Uma pessoa que compartilhou comigo e o resumo dos sonhos que ela mostrou, como em "Pessoas com acesso".
 function CartaoPessoa({ c }) {
   const { compartilhamentos, usuario } = useEstado();
-  const { carregando, sonhos, erro } = useSonhosDe(c.dono_id);
+  const { carregando, sonhos, trancados, erro } = useSonhosDe(c.dono_id);
   const [coment, setComent] = useState({});
   useEffect(() => {
     let vivo = true;
@@ -111,9 +118,10 @@ function CartaoPessoa({ c }) {
           <Avancar size={18} />
         </LinhaPessoa>
       </Link>
+      <AvisoTrancados n={trancados} nome={p.nome} />
       {carregando ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>Carregando os sonhos…</p>
         : erro ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>Não deu para carregar: {erro}</p>
-        : !lista.length ? <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>{semViuvas(`${p.nome.split(' ')[0]} ainda não escolheu nenhum sonho para mostrar.`)}</p>
+        : !lista.length ? trancados ? null : <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>{semViuvas(`${p.nome.split(' ')[0]} ainda não escolheu nenhum sonho para mostrar.`)}</p>
         : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span className="rotulo">{resumo.map((t) => t.replace(/ /g, '\u00a0')).join(' ·\u00a0')}</span>
@@ -146,7 +154,7 @@ function CartaoPessoa({ c }) {
 }
 
 function SonhosDaPessoa({ c }) {
-  const { carregando, sonhos, erro } = useSonhosDe(c.dono_id);
+  const { carregando, sonhos, trancados, erro } = useSonhosDe(c.dono_id);
   const { recarregarCompartilhamentos, avisar, compartilhamentos, usuario } = useEstado();
   const [coment, setComent] = useState({});
   useEffect(() => {
@@ -196,6 +204,7 @@ function SonhosDaPessoa({ c }) {
         </label>
       </div>
 
+      <AvisoTrancados n={trancados} nome={nome} />
       {(nSessao > 0 || nAtencao > 0) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {nSessao > 0 && <button type="button" className="btn btn-linha" aria-pressed={filtro === 'sessao'} onClick={() => setFiltro(filtro === 'sessao' ? '' : 'sessao')} style={{ minHeight: 36, background: filtro === 'sessao' ? 'var(--azul-claro)' : '#fff' }}>Para a próxima sessão ({nSessao})</button>}

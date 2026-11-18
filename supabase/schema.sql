@@ -644,3 +644,127 @@ language sql security definer set search_path = public as $$
 $$;
 revoke all on function public.ver_comentarios(uuid) from public, anon;
 grant execute on function public.ver_comentarios(uuid) to authenticated;
+
+-- 14. Criptografia de ponta a ponta --------------------------------------------
+-- Cada pessoa tem um par de chaves. A chave privada só chega ao banco trancada pela
+-- frase-senha (e, à parte, pelo código de recuperação): o banco nunca vê a frase-senha.
+-- Cada sonho tem a própria chave, guardada embrulhada para o dono (sonhos.chave_dono) e para
+-- cada pessoa que recebeu o sonho (chaves_sonhos). Título, relato, temas e amplificações
+-- ficam em "cifrado" e "cifrado_amp"; as colunas antigas ficam vazias nos sonhos trancados.
+-- Rode antes de publicar a versão do app com a frase-senha. Pode rodar de novo.
+create table if not exists public.chaves (
+  user_id              uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  email                text not null unique check (email = lower(email)),
+  publica              text not null,
+  privada_senha        jsonb not null,
+  privada_recuperacao  jsonb not null,
+  criado_em            timestamptz not null default now(),
+  atualizado_em        timestamptz not null default now()
+);
+alter table public.chaves enable row level security;
+drop policy if exists "chaves: a minha" on public.chaves;
+create policy "chaves: a minha" on public.chaves
+  for all using (auth.uid() = user_id)
+  with check (auth.uid() = user_id and email = lower(coalesce(auth.jwt() ->> 'email', '')));
+
+-- Das outras pessoas, só a chave pública (para embrulhar a chave de um sonho para elas).
+create or replace function public.chaves_publicas(emails text[])
+returns table (email text, publica text)
+language sql stable security definer set search_path = public as $$
+  select k.email, k.publica from public.chaves k where k.email = any (emails);
+$$;
+revoke all on function public.chaves_publicas(text[]) from public, anon;
+grant execute on function public.chaves_publicas(text[]) to authenticated;
+
+alter table public.sonhos add column if not exists cifrado     text;
+alter table public.sonhos add column if not exists cifrado_amp text;
+alter table public.sonhos add column if not exists chave_dono  text; -- não "chave": as funções do convite já têm um parâmetro com esse nome
+
+create table if not exists public.chaves_sonhos (
+  sonho_id   uuid not null references public.sonhos (id) on delete cascade,
+  email      text not null check (email = lower(email)),
+  chave      text not null,
+  criado_em  timestamptz not null default now(),
+  primary key (sonho_id, email)
+);
+alter table public.chaves_sonhos enable row level security;
+-- O dono entrega e tira as chaves dos próprios sonhos.
+drop policy if exists "chaves_sonhos: dono" on public.chaves_sonhos;
+create policy "chaves_sonhos: dono" on public.chaves_sonhos
+  for all using (exists (select 1 from public.sonhos s where s.id = sonho_id and s.user_id = auth.uid()))
+  with check (exists (select 1 from public.sonhos s where s.id = sonho_id and s.user_id = auth.uid()));
+-- Quem recebeu vê a própria chave e, se abriu um link com a chave, guarda ela para si.
+-- A chave sozinha não mostra nada: o sonho trancado só sai do banco para quem tem acesso.
+drop policy if exists "chaves_sonhos: a minha" on public.chaves_sonhos;
+create policy "chaves_sonhos: a minha" on public.chaves_sonhos
+  for all using (email = lower(coalesce(auth.jwt() ->> 'email', '')))
+  with check (email = lower(coalesce(auth.jwt() ->> 'email', '')));
+
+-- Quem já tem frase-senha e ainda não recebeu a chave de um sonho meu compartilhado com ela.
+create or replace function public.chaves_faltando()
+returns table (sonho_id uuid, email text, publica text, chave_dono text)
+language sql stable security definer set search_path = public as $$
+  select s.id, e.email, k.publica, s.chave_dono
+  from public.sonhos s
+  cross join lateral unnest(s.compartilhado_com) as e(email)
+  join public.chaves k on k.email = e.email
+  where s.user_id = auth.uid() and s.cifrado is not null and s.chave_dono is not null and s.apagado_em is null
+    and not exists (select 1 from public.chaves_sonhos cs where cs.sonho_id = s.id and cs.email = e.email);
+$$;
+revoke all on function public.chaves_faltando() from public, anon;
+grant execute on function public.chaves_faltando() to authenticated;
+
+-- Sonhos compartilhados comigo agora vêm trancados, com a minha chave.
+-- As amplificações trancadas só saem se o dono deixou ver, como antes.
+drop function if exists public.sonhos_compartilhados(uuid);
+create function public.sonhos_compartilhados(dono uuid)
+returns table (
+  id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
+  temas text[], status text, cor text, conclusoes jsonb, levar_sessao boolean, audio jsonb, imagens jsonb,
+  cifrado text, cifrado_amp text, chave text
+)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.sonhado_em, s.atualizado_em, s.titulo, s.texto, s.temas, s.status, s.cor,
+         case when c.ver_amplificacoes then s.conclusoes else '[]'::jsonb end,
+         s.levar_sessao, s.audio, s.imagens,
+         s.cifrado,
+         case when c.ver_amplificacoes then s.cifrado_amp else null end,
+         cs.chave
+  from public.sonhos s
+  join public.compartilhamentos c on c.dono_id = s.user_id
+  left join public.chaves_sonhos cs on cs.sonho_id = s.id and cs.email = c.convidado_email
+  where s.user_id = dono and not c.pendente and s.apagado_em is null
+    and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+    and c.convidado_email = any (s.compartilhado_com)
+  order by s.sonhado_em desc;
+$$;
+revoke all on function public.sonhos_compartilhados(uuid) from public, anon;
+grant execute on function public.sonhos_compartilhados(uuid) to authenticated;
+
+-- O começo do sonho no link: de um sonho trancado, o banco não tem o que mostrar.
+-- O app guarda no convite uma prévia trancada, que só abre com a chave que vai no "#" do link.
+create or replace function public.ver_trecho_convite(chave text)
+returns table (sonho_titulo text, sonho_trecho text)
+language sql stable security definer set search_path = public as $$
+  select coalesce(s.titulo, ''), coalesce(left(s.texto, 400), '')
+  from public.convites c
+  join public.sonhos s on s.id = c.sonho_id and s.user_id = c.dono_id and s.apagado_em is null
+  where c.token = $1 and s.cifrado is null;
+$$;
+
+alter table public.convites add column if not exists previa text;
+create or replace function public.ver_previa_convite(chave text)
+returns text
+language sql stable security definer set search_path = public as $$
+  select c.previa
+  from public.convites c
+  join public.sonhos s on s.id = c.sonho_id and s.user_id = c.dono_id and s.apagado_em is null
+  where c.token = $1;
+$$;
+revoke all on function public.ver_previa_convite(text) from public;
+grant execute on function public.ver_previa_convite(text) to anon, authenticated;
+
+-- Comentários trancados ficam maiores que o texto original.
+alter table public.comentarios drop constraint if exists comentarios_texto_check;
+alter table public.comentarios add constraint comentarios_texto_check
+  check (length(trim(texto)) > 0 and length(texto) <= 12000);

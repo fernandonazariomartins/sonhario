@@ -9,6 +9,7 @@ import { resumoComentarios } from './comentarios.js';
 import { sonhosDeExemplo } from './exemplos.js';
 import { usaBotaoGoogle } from './googleLogin.js';
 import EntrarGoogle from '../components/EntrarGoogle.jsx';
+import * as cofreLib from './cofre.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -35,6 +36,23 @@ export function EstadoProvider({ children }) {
 
   const usuario = sessao?.user || null;
   const loja = useMemo(() => (usuario ? remoto(usuario.id) : local), [usuario]);
+  const uid = usuario?.id || null;
+
+  // Cofre: 'carregando' | 'indisponivel' | 'sem-chaves' | 'trancado' | 'aberto' | 'erro' (veja cofre.js).
+  // O estado vale só para a conta em que foi lido: logo depois de entrar, ainda é 'carregando'
+  // (senão um sonho do aparelho poderia subir aberto antes de o cofre ser lido).
+  const [cofreDe, setCofreDe] = useState({ uid: undefined, estado: 'carregando' });
+  const cofre = cofreDe.uid === uid ? cofreDe.estado : 'carregando';
+  const setCofre = useCallback((estado) => setCofreDe({ uid, estado }), [uid]);
+  const [codigoRecuperacao, setCodigoRecuperacao] = useState('');
+  const abrirCofre = useCallback(async () => {
+    setCofreDe({ uid: undefined, estado: 'carregando' });
+    try { setCofreDe({ uid, estado: await cofreLib.carregarCofre(usuario) }); } catch { setCofreDe({ uid, estado: 'erro' }); }
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (pronto) abrirCofre(); }, [pronto, abrirCofre]);
+  // Com o cofre, dá para ler (aberto) ou só guardar sonhos novos (trancado: só a chave pública).
+  const podeGuardar = cofre === 'indisponivel' || cofre === 'aberto' || cofre === 'trancado';
+  const podeLer = cofre === 'indisponivel' || cofre === 'aberto';
 
   const avisar = useCallback((msg, acao) => {
     setAviso({ msg, acao });
@@ -50,6 +68,7 @@ export function EstadoProvider({ children }) {
   }, []);
 
   const recarregar = useCallback(async () => {
+    if (!podeLer) { setSonhos([]); setCarregado(true); return; }
     try {
       const lista = await loja.listar();
       // Passados os 7 dias na lixeira, apaga de vez (com o áudio).
@@ -58,13 +77,15 @@ export function EstadoProvider({ children }) {
       if (velhos.length) loja.apagarVarios(velhos).catch(() => {});
     } catch (e) { avisar('Não deu para carregar os sonhos: ' + e.message); }
     setCarregado(true);
-  }, [loja, avisar]);
+    if (cofre === 'aberto') cofreLib.entregarChaves().catch(() => {});
+  }, [loja, avisar, podeLer, cofre]);
 
   // Ao entrar com Google, leva para a conta o que estava salvo no aparelho.
   useEffect(() => {
-    if (!pronto) return;
+    if (!pronto || !podeGuardar) return;
     setCarregado(false);
     (async () => {
+      if (cofreLib.temPublica()) await cofreLib.subirChavesDeLinks().catch(() => {});
       if (usuario && local.listar().length) {
         try {
           const n = await levarParaConta(usuario.id);
@@ -73,12 +94,14 @@ export function EstadoProvider({ children }) {
       }
       recarregar();
     })();
-  }, [pronto, usuario, recarregar, avisar]);
+  }, [pronto, usuario, recarregar, avisar, podeGuardar]);
 
   // Convites feitos e recebidos. Se o banco ainda não tem a tabela, fica tudo vazio.
   const recarregarCompartilhamentos = useCallback(async () => {
     if (!usuario) { setCompartilhamentos({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} }); return; }
     try { setCompartilhamentos(await listarCompartilhamentos(usuario)); } catch { setCompartilhamentos({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} }); }
+    // Alguém novo pode ter ganhado acesso (pedido aprovado, link aberto): entrega a chave dos sonhos.
+    cofreLib.entregarChaves().catch(() => {});
   }, [usuario]);
   useEffect(() => {
     if (!pronto) return;
@@ -103,10 +126,15 @@ export function EstadoProvider({ children }) {
 
   const salvar = useCallback(async (sonho) => {
     const s = { ...sonho, atualizado_em: new Date().toISOString() };
+    // Com conta e cofre, todo sonho salvo vai trancado.
+    if (usuario && cofreLib.temPublica() && !s._trancado) s._cifrado = true;
     setSonhos((lista) => [s, ...lista.filter((x) => x.id !== s.id)].sort((a, b) => b.sonhado_em.localeCompare(a.sonhado_em)));
-    try { await loja.salvar(s); } catch (e) { avisar('Não deu para salvar: ' + e.message); }
+    try {
+      await loja.salvar(s);
+      if (s._cifrado && s.compartilhado_com?.length) cofreLib.entregarChaves().catch(() => {});
+    } catch (e) { avisar('Não deu para salvar: ' + e.message); }
     return s;
-  }, [loja, avisar]);
+  }, [loja, avisar, usuario]);
 
   // Muda só alguns campos do sonho mais recente (ex.: a transcrição que chega depois de guardar).
   const atualizar = useCallback(async (id, parcial) => {
@@ -171,7 +199,27 @@ export function EstadoProvider({ children }) {
     }
   }, []);
 
+  // Frase-senha e código de recuperação.
+  const criarCofre = useCallback(async (senha) => {
+    const codigo = await cofreLib.criarCofre(usuario, senha);
+    setCodigoRecuperacao(codigo); // mostrado até a pessoa confirmar que guardou
+    setCofre('aberto');
+    return codigo;
+  }, [uid, setCofre]); // eslint-disable-line react-hooks/exhaustive-deps
+  const destrancar = useCallback(async (senha) => { await cofreLib.destrancar(senha); setCofre('aberto'); }, [setCofre]);
+  const recuperarCofre = useCallback(async (codigo, nova) => { await cofreLib.recuperar(codigo, nova); setCofre('aberto'); }, [setCofre]);
+  const trocarSenha = useCallback((atual, nova) => cofreLib.trocarSenha(atual, nova), []);
+  // Tranca o que ainda está aberto no banco (sonhos de antes da frase-senha).
+  const trancarAcervo = useCallback(async (aoAvancar) => {
+    const r = await loja.trancarTodos(sonhosRef.current, aoAvancar);
+    await recarregar();
+    return r;
+  }, [loja, recarregar]);
+  const abertosNoBanco = useMemo(() => (usuario && cofre === 'aberto' ? todos.filter((s) => !s._cifrado && !s._trancado).length : 0), [usuario, cofre, todos]);
+
   const valor = {
+    cofre, abrirCofre, criarCofre, destrancar, recuperarCofre, trocarSenha, trancarAcervo, abertosNoBanco,
+    codigoRecuperacao, esquecerCodigo: () => setCodigoRecuperacao(''),
     pronto, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
     esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
@@ -183,7 +231,7 @@ export function EstadoProvider({ children }) {
     semConta,
     entrar: () => (usaBotaoGoogle() ? setJanelaLogin(true) : entrarComGoogle()),
     pularLogin: () => { localStorage.setItem(PULOU, '1'); setSemConta(true); },
-    sair: async () => { await sair(); localStorage.removeItem(PULOU); setSemConta(false); setSonhos([]); setCarregado(false); },
+    sair: async () => { await cofreLib.esquecerAparelho(usuario?.id); await sair(); localStorage.removeItem(PULOU); setSemConta(false); setSonhos([]); setCarregado(false); },
   };
   return (
     <Ctx.Provider value={valor}>

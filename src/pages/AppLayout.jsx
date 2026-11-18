@@ -7,13 +7,15 @@ import Assinatura from '../components/Assinatura.jsx';
 import Entrar from './Entrar.jsx';
 import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
+import { CriarFrase, MostrarCodigo, Destrancar, ErroCofre, TrocarFrase, TrancarAcervo } from '../components/Cofre.jsx';
+import JanelaIA from '../components/IA.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
 import { primeiraVezInstalado } from '../lib/instalar.js';
-import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas } from '../components/Icones.jsx';
+import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco } = useEstado();
   const navegar = useNavigate();
   const comigoTodos = [...compartilhamentos.comigo, ...compartilhamentos.aguardando];
   const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
@@ -21,7 +23,7 @@ export default function AppLayout() {
   const [arrumando, setArrumando] = useState(false);
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
-  const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete'
+  const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'frase' | 'trancar' | 'ia'
   const caixaMenu = useRef(null);
 
   useEffect(() => { setMenu(false); setJanela(''); }, [pathname]);
@@ -64,6 +66,16 @@ export default function AppLayout() {
   }
 
   const naCaptura = pathname === '/app' || pathname === '/app/';
+
+  // Frase-senha: na primeira vez, antes de tudo (nenhum sonho pode sair aberto); num aparelho
+  // novo, só para ler (a captura funciona trancada, porque guardar só precisa da chave pública).
+  if (usuario) {
+    if (cofre === 'sem-chaves') return <CriarFrase />;
+    if (cofre === 'erro') return <ErroCofre />;
+    if (codigoRecuperacao) return <MostrarCodigo />;
+  }
+  const pedeFrase = usuario && cofre === 'trancado' && !naCaptura;
+  const abrindoCofre = usuario && cofre === 'carregando' && !naCaptura;
   const aba = ({ isActive }) => 'aba' + (isActive ? ' ativa' : '');
   const abrir = (j) => { setMenu(false); setJanela(j); };
   // Sonhos que vieram do Notion com o cabeçalho ("# Sem título", "Data : …") dentro do relato.
@@ -101,6 +113,8 @@ export default function AppLayout() {
               {temLogin && <Link role="menuitem" className="menu-item" to="/app/pessoas"><Pessoas size={18} /> Pessoas com acesso{compartilhamentos.pedidos.length > 0 && <span style={{ marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 6px', borderRadius: 999, background: 'var(--azul)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{compartilhamentos.pedidos.length}</span>}</Link>}
               {temLogin && usuario && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
+              {usuario && cofre === 'aberto' && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('frase')}><Cadeado size={18} /> Trocar a frase-senha</button>}
+              {usuario && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('ia')}><Faisca size={18} /> Inteligência artificial</button>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
               {doNotion.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={arrumarNotion}><Importar size={18} /> Arrumar sonhos vindos do Notion ({doNotion.length})</button>}
@@ -120,13 +134,18 @@ export default function AppLayout() {
           <Pessoas size={16} /> {compartilhamentos.pedidos.length === 1 ? '1 pessoa abriu seu link e quer ver um sonho' : compartilhamentos.pedidos.length + ' pessoas abriram seu link e querem ver um sonho'} · <span style={{ textDecoration: 'underline' }}>ver pedidos</span>
         </button>
       )}
+      {!naCaptura && abertosNoBanco > 0 && (
+        <button type="button" onClick={() => setJanela('trancar')} style={{ border: 0, borderBottom: '1px solid var(--line)', background: 'var(--azul-claro)', color: 'var(--azul-escuro)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', textAlign: 'center' }}>
+          <Cadeado size={16} /> {abertosNoBanco === 1 ? '1 sonho de antes ainda está aberto no banco' : abertosNoBanco + ' sonhos de antes ainda estão abertos no banco'} · <span style={{ textDecoration: 'underline' }}>trancar</span>
+        </button>
+      )}
       {!naCaptura && doNotion.length > 0 && (
         <button type="button" disabled={arrumando} onClick={arrumarNotion} style={{ border: 0, borderBottom: '1px solid #F3DDB5', background: 'var(--warn-bg)', color: 'var(--warn-ink)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', textAlign: 'center' }}>
           <Importar size={16} /> {doNotion.length === 1 ? '1 sonho veio do Notion com o cabeçalho no relato' : doNotion.length + ' sonhos vieram do Notion com o cabeçalho no relato'} · <span style={{ textDecoration: 'underline' }}>{arrumando ? 'arrumando…' : 'arrumar título e data'}</span>
         </button>
       )}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Outlet />
+        {pedeFrase ? <Destrancar /> : abrindoCofre ? <p style={{ padding: 40, color: 'var(--muted)' }}>Abrindo…</p> : <Outlet />}
       </main>
       {!naCaptura && (
         <footer style={{ padding: '0 20px 108px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -137,6 +156,9 @@ export default function AppLayout() {
       {!naCaptura && <Link to="/app" className="fab" aria-label="Novo sonho"><Mais size={26} w={2.6} /><span className="esconde-celular">Novo sonho</span></Link>}
       {janela === 'contribuir' && <Contribuir aoFechar={() => setJanela('')} />}
       {janela === 'lembrete' && <Lembrete aoFechar={() => setJanela('')} />}
+      {janela === 'frase' && <TrocarFrase aoFechar={() => setJanela('')} />}
+      {janela === 'trancar' && <TrancarAcervo aoFechar={() => setJanela('')} />}
+      {janela === 'ia' && <JanelaIA aoFechar={() => setJanela('')} />}
       {aviso && (
         <div className="toast" role="status" style={{ ...(naCaptura ? null : { bottom: 100 }), display: 'flex', alignItems: 'center', gap: 14 }}>
           <span>{aviso.msg}</span>

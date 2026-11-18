@@ -98,7 +98,7 @@ function Bloco({ titulo, children, primeiro }) {
 
 // Link deste sonho: pode ir para várias pessoas, e cada uma vira um pedido para aprovar.
 function LinkConvite({ s }) {
-  const { usuario, avisar } = useEstado();
+  const { usuario, avisar, salvar, cofre } = useEstado();
   const papel = 'amigo';
   const [amp, setAmp] = useState(false);
   const [aprovar, setAprovar] = useState(true);
@@ -110,7 +110,10 @@ function LinkConvite({ s }) {
 
   async function gerar() {
     setOcupado(true);
-    try { const u = await criarLink(usuario, { sonhoId: s.id, papel, ver_amplificacoes: amp, aprovar }); setUrl(u); setComAprovacao(aprovar); setComAmp(amp); setFeito('criado'); }
+    try {
+      // Com o cofre aberto, o sonho é trancado antes, para o link levar a chave dele.
+      const sonho = cofre === 'aberto' && !s._cifrado ? await salvar(s) : s;
+      const u = await criarLink(usuario, { sonho, papel, ver_amplificacoes: amp, aprovar }); setUrl(u); setComAprovacao(aprovar); setComAmp(amp); setFeito('criado'); }
     catch (e) { avisar('Não deu para criar o link: ' + e.message); }
     setOcupado(false);
   }
