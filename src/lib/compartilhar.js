@@ -147,9 +147,9 @@ export async function aceitarConvite(token) {
 
 export async function mandarLink(url, avisar) {
   const texto = 'Quero te mostrar um sonho que anotei no Sonhário. Abra o link e entre com a sua conta Google:\n' + url;
-  try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
-  try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); }
-  catch { prompt('Copie o link:', url); }
+  try { if (navigator.share) { await navigator.share({ text: texto }); return true; } } catch (e) { if (e.name === 'AbortError') return false; }
+  try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); return true; }
+  catch { prompt('Copie o link:', url); return false; }
 }
 
 // Recusar: quem não foi aprovada sai; quem já via outros sonhos só perde os pedidos.

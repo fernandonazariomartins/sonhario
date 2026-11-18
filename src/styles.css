@@ -76,7 +76,7 @@ mark.achado { background: #FFE58A; color: inherit; border-radius: 3px; padding: 
 .painel { background: #fff; border: 1px solid var(--line); border-radius: 16px; }
 .campo { width: 100%; border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; font-size: 14px; background: #fff; }
 .aviso { background: var(--warn-bg); color: var(--warn-ink); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--preto); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow-pop); z-index: 50; max-width: calc(100% - 32px); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--preto); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow-pop); z-index: 70; max-width: calc(100% - 32px); }
 
 /* assinatura */
 .credit { color: var(--muted); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; margin: 40px 0 0; font-size: 13px; }

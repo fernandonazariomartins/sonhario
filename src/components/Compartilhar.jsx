@@ -73,6 +73,29 @@ function Pedidos({ pedidos, perfis, sonhoId }) {
   );
 }
 
+// Mostra "Copiado" no próprio botão por alguns segundos.
+function useFeito(ms = 2500) {
+  const [feito, setFeito] = useState('');
+  useEffect(() => {
+    if (!feito) return;
+    const t = setTimeout(() => setFeito(''), ms);
+    return () => clearTimeout(t);
+  }, [feito, ms]);
+  return [feito, setFeito];
+}
+
+const Feito = ({ txt }) => <><Ok size={16} /> {txt}</>;
+
+// Um bloco do link, com título pequeno e separação clara.
+function Bloco({ titulo, children, primeiro }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: primeiro ? 0 : 12, borderTop: primeiro ? 0 : '1px solid var(--line)' }}>
+      <span className="rotulo">{titulo}</span>
+      {children}
+    </div>
+  );
+}
+
 // Link deste sonho: pode ir para várias pessoas, e cada uma vira um pedido para aprovar.
 function LinkConvite({ s }) {
   const { usuario, avisar } = useEstado();
@@ -81,16 +104,21 @@ function LinkConvite({ s }) {
   const [aprovar, setAprovar] = useState(true);
   const [url, setUrl] = useState('');
   const [comAprovacao, setComAprovacao] = useState(true); // do link já criado
+  const [comAmp, setComAmp] = useState(false); // do link já criado
   const [ocupado, setOcupado] = useState(false);
+  const [feito, setFeito] = useFeito();
 
   async function gerar() {
     setOcupado(true);
-    try { const u = await criarLink(usuario, { sonhoId: s.id, papel, ver_amplificacoes: amp, aprovar }); setUrl(u); setComAprovacao(aprovar); mandarLink(u, avisar); }
+    try { const u = await criarLink(usuario, { sonhoId: s.id, papel, ver_amplificacoes: amp, aprovar }); setUrl(u); setComAprovacao(aprovar); setComAmp(amp); setFeito('criado'); }
     catch (e) { avisar('Não deu para criar o link: ' + e.message); }
     setOcupado(false);
   }
   async function copiar() {
-    try { await navigator.clipboard.writeText(url); avisar('Link copiado'); } catch { prompt('Copie o link:', url); }
+    try { await navigator.clipboard.writeText(url); setFeito('copiar'); avisar('Link copiado'); } catch { prompt('Copie o link:', url); }
+  }
+  async function mandar() {
+    if (await mandarLink(url, avisar)) setFeito('mandar');
   }
 
   // Card de story (1080×1920) do mesmo link. Já busca a imagem quando o link existe,
@@ -112,7 +140,7 @@ function LinkConvite({ s }) {
     navigator.clipboard?.writeText(url).catch(() => {});
     const dica = 'Link copiado. No story, use a figurinha de link e cole.';
     if (navigator.canShare?.({ files: [story] })) {
-      try { await navigator.share({ files: [story] }); avisar(dica); return; }
+      try { await navigator.share({ files: [story] }); setFeito('story'); avisar(dica); return; }
       catch (e) { if (e.name === 'AbortError') return; }
     }
     const a = document.createElement('a');
@@ -120,42 +148,56 @@ function LinkConvite({ s }) {
     a.download = story.name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    setFeito('story');
     avisar('Imagem baixada. ' + dica);
   }
 
   return (
-    <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas((url ? comAprovacao : aprovar)
-        ? 'Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google e pede para ver. Você aprova cada pessoa.'
-        : 'Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google e já vê, sem esperar a sua aprovação.')}</p>
+    <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google.')}</p>
+      </div>
       {url ? (
-        <>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Link deste sonho" style={{ fontSize: 13 }} />
-            <button type="button" className="btn btn-linha" onClick={copiar}><Copiar size={16} /> Copiar</button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button type="button" className="btn btn-azul" onClick={() => mandarLink(url, avisar)}>Mandar</button>
-            {story !== false && (
-              <button type="button" className="btn btn-linha" onClick={mandarStory} disabled={!story}>{story ? 'Card para o story' : 'Preparando o card…'}</button>
-            )}
-          </div>
-          {story && <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('No Instagram, ponha a figurinha de link embaixo da seta e cole o link: ele já fica copiado.')}</p>}
-        </>
+        <div style={{ background: '#fff', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Bloco titulo="Seu link" primeiro>
+            {feito === 'criado' && <span role="status" style={{ fontSize: 13, color: 'var(--azul-escuro)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} /> Link criado</span>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Link deste sonho" style={{ fontSize: 13 }} />
+              <button type="button" className={'btn ' + (feito === 'copiar' ? 'btn-azul' : 'btn-linha')} onClick={copiar} style={{ minWidth: 118, flex: 'none' }} aria-live="polite">
+                {feito === 'copiar' ? <Feito txt="Copiado" /> : <><Copiar size={16} /> Copiar</>}
+              </button>
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas((comAprovacao ? 'Você aprova cada pessoa antes de ela ler.' : 'Quem entrar com Google já lê, sem esperar você.') + (comAmp ? ' As amplificações aparecem junto.' : ''))}</span>
+          </Bloco>
+          <Bloco titulo="Mandar">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <button type="button" className="btn btn-azul" onClick={mandar} aria-live="polite">{feito === 'mandar' ? <Feito txt="Pronto" /> : 'Mandar'}</button>
+              {story !== false && (
+                <button type="button" className="btn btn-linha" onClick={mandarStory} disabled={!story} aria-live="polite">{feito === 'story' ? <Feito txt="Card pronto" /> : story ? 'Card para o story' : 'Preparando o card…'}</button>
+              )}
+            </div>
+            {story && <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('No Instagram, ponha a figurinha de link embaixo da seta e cole o link: ele já fica copiado.')}</span>}
+          </Bloco>
+        </div>
       ) : (
-        <>
-          <div role="radiogroup" aria-label="Quem abre o link" className="abas" style={{ background: '#fff', alignSelf: 'flex-start' }}>
-            {[[true, 'Eu aprovo cada pessoa'], [false, 'Entra direto']].map(([v, r]) => (
-              <button key={r} type="button" role="radio" aria-checked={aprovar === v} className={'aba' + (aprovar === v ? ' ativa' : '')} style={aprovar === v ? { background: 'var(--cinza)' } : undefined} onClick={() => setAprovar(v)}>{r}</button>
-            ))}
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
-            <input type="checkbox" checked={amp} onChange={(e) => setAmp(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
-            Mostrar também as amplificações
-          </label>
+        <div style={{ background: '#fff', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Bloco titulo="Quem abre o link" primeiro>
+            <div role="radiogroup" aria-label="Quem abre o link" className="abas" style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
+              {[[true, 'Eu aprovo cada pessoa'], [false, 'Entra direto']].map(([v, r]) => (
+                <button key={r} type="button" role="radio" aria-checked={aprovar === v} className={'aba' + (aprovar === v ? ' ativa' : '')} onClick={() => setAprovar(v)}>{r}</button>
+              ))}
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(aprovar ? 'Cada pessoa pede para ver e você aprova.' : 'Quem entrar com Google já lê, sem esperar a sua aprovação.')}</span>
+          </Bloco>
+          <Bloco titulo="O que aparece">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
+              <input type="checkbox" checked={amp} onChange={(e) => setAmp(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
+              Mostrar também as amplificações
+            </label>
+          </Bloco>
           <button type="button" className="btn btn-azul" style={{ alignSelf: 'flex-start' }} onClick={gerar} disabled={ocupado}><IconeLink size={16} /> {ocupado ? 'Criando…' : 'Criar link deste sonho'}</button>
-        </>
+        </div>
       )}
     </section>
   );
