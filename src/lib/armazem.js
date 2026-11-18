@@ -115,9 +115,21 @@ function linha(s, userId) {
 export function remoto(userId) {
   return {
     async listar() {
-      const { data, error } = await supabase.from('sonhos').select('*').order('sonhado_em', { ascending: false });
-      if (error) throw error;
-      return data;
+      // O Supabase devolve no máximo 1000 linhas por consulta: busca em páginas até acabar.
+      const PAGINA = 1000;
+      const tudo = [];
+      for (let de = 0; ; de += PAGINA) {
+        const { data, error } = await supabase
+          .from('sonhos')
+          .select('*')
+          .order('sonhado_em', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, de + PAGINA - 1);
+        if (error) throw error;
+        tudo.push(...data);
+        if (data.length < PAGINA) break;
+      }
+      return tudo;
     },
     async salvar(sonho) {
       const { error } = await supabase.from('sonhos').upsert(linha(sonho, userId));
