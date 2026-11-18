@@ -55,7 +55,6 @@ export default function Sonho() {
     return () => { vivo = false; };
   }, [s?.audio?.ref]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const recentes = useMemo(() => contarTemas(sonhos).map((t) => t.nome).filter((t) => !s?.temas?.includes(t)).slice(0, 6), [sonhos, s?.temas]);
   const parecidos = useMemo(() => !s ? [] : sonhos.filter((x) => x.id !== s.id && x.temas?.some((t) => s.temas?.includes(t))).slice(0, 6), [sonhos, s]);
 
   if (!s) return (
@@ -247,12 +246,6 @@ export default function Sonho() {
               <datalist id="temas-existentes">{contarTemas(sonhos).map((t) => <option key={t.nome} value={t.nome} />)}</datalist>
             </form>
           </div>
-          {recentes.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Usados antes:</span>
-              {recentes.map((t) => <button key={t} type="button" onClick={() => addTema(t)} style={{ ...estiloTema(t), height: 28, padding: '0 9px', borderRadius: 6, border: 0, fontSize: 13, fontWeight: 600, opacity: 0.75 }}>+ {t}</button>)}
-            </div>
-          )}
         </section>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-end' }}>
