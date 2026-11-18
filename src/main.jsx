@@ -32,7 +32,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="acervo" element={<Acervo />} />
             <Route path="sonho/:id" element={<Sonho />} />
             <Route path="importar" element={<Importar />} />
-            <Route path="insights" element={<Insights />} />
+            <Route path="observacoes" element={<Insights />} />
+            <Route path="insights" element={<Navigate to="/app/observacoes" replace />} />
             <Route path="lixeira" element={<Lixeira />} />
             <Route path="pessoas" element={<Pessoas />} />
             <Route path="compartilhados" element={<Compartilhados />} />

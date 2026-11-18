@@ -226,7 +226,7 @@ export function EstadoProvider({ children }) {
   const valor = {
     cofre, abrirCofre, criarCofre, destrancar, recuperarCofre, recuperarBasico, trocarSenha, nivel, irParaAvancado, irParaBasico, trancarAcervo, abertosNoBanco,
     codigoRecuperacao, esquecerCodigo: () => setCodigoRecuperacao(''),
-    pronto, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
+    pronto, carregado, podeLer, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
     esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),

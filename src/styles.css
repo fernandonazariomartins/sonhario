@@ -138,6 +138,10 @@ mark.achado { background: #FFE58A; color: inherit; border-radius: 3px; padding: 
 .insights { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 .insight { border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #fff; border: 1px solid var(--line); }
 .insight.bloqueado { background: var(--cinza); border-color: transparent; }
+.insight.com-novidade { border: 1.5px solid var(--azul); box-shadow: 0 0 0 4px var(--azul-claro); }
+.selo-novidade { height: 20px; padding: 0 8px; border-radius: 999px; background: var(--azul); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: inline-flex; align-items: center; flex: none; white-space: nowrap; }
+.insight .linha-nova { position: relative; }
+.insight .linha-nova::before { content: ""; position: absolute; left: -12px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--azul); }
 .barra { height: 6px; border-radius: 99px; background: rgba(31,35,40,.1); overflow: hidden; }
 .barra span { display: block; height: 100%; background: var(--azul); border-radius: 99px; }
 

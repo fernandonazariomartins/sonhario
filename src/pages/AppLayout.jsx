@@ -101,7 +101,7 @@ export default function AppLayout() {
         <nav aria-label="Seções do app" className="abas" style={{ marginLeft: 'auto' }}>
           <NavLink to="/app" end aria-label="Novo sonho" className={({ isActive }) => 'aba' + (isActive ? ' ativa' : ' aba-novo')}><Mais size={16} /> <span className="esconde-celular">Novo</span></NavLink>
           <NavLink to="/app/acervo" aria-label="Acervo" className={({ isActive }) => aba({ isActive: isActive || pathname.startsWith('/app/sonho') })}><Mural size={16} /> <span className="esconde-pequeno">Acervo</span></NavLink>
-          <NavLink to="/app/insights" aria-label="Insights" className={aba}><Faisca size={16} /> <span className="esconde-celular">Insights</span></NavLink>
+          <NavLink to="/app/observacoes" aria-label="Observações" className={aba}><Faisca size={16} /> <span className="esconde-celular">Observações</span></NavLink>
           {comigoTodos.length > 0 && <NavLink to="/app/compartilhados" aria-label={rotuloAba(comigoTodos)} className={aba}><Pessoas size={16} /> <span className="esconde-celular">{rotuloAba(comigoTodos)}</span></NavLink>}
         </nav>
         <div ref={caixaMenu} style={{ position: 'relative' }}>
