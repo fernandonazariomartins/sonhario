@@ -88,7 +88,7 @@ export default function Home() {
             <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
           <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Registre seus sonhos em qualquer dispositivo. Sem loja de aplicativos: o Sonhário se instala direto pelo site.')}</p>
-          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos são privados. Só vê quem você escolher.')}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Nem nós conseguimos ler.')}</p>
 
           <div id="recursos" className="cartoes-3" style={{ marginTop: 64 }}>
             {CARTOES.map(({ n: num, t, d, Ic, bg, fg }) => (
@@ -123,7 +123,7 @@ export default function Home() {
             <Rotulo>02 — Compartilhar</Rotulo>
             <h2 className="titulo-l">{n('Leve um sonho para a sessão. Só aquele.')}</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Escolha um sonho e mande para o seu analista ou para alguém de confiança. A pessoa entra com a própria conta e encontra o sonho numa aba separada, com o seu nome e a sua foto. O resto do caderno continua só seu.')}</p>
-            <Checks itens={['Sempre um sonho por vez, nunca o caderno inteiro', 'Você decide se as amplificações vão junto', 'Convite por link, e você aprova cada pessoa', 'Pare de compartilhar quando quiser']} bg="var(--azul)" fg="#fff" />
+            <Checks itens={['Sempre um sonho por vez, nunca o caderno inteiro', 'Você decide se as amplificações vão junto', 'Convite por link, e você aprova cada pessoa', 'Pare de compartilhar quando quiser', 'O sonho vai trancado: só abre para quem você escolheu']} bg="var(--azul)" fg="#fff" />
           </div>
           <div className="c-4"><MiniCompartilhar /></div>
         </div>
