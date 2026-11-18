@@ -1,6 +1,9 @@
 // Compartilhar sonhos com o terapeuta ou com amigos.
 // Quem compartilha convida pelo e-mail; quem foi convidado entra com Google e lê (sem editar).
 import { supabase, AUDIO_BUCKET, IMAGEM_BUCKET } from './supabase.js';
+import { abrirSonho, abrirArquivo } from './armazem.js';
+import { cifrar, decifrar } from './cripto.js';
+import * as cofre from './cofre.js';
 
 export const PAPEIS = {
   // Terapeuta e amigo funcionam igual: o papel fica guardado só por compatibilidade.
@@ -76,17 +79,18 @@ export async function desfazer(id) {
 export async function sonhosDe(donoId) {
   const { data, error } = await supabase.rpc('sonhos_compartilhados', { dono: donoId });
   if (error) throw error;
-  return data;
+  // Sonho trancado abre com a minha chave (a que o dono embrulhou para mim).
+  return Promise.all(data.map((row) => abrirSonho(row, row.chave)));
 }
 
 export async function urlImagemCompartilhada(ref) {
   const { data, error } = await supabase.storage.from(IMAGEM_BUCKET).createSignedUrl(ref, 60 * 60);
-  return error ? null : data.signedUrl;
+  return error ? null : abrirArquivo(data.signedUrl).catch(() => null);
 }
 
 export async function urlAudioCompartilhado(ref) {
   const { data, error } = await supabase.storage.from(AUDIO_BUCKET).createSignedUrl(ref, 60 * 60);
-  return error ? null : data.signedUrl;
+  return error ? null : abrirArquivo(data.signedUrl).catch(() => null);
 }
 
 // Texto do convite pelo e-mail, para mandar por WhatsApp ou e-mail.
@@ -119,24 +123,46 @@ function novoToken() {
 
 // Cria um link. Pode ir para várias pessoas: cada uma vira um pedido para aprovar.
 // aprovar: true, cada pessoa vira um pedido; false, entra direto (mas sempre com login).
-export async function criarLink(usuario, { sonhoId, papel, ver_amplificacoes, aprovar = true }) {
+// Sonho trancado: o link leva a chave depois do "#" (o navegador não manda essa parte ao
+// servidor), e o convite guarda o começo do sonho trancado com ela, para a prévia.
+export async function criarLink(usuario, { sonho, papel, ver_amplificacoes, aprovar = true }) {
   const token = novoToken();
+  const k = sonho._cifrado ? cofre.chaveEmCache(sonho.id) : null;
+  const previa = k ? await cifrar({ titulo: (sonho.titulo || '').trim(), trecho: (sonho.texto || '').slice(0, 400) }, k) : null;
   const { error } = await supabase.from('convites').insert({
-    token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '', sonho_id: sonhoId, papel, ver_amplificacoes, aprovar,
+    token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '', sonho_id: sonho.id, papel, ver_amplificacoes, aprovar,
+    ...(previa ? { previa } : {}),
   });
   if (error) throw error;
-  return location.origin + '/convite/' + token;
+  return location.origin + '/convite/' + token + (k ? '#k=' + await cofre.linkDaChave(k) : '');
 }
 
-export async function verConvite(token) {
-  const [{ data, error }, trecho] = await Promise.all([
+// A chave que veio no "#" do link, guardada até a pessoa entrar (o login do Google apaga o "#").
+const CHAVE_LINK = 'sonhario:chave-do-link:';
+export const chaveDoLinkAberto = {
+  guardar: (token, k) => { try { localStorage.setItem(CHAVE_LINK + token, k); } catch { /* sem armazenamento */ } },
+  pegar: (token) => { try { return localStorage.getItem(CHAVE_LINK + token); } catch { return null; } },
+  tirar: (token) => { try { localStorage.removeItem(CHAVE_LINK + token); } catch { /* idem */ } },
+};
+
+export async function verConvite(token, chaveTexto) {
+  const [{ data, error }, trecho, previa] = await Promise.all([
     supabase.rpc('ver_convite', { chave: token }),
     supabase.rpc('ver_trecho_convite', { chave: token }),
+    chaveTexto ? supabase.rpc('ver_previa_convite', { chave: token }) : Promise.resolve({ data: null }),
   ]);
   if (error) throw error;
   const convite = data?.[0] || null;
+  if (!convite) return null;
   // O começo do sonho é extra: se não vier, a tela fica como antes.
-  return convite && { ...convite, ...(trecho.data?.[0] || {}) };
+  let comeco = trecho.data?.[0] || {};
+  if (previa.data && chaveTexto) {
+    try {
+      const p = await decifrar(previa.data, await cofre.chaveDeLink(chaveTexto));
+      comeco = { sonho_titulo: p.titulo, sonho_trecho: p.trecho };
+    } catch { /* chave errada ou link cortado: só não mostra o começo */ }
+  }
+  return { ...convite, ...comeco };
 }
 
 export async function aceitarConvite(token) {

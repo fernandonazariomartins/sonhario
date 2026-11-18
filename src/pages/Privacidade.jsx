@@ -10,19 +10,20 @@ const SECOES = [
   ]],
   ['Onde ficam os dados', [
     'Sem conta, tudo fica apenas no seu aparelho, no próprio navegador.',
-    'Com conta, os sonhos e os áudios ficam guardados no Supabase, um serviço de banco de dados, com conexão protegida. Regras de acesso garantem que cada pessoa que usa o app veja somente os próprios sonhos e os que alguém compartilhou com ela.',
+    'Com conta, os sonhos e os áudios ficam guardados no Supabase, um serviço de banco de dados, trancados como explicado abaixo. Além disso, regras de acesso garantem que cada pessoa veja somente os próprios sonhos e os que alguém compartilhou com ela.',
   ]],
-  ['Quem administra o app', [
-    'Hoje os sonhos ficam guardados sem criptografia de ponta a ponta. Isso quer dizer que quem administra o banco de dados teria como acessá-los. Nós não lemos os seus sonhos e só abriríamos um registro se você pedisse ajuda com ele.',
-    'Estamos trabalhando para que o sonho saia do seu aparelho já trancado com uma senha que só você sabe, de modo que nem nós consigamos ler. Quando isso estiver pronto, esta página avisa.',
-    'Enquanto isso, se preferir, você pode usar o Sonhário sem conta: aí tudo fica apenas no seu aparelho.',
+  ['Criptografia de ponta a ponta', [
+    'Com conta, você cria uma frase-senha. Cada sonho sai do seu aparelho já trancado: título, relato, temas, amplificações, áudio, imagens e comentários. No banco de dados fica só texto embaralhado, e quem administra o Sonhário não tem como abrir.',
+    'Ficam abertos no banco só o necessário para o app funcionar: datas, status, cor, favorito, lixeira, a duração dos áudios, o tamanho das imagens e com quem cada sonho foi compartilhado.',
+    'A frase-senha nunca sai do seu aparelho. Ao criá-la, você recebe um código de recuperação. Sem a frase-senha e sem o código, ninguém consegue abrir os sonhos, nem você, nem nós.',
+    'Sonhos guardados antes da frase-senha continuam abertos no banco até você tocar em "trancar". Cópias de segurança antigas do banco podem guardar essa versão aberta por alguns dias, até expirarem.',
   ]],
   ['O que não fazemos', [
-    'Não vendemos, não alugamos e não compartilhamos seus dados com ninguém. Só vê seus sonhos quem você mesmo convidar.',
+    'Não vendemos, não alugamos e não compartilhamos seus dados com ninguém. Só vê seus sonhos quem você mesmo convidar: a chave de cada sonho vai trancada só para essas pessoas.',
     'Não usamos seus sonhos para publicidade nem para treinar inteligência artificial.',
   ]],
-  ['Temas automáticos', [
-    'Ao tocar em "Temas automáticos", o app primeiro procura temas no próprio aparelho. Se você estiver logado, o relato daquele sonho também é enviado para a OpenAI, que sugere temas. Isso só acontece quando você toca no botão, e a OpenAI não usa esses dados para treinar os modelos dela.',
+  ['Inteligência artificial', [
+    'Os temas automáticos procuram temas no próprio aparelho, sem enviar nada. Se você ligar a inteligência artificial (menu ⋯, desligada até você ligar), o relato daquele sonho também vai aberto para a OpenAI, que sugere temas. A OpenAI não usa esses dados para treinar os modelos dela.',
   ]],
   ['Compartilhar com terapeuta ou amigos', [
     'Você pode mostrar um sonho de cada vez para outras pessoas, pelo e-mail da conta Google delas. Nunca o caderno inteiro: cada pessoa vê só os sonhos que você escolheu para ela, e só vê as amplificações se você permitir.',
@@ -31,7 +32,7 @@ const SECOES = [
   ]],
   ['Transcrição de voz', [
     'Quando você grava, a fala pode virar texto pelo reconhecimento de voz do próprio navegador (por exemplo, o do Google Chrome), que segue as regras de privacidade de quem fez o navegador.',
-    'Nos navegadores que não transcrevem enquanto você fala (como o Safari no iPhone), o áudio gravado pode ser enviado para a OpenAI, que devolve o texto.',
+    'Nos navegadores que não transcrevem enquanto você fala (como o Safari no iPhone), o áudio só vai para a OpenAI virar texto se você tiver ligado a inteligência artificial.',
   ]],
   ['Links para a Amazon', [
     'A página inicial indica livros com links da Amazon. Se você comprar por eles, o Sonhário pode receber uma comissão, sem custo a mais para você. A Amazon tem a própria política de privacidade.',

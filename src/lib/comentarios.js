@@ -1,14 +1,28 @@
 // Comentários nos sonhos compartilhados (bloco 13 do supabase/schema.sql).
 // Cada pessoa que recebeu o sonho tem a sua conversa com o dono (leitor_email).
 // "privado": nota que só quem escreveu vê.
+// Com a chave do sonho à mão (dono ou quem recebeu), o texto vai trancado.
 import { supabase } from './supabase.js';
+import { cifrar, decifrar, ehCifrado } from './cripto.js';
+import { chaveEmCache } from './cofre.js';
+
+async function abrirTexto(c) {
+  if (!ehCifrado(c.texto)) return c;
+  const k = chaveEmCache(c.sonho_id);
+  if (!k) return { ...c, texto: '(comentário trancado)', _trancado: true };
+  try { return { ...c, texto: await decifrar(c.texto, k) }; } catch { return { ...c, texto: '(comentário trancado)', _trancado: true }; }
+}
+async function fecharTexto(sonhoId, texto) {
+  const k = chaveEmCache(sonhoId);
+  return k ? cifrar(texto, k) : texto;
+}
 
 const semTabela = (e) => /comentarios|vejo_sonho|ver_comentarios/.test(e?.message || '') && /exist|schema cache|find/i.test(e?.message || '');
 
 export async function comentariosDoSonho(sonhoId) {
   const { data, error } = await supabase.from('comentarios').select('*').eq('sonho_id', sonhoId).order('criado_em');
   if (error) { if (semTabela(error)) return null; throw error; }
-  return data;
+  return Promise.all(data.map(abrirTexto));
 }
 
 // Resumo por sonho para os indicadores do mural e da lista: { [sonho_id]: { total, novos } }.
@@ -31,16 +45,18 @@ export async function resumoComentarios({ donoId, leitorEmail, meuId }) {
 
 export async function comentar({ sonhoId, texto, privado = false, leitorEmail = '' }) {
   const { data, error } = await supabase.from('comentarios')
-    .insert({ sonho_id: sonhoId, texto: texto.trim(), privado, leitor_email: leitorEmail || '' })
+    .insert({ sonho_id: sonhoId, texto: await fecharTexto(sonhoId, texto.trim()), privado, leitor_email: leitorEmail || '' })
     .select().single();
   if (error) throw new Error(semTabela(error) ? 'Os comentários ainda não estão ativos no banco (bloco 13 do schema.sql).' : error.message);
-  return data;
+  return abrirTexto(data);
 }
 
-export async function editarComentario(id, parcial) {
-  const { data, error } = await supabase.from('comentarios').update(parcial).eq('id', id).select().single();
+export async function editarComentario(id, parcial, sonhoId) {
+  const p = { ...parcial };
+  if (typeof p.texto === 'string' && sonhoId) p.texto = await fecharTexto(sonhoId, p.texto);
+  const { data, error } = await supabase.from('comentarios').update(p).eq('id', id).select().single();
   if (error) throw error;
-  return data;
+  return abrirTexto(data);
 }
 
 export async function apagarComentario(id) {

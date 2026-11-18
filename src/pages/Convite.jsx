@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
-import { verConvite, aceitarConvite, convitePendente } from '../lib/compartilhar.js';
+import { verConvite, aceitarConvite, convitePendente, chaveDoLinkAberto } from '../lib/compartilhar.js';
+import { guardarChaveDeLink, subirChavesDeLinks } from '../lib/cofre.js';
 import Logo from '../components/Logo.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Assinatura from '../components/Assinatura.jsx';
@@ -16,10 +17,17 @@ export default function Convite() {
   const [erro, setErro] = useState('');
   const [esperando, setEsperando] = useState(false);
 
+  // A chave do sonho vem depois do "#": guarda (o login do Google apaga o "#") e tira do endereço.
+  const [chaveLink] = useState(() => {
+    const k = new URLSearchParams(location.hash.slice(1)).get('k');
+    if (k) { chaveDoLinkAberto.guardar(token, k); history.replaceState(history.state, '', location.pathname + location.search); }
+    return k || chaveDoLinkAberto.pegar(token);
+  });
+
   useEffect(() => {
     if (!temLogin) { setConvite(null); return; }
-    verConvite(token).then(setConvite).catch(() => setConvite(null));
-  }, [token, temLogin]);
+    verConvite(token, chaveLink).then(setConvite).catch(() => setConvite(null));
+  }, [token, temLogin, chaveLink]);
 
   // Já com a conta: aceita e vai direto para o sonho.
   useEffect(() => {
@@ -27,6 +35,12 @@ export default function Convite() {
     let vivo = true;
     aceitarConvite(token)
       .then(async (r) => {
+        // A chave do link fica com a pessoa: embrulhada com a chave dela, ou guardada até ela criar a frase-senha.
+        if (chaveLink && r.sonho) {
+          guardarChaveDeLink(r.sonho, chaveLink);
+          chaveDoLinkAberto.tirar(token);
+          await subirChavesDeLinks().catch(() => {});
+        }
         await recarregarCompartilhamentos();
         if (!vivo) return;
         if (r.pendente) { setEsperando(true); return; }
@@ -34,7 +48,7 @@ export default function Convite() {
       })
       .catch((e) => vivo && setErro(e.message));
     return () => { vivo = false; };
-  }, [pronto, usuario, convite, token, navegar, recarregarCompartilhamentos]);
+  }, [pronto, usuario, convite, token, navegar, recarregarCompartilhamentos, chaveLink]);
 
   const nome = convite?.dono_nome || 'Alguém';
   let corpo;

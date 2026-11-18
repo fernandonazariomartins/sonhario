@@ -4,6 +4,7 @@ import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataLonga, dataCurta, tituloDe, contarTemas, novoId, duracao, paraCampoData, deCampoData } from '../lib/sonhos.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { sugerirTemas, sugerirTemasIA, juntarIA } from '../lib/temasAuto.js';
+import { iaLigada } from '../lib/ia.js';
 import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca, Compartilhar } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { quemVe, pessoa, terapeutaDe } from '../lib/compartilhar.js';
@@ -77,7 +78,7 @@ export default function Sonho() {
     if (!s.texto?.trim()) { avisar('Escreva o relato primeiro.'); return; }
     const acervo = contarTemas(sonhos).map((t) => t.nome);
     const grupos = sugerirTemas(texto, s.temas, acervo);
-    const comIA = !!usuario;
+    const comIA = !!usuario && iaLigada();
     if (!comIA && !grupos.doAcervo.length && !grupos.novos.length) { avisar('Não encontrei temas no relato. Dá para pôr à mão.'); return; }
     // Os do seu acervo já vêm marcados; as sugestões novas, só se você marcar.
     setSugestao({ ...grupos, ia: [], marcados: grupos.doAcervo, buscando: comIA });
@@ -219,7 +220,7 @@ export default function Sonho() {
           </div>
         )}
         <Imagens imagens={s.imagens || []} urlDe={urlImagem} aoAdicionar={adicionarImagens} aoTirar={tirarImagem} />
-        {s.audio && transcricaoNoServidor && usuario && (
+        {s.audio && transcricaoNoServidor && usuario && iaLigada() && (
           <button type="button" className="btn btn-tracejado" style={{ alignSelf: 'flex-start' }} onClick={transcrever} disabled={transcrevendo}>
             {transcrevendo ? 'Transcrevendo o áudio…' : s.texto ? 'Transcrever o áudio de novo (soma ao texto)' : 'Transformar o áudio em texto'}
           </button>
