@@ -774,7 +774,7 @@ alter table public.comentarios add constraint comentarios_texto_check
 -- função "recuperacao", trancado com uma chave do servidor, e devolvido só para a
 -- própria conta quando ela esquece a frase-senha.
 -- Avançada: só a pessoa guarda o código; o servidor não tem cópia.
-alter table public.chaves add column if not exists modo text not null default 'basico'
+alter table public.chaves add column if not exists modo text not null default 'avancado' -- o app sempre manda o modo
   check (modo in ('basico', 'avancado'));
 
 create table if not exists public.recuperacoes (
