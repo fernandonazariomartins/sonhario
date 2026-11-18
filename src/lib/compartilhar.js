@@ -129,9 +129,14 @@ export async function criarLink(usuario, { sonhoId, papel, ver_amplificacoes, ap
 }
 
 export async function verConvite(token) {
-  const { data, error } = await supabase.rpc('ver_convite', { chave: token });
+  const [{ data, error }, trecho] = await Promise.all([
+    supabase.rpc('ver_convite', { chave: token }),
+    supabase.rpc('ver_trecho_convite', { chave: token }),
+  ]);
   if (error) throw error;
-  return data?.[0] || null;
+  const convite = data?.[0] || null;
+  // O começo do sonho é extra: se não vier, a tela fica como antes.
+  return convite && { ...convite, ...(trecho.data?.[0] || {}) };
 }
 
 export async function aceitarConvite(token) {
