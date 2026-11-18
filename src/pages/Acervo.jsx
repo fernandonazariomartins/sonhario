@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem, Mensagem } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import Realce from '../components/Realce.jsx';
@@ -50,9 +50,23 @@ export function BotaoFavorito({ s, size = 18, style, aoMudar }) {
   );
 }
 
+// Balão de comentários: número, e azul cheio quando há comentário novo.
+export function SinalComentarios({ r, cor = 'var(--muted)' }) {
+  if (!r?.total) return null;
+  const novo = r.novos > 0;
+  const titulo = novo ? (r.novos === 1 ? '1 comentário novo' : r.novos + ' comentários novos') : (r.total === 1 ? '1 comentário' : r.total + ' comentários');
+  return (
+    <span title={titulo} aria-label={titulo} className={'sinal-coment' + (novo ? ' novo' : '')} style={novo ? undefined : { color: cor }}>
+      <Mensagem size={12} w={2.4} />{novo ? r.novos : r.total}
+    </span>
+  );
+}
+
 // Sem "para" é sonho meu: dá para favoritar. Com "para" (compartilhado comigo), só mostra.
-export function Nota({ s, comTemas = true, para, achado }) {
+export function Nota({ s, comTemas = true, para, achado, coment }) {
   const estiloTema = useCorTema();
+  const { comentarios } = useEstado();
+  const rc = coment !== undefined ? coment : !para ? comentarios?.[s.id] : null;
   const c = CORES[s.cor] || CORES.branco;
   const termos = achado?.termos;
   return (
@@ -61,6 +75,7 @@ export function Nota({ s, comTemas = true, para, achado }) {
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           {achado?.ocorrencias > 0 && <span className="contagem-achados" title="Vezes que a busca aparece neste sonho">{achado.ocorrencias}×</span>}
+          <SinalComentarios r={rc} cor={c.rotulo} />
           {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
           {(s.imagens || []).length > 0 && <span title={s.imagens.length === 1 ? '1 imagem' : s.imagens.length + ' imagens'} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Imagem size={12} w={2.4} />{s.imagens.length > 1 && s.imagens.length}</span>}
           {!para ? <BotaoFavorito s={s} size={16} style={{ margin: '-6px -6px -6px 0' }} /> : s.favorito && <span className="btn-favorito ligado" aria-label="Favorito"><Estrela size={16} cheia /></span>}
@@ -347,6 +362,7 @@ function Paginacao({ pagina, total, irPara, legenda }) {
 
 function ListaSonhos({ sonhos, achados }) {
   const estiloTema = useCorTema();
+  const { comentarios } = useEstado();
   const navegar = useNavigate();
   let mesAtual = '';
   return (
@@ -369,6 +385,7 @@ function ListaSonhos({ sonhos, achados }) {
                   {s.favorito && <span style={{ color: '#C98A00', marginRight: 6, verticalAlign: '-2px', display: 'inline-flex' }} aria-label="Favorito"><Estrela size={15} cheia /></span>}
                   <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
                   {a?.ocorrencias > 0 && <span className="contagem-achados" style={{ marginLeft: 8 }}>{a.ocorrencias}×</span>}
+                  {comentarios?.[s.id] && <span style={{ marginLeft: 8, verticalAlign: '1px' }}><SinalComentarios r={comentarios[s.id]} /></span>}
                   {(a?.trecho || s.texto) && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, ...(a?.trecho ? { lineHeight: 1.5 } : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }) }}>
                     {a?.onde === 'amplificacoes' && <strong style={{ fontFamily: 'inherit' }}>Nas amplificações: </strong>}
                     <Realce texto={a?.trecho || s.texto} termos={termos} viuvas={false} />

@@ -517,3 +517,130 @@ grant execute on function public.ver_trecho_convite(text) to anon, authenticated
 -- "Levar para a próxima sessão" num sonho já compartilha o sonho com essa pessoa.
 alter table public.compartilhamentos add column if not exists eh_terapeuta boolean not null default false;
 create unique index if not exists compartilhamentos_um_terapeuta on public.compartilhamentos (dono_id) where eh_terapeuta;
+
+-- 13. Comentários ---------------------------------------------------------------
+-- Quem recebeu um sonho comenta nele. Cada pessoa tem a sua conversa com o dono
+-- (leitor_email): o dono vê e responde; outra pessoa que vê o mesmo sonho não vê.
+-- "privado": nota só para quem escreveu (o dono do sonho não vê).
+create table if not exists public.comentarios (
+  id            uuid primary key default gen_random_uuid(),
+  sonho_id      uuid not null references public.sonhos (id) on delete cascade,
+  dono_id       uuid not null references auth.users (id) on delete cascade,
+  leitor_email  text not null check (leitor_email = lower(leitor_email)),
+  autor_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  autor_nome    text not null default '',
+  autor_foto    text not null default '',
+  texto         text not null check (length(trim(texto)) > 0 and length(texto) <= 5000),
+  privado       boolean not null default false,
+  visto         boolean not null default false,  -- a outra ponta da conversa já viu
+  criado_em     timestamptz not null default now(),
+  editado_em    timestamptz
+);
+create index if not exists comentarios_sonho on public.comentarios (sonho_id, criado_em);
+create index if not exists comentarios_dono on public.comentarios (dono_id) where not privado;
+create index if not exists comentarios_leitor on public.comentarios (leitor_email);
+
+-- Vejo este sonho porque foi compartilhado comigo (aprovado, fora da lixeira)?
+create or replace function public.vejo_sonho(sonho uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.sonhos s
+    join public.compartilhamentos c on c.dono_id = s.user_id
+    where s.id = sonho and not c.pendente and s.apagado_em is null
+      and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+      and c.convidado_email = any (s.compartilhado_com)
+  );
+$$;
+revoke all on function public.vejo_sonho(uuid) from public, anon;
+grant execute on function public.vejo_sonho(uuid) to authenticated;
+
+-- Quem escreve, o dono e o nome/foto vêm do banco, não do aparelho.
+create or replace function public.comentarios_preencher()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  p public.perfis;
+begin
+  new.autor_id := auth.uid();
+  select user_id into new.dono_id from public.sonhos where id = new.sonho_id;
+  if new.dono_id is null then raise exception 'Sonho não encontrado.'; end if;
+  if new.autor_id <> new.dono_id then
+    new.leitor_email := lower(coalesce(auth.jwt() ->> 'email', ''));
+  else
+    new.privado := false; -- o dono anota nas amplificações
+  end if;
+  select * into p from public.perfis where id = auth.uid();
+  new.autor_nome := coalesce(p.nome, '');
+  new.autor_foto := coalesce(p.foto, '');
+  new.visto := false;
+  new.criado_em := now();
+  return new;
+end;
+$$;
+drop trigger if exists comentarios_preencher on public.comentarios;
+create trigger comentarios_preencher before insert on public.comentarios
+  for each row execute function public.comentarios_preencher();
+
+-- Ao editar, só o texto e o "privado" mudam; quem lê volta a ver como novo.
+create or replace function public.comentarios_editar()
+returns trigger
+language plpgsql set search_path = public as $$
+begin
+  new.sonho_id := old.sonho_id; new.dono_id := old.dono_id; new.leitor_email := old.leitor_email;
+  new.autor_id := old.autor_id; new.autor_nome := old.autor_nome; new.autor_foto := old.autor_foto;
+  new.criado_em := old.criado_em;
+  if old.autor_id = new.dono_id then new.privado := false; end if;
+  if auth.uid() = old.autor_id then
+    if new.texto is distinct from old.texto then new.editado_em := now(); new.visto := false;
+    else new.visto := old.visto; new.editado_em := old.editado_em; end if;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists comentarios_editar on public.comentarios;
+create trigger comentarios_editar before update on public.comentarios
+  for each row execute function public.comentarios_editar();
+
+alter table public.comentarios enable row level security;
+
+drop policy if exists "comentarios: ler" on public.comentarios;
+create policy "comentarios: ler" on public.comentarios
+  for select using (
+    autor_id = auth.uid()
+    or (not privado and dono_id = auth.uid())
+    or (not privado and leitor_email = lower(coalesce(auth.jwt() ->> 'email', '')) and public.vejo_sonho(sonho_id))
+  );
+
+-- Quem recebeu comenta (ou anota só para si); o dono responde na conversa de cada pessoa.
+drop policy if exists "comentarios: escrever" on public.comentarios;
+create policy "comentarios: escrever" on public.comentarios
+  for insert with check (
+    autor_id = auth.uid() and (
+      (dono_id <> auth.uid() and public.vejo_sonho(sonho_id))
+      or (dono_id = auth.uid() and not privado and exists (
+            select 1 from public.comentarios o
+            where o.sonho_id = comentarios.sonho_id and o.leitor_email = comentarios.leitor_email and not o.privado))
+    )
+  );
+
+drop policy if exists "comentarios: editar o meu" on public.comentarios;
+create policy "comentarios: editar o meu" on public.comentarios
+  for update using (autor_id = auth.uid()) with check (autor_id = auth.uid());
+
+-- Apaga quem escreveu; o dono também pode tirar comentários do próprio sonho.
+drop policy if exists "comentarios: apagar" on public.comentarios;
+create policy "comentarios: apagar" on public.comentarios
+  for delete using (autor_id = auth.uid() or (not privado and dono_id = auth.uid()));
+
+-- Marca como vistos os comentários da outra ponta, ao abrir o sonho.
+create or replace function public.ver_comentarios(sonho uuid)
+returns void
+language sql security definer set search_path = public as $$
+  update public.comentarios c set visto = true
+   where c.sonho_id = sonho and not c.visto and not c.privado and c.autor_id <> auth.uid()
+     and (c.dono_id = auth.uid()
+          or (c.leitor_email = lower(coalesce(auth.jwt() ->> 'email', '')) and public.vejo_sonho(sonho)));
+$$;
+revoke all on function public.ver_comentarios(uuid) from public, anon;
+grant execute on function public.ver_comentarios(uuid) to authenticated;

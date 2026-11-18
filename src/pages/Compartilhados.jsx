@@ -4,6 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { sonhosDe, urlAudioCompartilhado, urlImagemCompartilhada, desfazer, pessoa } from '../lib/compartilhar.js';
 import Imagens from '../components/Imagens.jsx';
+import Comentarios from '../components/Comentarios.jsx';
+import { resumoComentarios } from '../lib/comentarios.js';
 import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
@@ -60,7 +62,7 @@ function Pessoas_() {
     <div style={{ width: '100%', maxWidth: 960, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <h1 className="titulo-m">Compartilhados com você</h1>
-        <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Você vê só os sonhos que cada pessoa escolheu mostrar, um por um. Aqui é só leitura.')}</p>
+        <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Você vê só os sonhos que cada pessoa escolheu mostrar, um por um. Não dá para editar, mas dá para comentar.')}</p>
       </div>
       {esperando}
       {grupos.map(([nome, lista]) => (
@@ -86,7 +88,13 @@ function Pessoas_() {
 
 function SonhosDaPessoa({ c }) {
   const { carregando, sonhos, erro } = useSonhosDe(c.dono_id);
-  const { recarregarCompartilhamentos, avisar, compartilhamentos } = useEstado();
+  const { recarregarCompartilhamentos, avisar, compartilhamentos, usuario } = useEstado();
+  const [coment, setComent] = useState({});
+  useEffect(() => {
+    let vivo = true;
+    if (usuario) resumoComentarios({ donoId: c.dono_id, leitorEmail: (usuario.email || '').toLowerCase(), meuId: usuario.id }).then((r) => vivo && setComent(r));
+    return () => { vivo = false; };
+  }, [c.dono_id, usuario]);
   const foto = pessoa(compartilhamentos.perfis, c.dono_email).foto;
   const navegar = useNavigate();
   const [busca, setBusca] = useState('');
@@ -119,7 +127,7 @@ function SonhosDaPessoa({ c }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <Avatar nome={nome} foto={foto} size={56} />
         <div style={{ marginRight: 'auto' }}>
-          <span className="rotulo">Compartilhou com você · só leitura</span>
+          <span className="rotulo">Compartilhou com você</span>
           <h1 className="titulo-m">{nome}</h1>
           {!carregando && <span style={{ fontSize: 14, color: 'var(--muted)' }}>{sonhos.length === 1 ? '1 sonho compartilhado' : sonhos.length + ' sonhos compartilhados'}</span>}
         </div>
@@ -145,7 +153,7 @@ function SonhosDaPessoa({ c }) {
       {carregando ? <p style={{ color: 'var(--muted)' }}>Carregando os sonhos…</p>
         : erro ? <div className="aviso">Não deu para carregar: {erro}</div>
         : !sonhos.length ? <div className="painel" style={{ padding: 24, color: 'var(--muted)' }}>{semViuvas(`${nome} ainda não escolheu nenhum sonho para mostrar.`)}</div>
-        : <MuralEmLinhas>{filtrados.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} para={`/app/compartilhados/${c.dono_id}/${s.id}`} />)}</MuralEmLinhas>}
+        : <MuralEmLinhas>{filtrados.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} coment={coment[s.id] || null} para={`/app/compartilhados/${c.dono_id}/${s.id}`} />)}</MuralEmLinhas>}
       {!carregando && sonhos.length > 0 && filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>Nenhum sonho com esse filtro.</p>}
 
       <button type="button" onClick={sair} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: '8px 0' }}>Deixar de ver os sonhos de {nome}</button>
@@ -176,7 +184,7 @@ function SonhoLido({ c, id }) {
     <div style={{ width: '100%', maxWidth: 1280, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <div style={{ flexBasis: '100%', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <Link to={voltar} className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> {nome}</Link>
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>só leitura</span>
+        <span style={{ fontSize: 13, color: 'var(--muted)' }}>só leitura · dá para comentar</span>
       </div>
 
       <article className="painel" style={{ flex: '999 1 560px', minWidth: 0, padding: 'clamp(20px, 4vw, 36px)', display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -218,7 +226,8 @@ function SonhoLido({ c, id }) {
               </ol>
             )}
         </div>
-        <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(`${nome.split(' ')[0]} compartilhou este sonho com você. Só quem compartilha pode editar ou tirar o acesso.`)}</p>
+        <Comentarios sonhoId={s.id} modo="leitor" donoNome={nome} />
+        <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(`${nome.split(' ')[0]} compartilhou este sonho com você. Só quem compartilha pode editar o sonho ou tirar o acesso.`)}</p>
         <div className="painel" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.55 }}>{semViuvas('O Sonhário é um caderno para registrar, organizar e voltar aos seus sonhos.')}</p>
           {/* "ficar" mantém quem já está logado na home em vez de mandar direto para o app. */}

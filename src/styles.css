@@ -228,3 +228,8 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 .trecho-convite strong { display: block; margin-bottom: 6px; font-size: 15px; }
 .trecho-convite p { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 1.7; white-space: pre-line; -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 92%); mask-image: linear-gradient(to bottom, #000 30%, transparent 92%); }
 .trecho-veu { position: absolute; left: 0; right: 0; bottom: 0; height: 65%; pointer-events: none; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 70%); mask-image: linear-gradient(to bottom, transparent, #000 70%); }
+
+/* Comentários */
+.sinal-coment { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; }
+.sinal-coment.novo { height: 20px; padding: 0 7px; border-radius: 999px; background: var(--azul); color: #fff; }
+.selo-novo { height: 18px; padding: 0 7px; border-radius: 999px; background: var(--azul); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; display: inline-flex; align-items: center; }

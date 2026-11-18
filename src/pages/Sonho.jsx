@@ -12,13 +12,14 @@ import { BotaoFavorito } from './Acervo.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Janela from '../components/Janela.jsx';
 import Imagens from '../components/Imagens.jsx';
+import Comentarios from '../components/Comentarios.jsx';
 import { prepararImagem } from '../lib/midia.js';
 
 export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio, urlImagem, salvarImagem, apagarImagem, usuario, avisar, compartilhamentos, temLogin } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, urlImagem, salvarImagem, apagarImagem, usuario, avisar, compartilhamentos, temLogin, recarregarComentarios } = useEstado();
   const [audioFalhou, setAudioFalhou] = useState(false);
   const [compartilhando, setCompartilhando] = useState(false);
   const estiloTema = useCorTema();
@@ -306,6 +307,7 @@ export default function Sonho() {
             ))}
           </ol>
         </div>
+        <Comentarios sonhoId={s.id} modo="dono" veem={veem} aoMudar={recarregarComentarios} />
         <label className="painel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
           <input type="checkbox" checked={!!s.levar_sessao} onChange={(e) => levarSessao(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--azul)', flex: 'none' }} />
           <span style={{ fontSize: 14, lineHeight: 1.45 }}><strong>Levar para a próxima sessão</strong><br /><span style={{ color: 'var(--muted)' }}>{semViuvas(dicaSessao)}</span></span>
