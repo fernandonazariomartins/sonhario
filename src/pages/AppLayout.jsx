@@ -10,6 +10,7 @@ import Lembrete from '../components/Lembrete.jsx';
 import Compartilhar from '../components/Compartilhar.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
+import { primeiraVezInstalado } from '../lib/instalar.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas } from '../components/Icones.jsx';
 
 export default function AppLayout() {
@@ -25,6 +26,11 @@ export default function AppLayout() {
   const caixaMenu = useRef(null);
 
   useEffect(() => { setMenu(false); setJanela(''); }, [pathname]);
+
+  // Primeira vez abrindo o app instalado: confirma que a instalação deu certo.
+  useEffect(() => {
+    if (pronto && (usuario || semConta || !temLogin) && primeiraVezInstalado()) avisar('Sonhário instalado. Sempre que acordar, é só abrir e gravar.');
+  }, [pronto, usuario, semConta, temLogin, avisar]);
 
   // Página nova abre no topo; só o botão voltar do navegador devolve a rolagem de antes.
   const tipoNavegacao = useNavigationType();

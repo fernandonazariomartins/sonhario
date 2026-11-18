@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import Contribuir from '../components/Contribuir.jsx';
+import BotaoInstalar from '../components/BotaoInstalar.jsx';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
-import { Celular, Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar, Cadeado } from '../components/Icones.jsx';
+import { Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar, Cadeado } from '../components/Icones.jsx';
 import { semViuvas as n } from '../lib/tipografia.js';
 
 // Troque pelo seu ID do Associados Amazon (termina em -20) quando a conta estiver aprovada.
@@ -72,7 +73,7 @@ export default function Home() {
           <a href="#recursos" className="esconde-celular" style={{ color: 'var(--ink)', textDecoration: 'none' }}>Recursos</a>
           <a href="#pratica" className="esconde-celular" style={{ color: 'var(--ink)', textDecoration: 'none' }}>Como fazer</a>
           <Entrar style={{ color: 'var(--ink)', textDecoration: 'none', background: 'none', border: 0, padding: 0, font: 'inherit', cursor: 'pointer' }}>{usuario ? 'Abrir o app' : 'Entrar'}</Entrar>
-          <a href="#instalar" className="btn btn-azul" style={{ minHeight: 40 }}><Celular size={16} /> Instalar no celular</a>
+          <BotaoInstalar style={{ minHeight: 40 }} />
         </nav>
         </div>
       </header>
@@ -83,7 +84,7 @@ export default function Home() {
           <div className="rotulo" style={{ color: 'var(--preto)', marginTop: 22 }}>Caderno de sonhos</div>
           <p style={{ margin: '28px 0 0', maxWidth: 560, fontSize: 18, lineHeight: 1.6, color: '#3A3F45' }}>{n('Um caderno para lembrar o que você sonhou, organizar com calma e voltar aos sonhos quando quiser entendê-los. Um apoio ao seu processo de individuação, no seu tempo.')}</p>
           <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            <a href="#instalar" className="btn btn-azul btn-grande"><Celular size={18} /> Instalar no celular</a>
+            <BotaoInstalar className="btn btn-azul btn-grande" size={18} />
             <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
           <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Registre seus sonhos em qualquer dispositivo. Sem loja de aplicativos: o Sonhário se instala direto pelo site.')}</p>
@@ -271,9 +272,12 @@ export default function Home() {
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: '#E6EDF5' }}>{n('Abra o site no celular, instale com dois toques e deixe perto da cama. Amanhã, abra antes de levantar.')}</p>
           <div style={{ marginTop: 10, width: '100%', maxWidth: 560, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 12, padding: '18px 20px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span className="rotulo" style={{ color: 'var(--azul-cinza)' }}>Sem loja de aplicativos</span>
-            <span style={{ fontSize: 15, lineHeight: 1.5 }}>Abra o Sonhário no navegador do celular e toque em <strong>Adicionar à tela&nbsp;inicial</strong>. Ele passa a funcionar como um&nbsp;aplicativo.</span>
+            <span style={{ fontSize: 15, lineHeight: 1.5 }}>Abra o Sonhário no navegador do celular e toque em <strong>Instalar no&nbsp;celular</strong>. Ele passa a funcionar como um aplicativo, sem precisar registrar nenhum sonho&nbsp;antes.</span>
           </div>
-          <Entrar className="btn btn-grande" style={{ marginTop: 6, background: '#fff', color: 'var(--azul)', border: 0 }}>{usuario ? 'Abrir o Sonhário' : 'Entrar com Google'}</Entrar>
+          <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+            <BotaoInstalar className="btn btn-grande" size={18} style={{ background: '#fff', color: 'var(--azul)', border: 0 }} />
+            <Entrar className="btn btn-grande" style={{ background: 'transparent', color: '#fff', border: '1.5px solid rgba(255,255,255,0.6)' }}>{usuario ? 'Abrir o Sonhário' : 'Usar no navegador'}</Entrar>
+          </div>
         </div>
       </section>
 

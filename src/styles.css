@@ -217,3 +217,7 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 .btn-favorito { width: 32px; height: 32px; border: 0; border-radius: 999px; background: transparent; color: rgba(31,35,40,.35); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
 .btn-favorito:hover { color: #C98A00; background: rgba(0,0,0,.05); }
 .btn-favorito.ligado { color: #C98A00; }
+
+/* Janela de instalar */
+.instalar-p { margin: 0; font-size: 16px; line-height: 1.55; }
+.instalar-passos { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 1.5; }
