@@ -182,6 +182,7 @@ export default function Captura() {
 }
 
 function Guardado({ sonho, motivo, transcrevendo, outro }) {
+  const { usuario } = useEstado();
   return (
     <div className="captura" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: 18 }} role="status">
       <span className="selo-ok" aria-hidden="true"><Ok size={44} /></span>
