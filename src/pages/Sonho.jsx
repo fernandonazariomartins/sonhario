@@ -8,6 +8,7 @@ import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca, Compartilhar } from
 import { semViuvas } from '../lib/tipografia.js';
 import { quemVe, pessoa } from '../lib/compartilhar.js';
 import { CompartilharSonho } from '../components/Compartilhar.jsx';
+import { BotaoFavorito } from './Acervo.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Janela from '../components/Janela.jsx';
 
@@ -170,9 +171,12 @@ export default function Sonho() {
             <Calendario size={14} /> {dataLonga(s.sonhado_em)} <span className="data-mudar">mudar</span>
           </button>
         )}
-        <label className="sr" htmlFor="titulo">Título</label>
-        <input id="titulo" value={s.titulo} onChange={(e) => mudar({ titulo: e.target.value })} placeholder={'Sem título'}
-          className="titulo-m" style={{ border: 0, padding: 0, outline: 'none', width: '100%', background: 'transparent', fontFamily: 'var(--sans)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className="sr" htmlFor="titulo">Título</label>
+          <input id="titulo" value={s.titulo} onChange={(e) => mudar({ titulo: e.target.value })} placeholder={'Sem título'}
+            className="titulo-m" style={{ border: 0, padding: 0, outline: 'none', flex: 1, minWidth: 0, background: 'transparent', fontFamily: 'var(--sans)' }} />
+          <BotaoFavorito s={s} size={26} style={{ width: 44, height: 44 }} aoMudar={(v) => mudar({ favorito: v }, true)} />
+        </div>
 
         {s.audio && (
           <div style={{ background: '#F7F8FA', borderRadius: 12, padding: 8, display: 'flex', alignItems: 'center', gap: 12 }}>

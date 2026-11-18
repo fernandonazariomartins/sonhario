@@ -4,7 +4,7 @@
 import { supabase, AUDIO_BUCKET } from './supabase.js';
 
 const CHAVE = 'sonhario:sonhos';
-const CAMPOS = ['id', 'sonhado_em', 'criado_em', 'atualizado_em', 'titulo', 'texto', 'temas', 'status', 'cor', 'conclusoes', 'levar_sessao', 'audio'];
+const CAMPOS = ['id', 'sonhado_em', 'criado_em', 'atualizado_em', 'titulo', 'texto', 'temas', 'status', 'cor', 'conclusoes', 'levar_sessao', 'audio', 'favorito'];
 
 /* ---------- áudio local (IndexedDB) ---------- */
 function abrirDB() {
