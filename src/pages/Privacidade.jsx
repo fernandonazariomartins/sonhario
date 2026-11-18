@@ -10,12 +10,14 @@ const SECOES = [
   ]],
   ['Onde ficam os dados', [
     'Sem conta, tudo fica apenas no seu aparelho, no próprio navegador.',
-    'Com conta, os sonhos e os áudios ficam guardados no Supabase, um serviço de banco de dados, trancados como explicado abaixo. Além disso, regras de acesso garantem que cada pessoa veja somente os próprios sonhos e os que alguém compartilhou com ela.',
+    'Com conta, os sonhos e os áudios ficam guardados no Supabase, um serviço de banco de dados, trancados com a sua frase-senha, como explicado abaixo. Além disso, regras de acesso garantem que cada pessoa veja somente os próprios sonhos e os que alguém compartilhou com ela.',
   ]],
-  ['Criptografia de ponta a ponta', [
-    'Com conta, você cria uma frase-senha. Cada sonho sai do seu aparelho já trancado: título, relato, temas, amplificações, áudio, imagens e comentários. No banco de dados fica só texto embaralhado, e quem administra o Sonhário não tem como abrir.',
+  ['Criptografia', [
+    'Com conta, você cria uma frase-senha. Cada sonho sai do seu aparelho já trancado: título, relato, temas, amplificações, áudio, imagens e comentários. No banco de dados fica só texto embaralhado.',
     'Ficam abertos no banco só o necessário para o app funcionar: datas, status, cor, favorito, lixeira, a duração dos áudios, o tamanho das imagens e com quem cada sonho foi compartilhado.',
-    'A frase-senha nunca sai do seu aparelho. Ao criá-la, você recebe um código de recuperação. Sem a frase-senha e sem o código, ninguém consegue abrir os sonhos, nem você, nem nós.',
+    'A frase-senha nunca sai do seu aparelho. Junto com ela é criado um código de recuperação, que também abre os seus sonhos.',
+    'No nível básico, uma cópia desse código fica guardada no nosso servidor, trancada, e só é devolvida à sua conta Google quando você esquece a frase-senha.',
+    'No nível avançado, essa cópia não existe: só você guarda o código, e ninguém além de você e de quem você escolher consegue abrir os sonhos, nem quem administra o Sonhário. Se perder a frase-senha e o código, os sonhos não podem ser recuperados. Você escolhe o nível ao criar a frase-senha e pode mudar em ⋯ › Criptografia.',
     'Sonhos guardados antes da frase-senha continuam abertos no banco até você tocar em "trancar". Cópias de segurança antigas do banco podem guardar essa versão aberta por alguns dias, até expirarem.',
   ]],
   ['O que não fazemos', [

@@ -9,6 +9,7 @@ import {
 } from './cripto.js';
 
 let dono = null; // user id
+let modo = 'basico'; // 'basico': o servidor guarda o código de recuperação; 'avancado': só a pessoa guarda
 let meuEmail = '';
 let publica = null;
 let privada = null;
@@ -21,6 +22,7 @@ export const estadoDoCofre = () => estadoAtual;
 export const esperarCofre = () => lendo;
 
 export const temPublica = () => !!publica;
+export const modoAtual = () => modo;
 export const estaAberto = () => !!privada;
 export const chaveEmCache = (id) => chavesSonhos.get(id) || null;
 export const guardarEmCache = (id, k) => { chavesSonhos.set(id, k); };
@@ -64,9 +66,12 @@ async function lerCofre(usuario) {
   if (!supabase || !usuario) return 'indisponivel';
   dono = usuario.id;
   meuEmail = (usuario.email || '').toLowerCase();
-  const { data, error } = await supabase.from('chaves').select('publica').eq('user_id', usuario.id).maybeSingle();
+  let { data, error } = await supabase.from('chaves').select('publica, modo').eq('user_id', usuario.id).maybeSingle();
+  // Banco ainda sem a coluna "modo" (bloco 15): lê como avançada, que é como funcionava.
+  if (error && /modo/.test(error.message || '')) ({ data, error } = await supabase.from('chaves').select('publica').eq('user_id', usuario.id).maybeSingle());
   if (error) { if (semTabela(error) || error.code === '42P01' || error.code === 'PGRST205') return 'indisponivel'; throw error; }
   if (!data) return 'sem-chaves';
+  modo = data.modo || 'avancado';
   publica = await importarPublica(data.publica);
   const guardada = await lerDoAparelho(usuario.id);
   if (guardada) { privada = guardada; return 'aberto'; }
@@ -74,6 +79,7 @@ async function lerCofre(usuario) {
 }
 
 function limparMemoria() {
+  modo = 'basico';
   dono = null; meuEmail = ''; publica = null; privada = null; chavesSonhos.clear();
 }
 
@@ -83,12 +89,27 @@ export async function esquecerAparelho(uid) {
   limparMemoria();
 }
 
+/* ---------- código de recuperação guardado pelo servidor (criptografia básica) ---------- */
+async function servidorRecuperacao(acao, codigo) {
+  const { data, error } = await supabase.functions.invoke('recuperacao', { body: { acao, codigo } });
+  if (error) {
+    let msg = error.message;
+    try { msg = (await error.context.json()).erro || msg; } catch { /* sem corpo */ }
+    throw new Error(msg);
+  }
+  return data;
+}
+
 // Primeira vez: cria o par, tranca a privada com a frase-senha e com um código de recuperação.
-export async function criarCofre(usuario, senha) {
+// Básica: o código fica guardado pelo servidor e a função devolve ''.
+// Avançada: devolve o código, que a pessoa precisa guardar.
+export async function criarCofre(usuario, senha, nivel = 'basico') {
   const s = normalizarSenha(senha);
   const par = await criarPar();
   const codigo = novoCodigoRecuperacao();
+  if (nivel === 'basico') await servidorRecuperacao('guardar', codigo);
   const linha = {
+    modo: nivel,
     user_id: usuario.id,
     email: (usuario.email || '').toLowerCase(),
     publica: await exportarPublica(par.publica),
@@ -100,10 +121,10 @@ export async function criarCofre(usuario, senha) {
   // A que fica no aparelho não pode ser exportada: nem um script na página consegue copiá-la.
   const fixa = await abrirPrivada(linha.privada_senha, s, false);
   dono = usuario.id; meuEmail = linha.email;
-  publica = par.publica; privada = fixa;
+  publica = par.publica; privada = fixa; modo = nivel;
   estadoAtual = 'aberto';
   await guardarNoAparelho(usuario.id, fixa);
-  return codigo;
+  return nivel === 'avancado' ? codigo : '';
 }
 
 async function pacote(campo) {
@@ -127,6 +148,36 @@ export async function recuperar(codigo, novaSenha) {
   try { k = await abrirPrivada(await pacote('privada_recuperacao'), normalizarCodigo(codigo), true); }
   catch (e) { throw new Error(e.message === 'senha' ? 'Esse código de recuperação não confere.' : e.message); }
   await gravarNovaSenha(k, normalizarSenha(novaSenha));
+}
+
+// Básica: esqueceu a frase-senha, o servidor devolve o código e a pessoa só cria uma nova.
+export async function recuperarBasico(novaSenha) {
+  const { codigo } = await servidorRecuperacao('pegar');
+  await recuperar(codigo, novaSenha);
+}
+
+// Configurações: passar para a avançada. Devolve o código para a pessoa guardar; o servidor apaga a cópia.
+export async function irParaAvancado() {
+  const { codigo } = await servidorRecuperacao('pegar');
+  const { error } = await supabase.from('chaves').update({ modo: 'avancado', atualizado_em: new Date().toISOString() }).eq('user_id', dono);
+  if (error) throw error;
+  modo = 'avancado';
+  await servidorRecuperacao('apagar');
+  return codigo;
+}
+
+// Configurações: voltar para a básica. Pede a frase-senha para criar um código novo, que o servidor guarda.
+export async function irParaBasico(senha) {
+  let k;
+  try { k = await abrirPrivada(await pacote('privada_senha'), normalizarSenha(senha), true); }
+  catch (e) { throw new Error(e.message === 'senha' ? 'Frase-senha errada.' : e.message); }
+  const codigo = novoCodigoRecuperacao();
+  await servidorRecuperacao('guardar', codigo);
+  const { error } = await supabase.from('chaves').update({
+    modo: 'basico', privada_recuperacao: await trancarPrivada(k, normalizarCodigo(codigo)), atualizado_em: new Date().toISOString(),
+  }).eq('user_id', dono);
+  if (error) throw error;
+  modo = 'basico';
 }
 
 export async function trocarSenha(atual, nova) {

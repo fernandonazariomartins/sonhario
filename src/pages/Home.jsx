@@ -88,7 +88,7 @@ export default function Home() {
             <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
           <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Registre seus sonhos em qualquer dispositivo. Sem loja de aplicativos: o Sonhário se instala direto pelo site.')}</p>
-          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Nem nós conseguimos ler.')}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Há também um nível avançado de criptografia.')}</p>
 
           <div id="recursos" className="cartoes-3" style={{ marginTop: 64 }}>
             {CARTOES.map(({ n: num, t, d, Ic, bg, fg }) => (

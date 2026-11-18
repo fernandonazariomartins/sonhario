@@ -47,6 +47,38 @@ function CampoSenha({ id, rotulo, valor, mudar, auto = 'new-password', foco = fa
 // Valida duas digitações da frase-senha nova. Devolve a mensagem de erro, ou ''.
 const conferir = (a, b) => (a.trim().length < MINIMO ? `Use pelo menos ${MINIMO} caracteres. Uma frase com 4 palavras é fácil de lembrar e difícil de adivinhar.` : a !== b ? 'As duas frases não estão iguais.' : '');
 
+const TEXTO_BASICO = 'Se esquecer a frase-senha, é só entrar com o Google e criar outra.';
+const TEXTO_AVANCADO = 'Você recebe um código de recuperação e é a única pessoa que o guarda. Se perder a frase-senha e o código, ninguém consegue recuperar os sonhos.';
+
+// Básica vem marcada; a avançada aparece só como opção, para quem quiser.
+function EscolhaNivel({ avancado, mudar }) {
+  const [aberta, setAberta] = useState(avancado);
+  if (!aberta) {
+    return (
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.5 }}>
+        {n(TEXTO_BASICO)}{' '}
+        <button type="button" onClick={() => setAberta(true)} style={{ border: 0, background: 'transparent', color: 'var(--ink)', fontSize: 14, fontWeight: 700, textDecoration: 'underline', padding: 0 }}>{n('Há também um nível avançado de criptografia')}</button>
+      </p>
+    );
+  }
+  const opcao = (valor, titulo, texto) => (
+    <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 12, border: '1.5px solid ' + (avancado === valor ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer' }}>
+      <input type="radio" name="nivel" checked={avancado === valor} onChange={() => mudar(valor)} style={{ width: 18, height: 18, marginTop: 2 }} />
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <strong style={{ fontSize: 15 }}>{titulo}</strong>
+        <span style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>{n(texto)}</span>
+      </span>
+    </label>
+  );
+  return (
+    <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <legend className="rotulo" style={{ marginBottom: 6 }}>Nível de criptografia</legend>
+      {opcao(false, 'Básico', TEXTO_BASICO)}
+      {opcao(true, 'Avançado', TEXTO_AVANCADO)}
+    </fieldset>
+  );
+}
+
 /* ---------- primeira vez ---------- */
 export function CriarFrase() {
   const { criarCofre, sair, usuario } = useEstado();
@@ -54,27 +86,28 @@ export function CriarFrase() {
   const [b, setB] = useState('');
   const [erro, setErro] = useState('');
   const [ocupado, setOcupado] = useState(false);
+  const [avancado, setAvancado] = useState(false);
   async function criar(e) {
     e.preventDefault();
     const problema = conferir(a, b);
     if (problema) { setErro(problema); return; }
     setOcupado(true); setErro('');
-    try { await criarCofre(a); } catch (er) { setErro(er.message); setOcupado(false); }
+    try { await criarCofre(a, avancado ? 'avancado' : 'basico'); } catch (er) { setErro(er.message); setOcupado(false); }
   }
   return (
     <Pagina>
       <Selo />
       <span className="rotulo">Seus sonhos, trancados</span>
-      <h1 className="titulo-m">{n('Crie uma frase-senha. Nem nós vamos conseguir ler seus sonhos.')}</h1>
-      <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{n('Cada sonho sai do seu aparelho já trancado com ela. No banco de dados fica só texto embaralhado: quem administra o Sonhário não tem como abrir.')}</p>
-      <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{n('Você digita a frase-senha uma vez em cada aparelho. Ela nunca sai dele.')}</p>
+      <h1 className="titulo-m">{n('Crie uma frase-senha para trancar seus sonhos.')}</h1>
+      <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{n('Cada sonho sai do seu aparelho já trancado com ela, e só abre para você e para quem você escolher. Você digita a frase-senha uma vez em cada aparelho.')}</p>
       <form onSubmit={criar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <CampoSenha id="frase-1" rotulo="Frase-senha" valor={a} mudar={setA} foco />
         <CampoSenha id="frase-2" rotulo="Repita a frase-senha" valor={b} mudar={setB} />
+        <EscolhaNivel avancado={avancado} mudar={setAvancado} />
         {erro && <div className="aviso">{n(erro)}</div>}
         <button type="submit" className="btn btn-preto btn-grande" disabled={ocupado}>{ocupado ? 'Criando as chaves…' : 'Criar frase-senha'}</button>
       </form>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{n('Na próxima tela você recebe um código de recuperação. Sem a frase-senha e sem esse código, ninguém consegue abrir os sonhos, nem você.')}</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{n('Dá para mudar o nível depois, no menu ⋯ › Criptografia.')}</p>
       <button type="button" onClick={sair} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: 0 }}>Sair de {usuario?.email}</button>
     </Pagina>
   );
@@ -117,7 +150,7 @@ export function MostrarCodigo() {
 
 /* ---------- aparelho novo ---------- */
 export function Destrancar() {
-  const { destrancar, recuperarCofre, sair, usuario } = useEstado();
+  const { destrancar, recuperarCofre, recuperarBasico, nivel, sair, usuario } = useEstado();
   const [modo, setModo] = useState('senha'); // 'senha' | 'codigo'
   const [senha, setSenha] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -131,33 +164,37 @@ export function Destrancar() {
     setErro('');
     if (modo === 'codigo') { const p = conferir(a, b); if (p) { setErro(p); return; } }
     setOcupado(true);
-    try { if (modo === 'senha') await destrancar(senha); else await recuperarCofre(codigo, a); }
+    try {
+      if (modo === 'senha') await destrancar(senha);
+      else if (nivel === 'basico') await recuperarBasico(a);
+      else await recuperarCofre(codigo, a);
+    }
     catch (er) { setErro(er.message); setOcupado(false); }
   }
 
   return (
     <Bloco>
       <Selo />
-      <h1 className="titulo-m">{n(modo === 'senha' ? 'Digite a frase-senha para abrir seus sonhos neste aparelho' : 'Recuperar com o código')}</h1>
+      <h1 className="titulo-m">{n(modo === 'senha' ? 'Digite a frase-senha para abrir seus sonhos neste aparelho' : nivel === 'basico' ? 'Crie uma nova frase-senha' : 'Recuperar com o código')}</h1>
       <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {modo === 'senha' ? (
           <CampoSenha id="frase" rotulo="Frase-senha" valor={senha} mudar={setSenha} auto="current-password" foco />
         ) : (
           <>
-            <label htmlFor="codigo" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
+            {nivel !== 'basico' && <label htmlFor="codigo" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
               Código de recuperação
               <input id="codigo" className="campo" value={codigo} onChange={(e) => setCodigo(e.target.value)} autoFocus autoComplete="off" spellCheck={false} placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" style={{ fontSize: 16, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', textTransform: 'uppercase' }} />
-            </label>
+            </label>}
             <CampoSenha id="nova-1" rotulo="Nova frase-senha" valor={a} mudar={setA} />
             <CampoSenha id="nova-2" rotulo="Repita a nova frase-senha" valor={b} mudar={setB} />
           </>
         )}
         {erro && <div className="aviso">{n(erro)}</div>}
-        <button type="submit" className="btn btn-preto btn-grande" disabled={ocupado}>{ocupado ? 'Abrindo…' : modo === 'senha' ? 'Abrir' : 'Recuperar e abrir'}</button>
+        <button type="submit" className="btn btn-preto btn-grande" disabled={ocupado}>{ocupado ? 'Abrindo…' : modo === 'senha' ? 'Abrir' : nivel === 'basico' ? 'Criar e abrir' : 'Recuperar e abrir'}</button>
       </form>
       <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{n(modo === 'senha'
         ? 'Você só precisa digitar uma vez por aparelho. Registrar um sonho novo funciona mesmo sem abrir.'
-        : 'O código é o que apareceu quando você criou a frase-senha. A nova frase-senha passa a valer em todos os aparelhos.')}</p>
+        : nivel === 'basico' ? 'Você já entrou com o Google, então basta criar uma nova. Ela passa a valer em todos os aparelhos.' : 'O código é o que apareceu quando você escolheu o nível avançado. A nova frase-senha passa a valer em todos os aparelhos.')}</p>
       <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => { setModo(modo === 'senha' ? 'codigo' : 'senha'); setErro(''); }} style={{ border: 0, background: 'transparent', color: 'var(--ink)', fontSize: 14, fontWeight: 700, textDecoration: 'underline', padding: 0 }}>{modo === 'senha' ? 'Esqueci a frase-senha' : 'Voltar para a frase-senha'}</button>
         <button type="button" onClick={sair} style={{ border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: 0 }}>Sair de {usuario?.email}</button>
@@ -180,7 +217,7 @@ export function ErroCofre() {
 
 /* ---------- trocar a frase-senha (menu) ---------- */
 export function TrocarFrase({ aoFechar }) {
-  const { trocarSenha, avisar } = useEstado();
+  const { trocarSenha, avisar, nivel } = useEstado();
   const [atual, setAtual] = useState('');
   const [a, setA] = useState('');
   const [b, setB] = useState('');
@@ -200,9 +237,61 @@ export function TrocarFrase({ aoFechar }) {
         <CampoSenha id="t-nova-1" rotulo="Nova frase-senha" valor={a} mudar={setA} />
         <CampoSenha id="t-nova-2" rotulo="Repita a nova frase-senha" valor={b} mudar={setB} />
         {erro && <div className="aviso">{n(erro)}</div>}
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{n('O código de recuperação continua o mesmo. Os outros aparelhos que já estão abertos seguem abertos.')}</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{n((nivel === 'avancado' ? 'O código de recuperação continua o mesmo. ' : '') + 'Os outros aparelhos que já estão abertos seguem abertos.')}</p>
         <button type="submit" className="btn btn-preto" disabled={ocupado}>{ocupado ? 'Trocando…' : 'Trocar'}</button>
       </form>
+    </Janela>
+  );
+}
+
+/* ---------- configurações: nível e frase-senha ---------- */
+export function JanelaCriptografia({ aoFechar, aoTrocarFrase }) {
+  const { nivel, irParaAvancado, irParaBasico, avisar } = useEstado();
+  const [passo, setPasso] = useState(''); // '' | 'avancado' | 'basico'
+  const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  async function mudar(e) {
+    e?.preventDefault();
+    setOcupado(true); setErro('');
+    try {
+      if (passo === 'avancado') { await irParaAvancado(); aoFechar(); }
+      else { await irParaBasico(senha); avisar('Nível básico ativado'); aoFechar(); }
+    } catch (er) { setErro(er.message); setOcupado(false); }
+  }
+  return (
+    <Janela titulo="Criptografia" aoFechar={aoFechar}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
+        <p style={{ margin: 0, lineHeight: 1.6 }}>{n(`Seus sonhos ficam trancados com a sua frase-senha. Nível atual: ${nivel === 'avancado' ? 'avançado' : 'básico'}.`)}</p>
+        <p style={{ margin: 0, lineHeight: 1.6, color: 'var(--muted)' }}>{n(nivel === 'avancado' ? TEXTO_AVANCADO : TEXTO_BASICO)}</p>
+        {!passo && (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-linha" onClick={() => setPasso(nivel === 'avancado' ? 'basico' : 'avancado')}><Cadeado size={16} /> {nivel === 'avancado' ? 'Voltar para o básico' : 'Usar o nível avançado'}</button>
+            <button type="button" className="btn btn-linha" onClick={aoTrocarFrase}>Trocar a frase-senha</button>
+          </div>
+        )}
+        {passo === 'avancado' && (
+          <>
+            <div className="aviso">{n('No avançado, você recebe agora um código de recuperação e passa a ser a única pessoa que o guarda. Se perder a frase-senha e o código, ninguém consegue recuperar os sonhos.')}</div>
+            {erro && <div className="aviso">{n(erro)}</div>}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-preto" disabled={ocupado} onClick={mudar}>{ocupado ? 'Mudando…' : 'Usar o avançado e ver o código'}</button>
+              <button type="button" className="btn btn-linha" disabled={ocupado} onClick={() => setPasso('')}>Cancelar</button>
+            </div>
+          </>
+        )}
+        {passo === 'basico' && (
+          <form onSubmit={mudar} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <p style={{ margin: 0, lineHeight: 1.6 }}>{n('No básico, se esquecer a frase-senha, é só entrar com o Google e criar outra. Confirme a frase-senha atual:')}</p>
+            <CampoSenha id="nivel-senha" rotulo="Frase-senha" valor={senha} mudar={setSenha} auto="current-password" foco />
+            {erro && <div className="aviso">{n(erro)}</div>}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="submit" className="btn btn-preto" disabled={ocupado}>{ocupado ? 'Mudando…' : 'Voltar para o básico'}</button>
+              <button type="button" className="btn btn-linha" disabled={ocupado} onClick={() => setPasso('')}>Cancelar</button>
+            </div>
+          </form>
+        )}
+      </div>
     </Janela>
   );
 }

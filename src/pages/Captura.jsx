@@ -176,7 +176,7 @@ export default function Captura() {
           <Ok size={18} /> {salvando ? 'Guardando…' : 'Guardar o texto'}
         </button>
       )}
-      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas(usuario ? 'Seus sonhos ficam trancados. Nem nós conseguimos ler. Só vê quem você escolher, um sonho por vez.' : 'Sem conta, seus sonhos ficam só neste aparelho.')}</p>
+      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas(usuario ? 'Seus sonhos ficam trancados com a sua frase-senha. Só vê quem você escolher, um sonho por vez.' : 'Sem conta, seus sonhos ficam só neste aparelho.')}</p>
     </div>
   );
 }

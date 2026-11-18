@@ -200,15 +200,21 @@ export function EstadoProvider({ children }) {
   }, []);
 
   // Frase-senha e código de recuperação.
-  const criarCofre = useCallback(async (senha) => {
-    const codigo = await cofreLib.criarCofre(usuario, senha);
-    setCodigoRecuperacao(codigo); // mostrado até a pessoa confirmar que guardou
+  const [nivel, setNivel] = useState('basico'); // nível de criptografia da conta
+  useEffect(() => { if (cofre === 'aberto' || cofre === 'trancado') setNivel(cofreLib.modoAtual()); }, [cofre]);
+  const criarCofre = useCallback(async (senha, n = 'basico') => {
+    const codigo = await cofreLib.criarCofre(usuario, senha, n);
+    if (codigo) setCodigoRecuperacao(codigo); // avançada: mostrado até a pessoa confirmar que guardou
+    setNivel(n);
     setCofre('aberto');
     return codigo;
   }, [uid, setCofre]); // eslint-disable-line react-hooks/exhaustive-deps
   const destrancar = useCallback(async (senha) => { await cofreLib.destrancar(senha); setCofre('aberto'); }, [setCofre]);
   const recuperarCofre = useCallback(async (codigo, nova) => { await cofreLib.recuperar(codigo, nova); setCofre('aberto'); }, [setCofre]);
   const trocarSenha = useCallback((atual, nova) => cofreLib.trocarSenha(atual, nova), []);
+  const recuperarBasico = useCallback(async (nova) => { await cofreLib.recuperarBasico(nova); setCofre('aberto'); }, [setCofre]);
+  const irParaAvancado = useCallback(async () => { const codigo = await cofreLib.irParaAvancado(); setNivel('avancado'); setCodigoRecuperacao(codigo); }, []);
+  const irParaBasico = useCallback(async (senha) => { await cofreLib.irParaBasico(senha); setNivel('basico'); }, []);
   // Tranca o que ainda está aberto no banco (sonhos de antes da frase-senha).
   const trancarAcervo = useCallback(async (aoAvancar) => {
     const r = await loja.trancarTodos(sonhosRef.current, aoAvancar);
@@ -218,7 +224,7 @@ export function EstadoProvider({ children }) {
   const abertosNoBanco = useMemo(() => (usuario && cofre === 'aberto' ? todos.filter((s) => !s._cifrado && !s._trancado).length : 0), [usuario, cofre, todos]);
 
   const valor = {
-    cofre, abrirCofre, criarCofre, destrancar, recuperarCofre, trocarSenha, trancarAcervo, abertosNoBanco,
+    cofre, abrirCofre, criarCofre, destrancar, recuperarCofre, recuperarBasico, trocarSenha, nivel, irParaAvancado, irParaBasico, trancarAcervo, abertosNoBanco,
     codigoRecuperacao, esquecerCodigo: () => setCodigoRecuperacao(''),
     pronto, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
     esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,

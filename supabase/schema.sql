@@ -768,3 +768,19 @@ grant execute on function public.ver_previa_convite(text) to anon, authenticated
 alter table public.comentarios drop constraint if exists comentarios_texto_check;
 alter table public.comentarios add constraint comentarios_texto_check
   check (length(trim(texto)) > 0 and length(texto) <= 12000);
+
+-- 15. Nível de criptografia: básica (padrão) ou avançada ----------------------
+-- Básica: a pessoa só cria a frase-senha. O código de recuperação é guardado pela
+-- função "recuperacao", trancado com uma chave do servidor, e devolvido só para a
+-- própria conta quando ela esquece a frase-senha.
+-- Avançada: só a pessoa guarda o código; o servidor não tem cópia.
+alter table public.chaves add column if not exists modo text not null default 'basico'
+  check (modo in ('basico', 'avancado'));
+
+create table if not exists public.recuperacoes (
+  user_id     uuid primary key references auth.users (id) on delete cascade,
+  codigo      text not null,               -- trancado pela função "recuperacao"
+  criado_em   timestamptz not null default now()
+);
+-- Sem nenhuma regra de acesso: só a função (com a chave de serviço) lê e grava.
+alter table public.recuperacoes enable row level security;
