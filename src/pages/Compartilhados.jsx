@@ -8,6 +8,7 @@ import Comentarios from '../components/Comentarios.jsx';
 import { resumoComentarios } from '../lib/comentarios.js';
 import Avatar from '../components/Avatar.jsx';
 import { LinhaPessoa } from '../components/Compartilhar.jsx';
+import { ConvidarPacientes, BotaoConvite } from '../components/Convidar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
@@ -56,24 +57,33 @@ function Vazio({ texto }) {
 }
 
 function Pessoas_() {
-  const { compartilhamentos, usuario } = useEstado();
+  const { compartilhamentos, usuario, modo } = useEstado();
   const { comigo, aguardando } = compartilhamentos;
   const esperando = aguardando.length > 0 && (
     <div className="aviso">{semViuvas(aguardando.length === 1
       ? `Seu pedido para ver o sonho de ${aguardando[0].dono_nome || aguardando[0].dono_email} está esperando aprovação.`
       : `${aguardando.length} pedidos esperando aprovação.`)}</div>
   );
-  if (!comigo.length && esperando) return <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>{esperando}</div>;
-  if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando alguém (um paciente, um amigo) liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
-  const grupos = [['Pessoas', comigo]];
+  if (!modo.atende) {
+    if (!comigo.length && esperando) return <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>{esperando}</div>;
+    if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando alguém (um paciente, um amigo) liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
+  }
+  // Paciente: quem me marcou como terapeuta (pelo convite ou em Pessoas com acesso).
+  const pacientes = comigo.filter((c) => c.eh_terapeuta);
+  const outros = comigo.filter((c) => !c.eh_terapeuta);
+  const grupos = modo.atende || pacientes.length
+    ? [['Pacientes', pacientes], [pacientes.length ? 'Outras pessoas' : 'Pessoas', outros]]
+    : [['Pessoas', comigo]];
   return (
     <div style={{ width: '100%', maxWidth: 960, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
-        <h1 className="titulo-m">Compartilhados com você</h1>
+        <h1 className="titulo-m">{modo.atende ? 'Pacientes' : 'Compartilhados com você'}</h1>
         <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Você vê só os sonhos que cada pessoa escolheu mostrar, um por um. Não dá para editar, mas dá para comentar.')}</p>
       </div>
+      {modo.atende && <ConvidarPacientes />}
       {esperando}
-      {grupos.map(([nome, lista]) => (
+      {modo.atende && !comigo.length && <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Ninguém entrou pelo seu link ainda. Quando alguém entrar, aparece aqui.')}</p>}
+      {grupos.filter(([, lista]) => lista.length).map(([nome, lista]) => (
         <section key={nome} aria-label={nome} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h2 className="rotulo">{nome}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16, alignItems: 'start' }}>
@@ -81,6 +91,7 @@ function Pessoas_() {
           </div>
         </section>
       ))}
+      {!modo.atende && <div><BotaoConvite tipo="amigo" /></div>}
     </div>
   );
 }
@@ -155,7 +166,7 @@ function CartaoPessoa({ c }) {
 
 function SonhosDaPessoa({ c }) {
   const { carregando, sonhos, trancados, erro } = useSonhosDe(c.dono_id);
-  const { recarregarCompartilhamentos, avisar, compartilhamentos, usuario } = useEstado();
+  const { recarregarCompartilhamentos, avisar, compartilhamentos, usuario, modo } = useEstado();
   const [coment, setComent] = useState({});
   useEffect(() => {
     let vivo = true;
@@ -190,11 +201,11 @@ function SonhosDaPessoa({ c }) {
 
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div><Link to="/app/compartilhados" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Compartilhados</Link></div>
+      <div><Link to="/app/compartilhados" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> {modo.atende ? 'Pacientes' : 'Compartilhados'}</Link></div>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <Avatar nome={nome} foto={foto} size={56} />
         <div style={{ marginRight: 'auto' }}>
-          <span className="rotulo">Compartilhou com você</span>
+          <span className="rotulo">{c.eh_terapeuta ? 'Paciente' : 'Compartilhou com você'}</span>
           <h1 className="titulo-m">{nome}</h1>
           {!carregando && <span style={{ fontSize: 14, color: 'var(--muted)' }}>{sonhos.length === 1 ? '1 sonho compartilhado' : sonhos.length + ' sonhos compartilhados'}</span>}
         </div>

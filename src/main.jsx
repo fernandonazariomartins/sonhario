@@ -16,6 +16,7 @@ import Insights from './pages/Insights.jsx';
 import Privacidade from './pages/Privacidade.jsx';
 import Compartilhados from './pages/Compartilhados.jsx';
 import Convite from './pages/Convite.jsx';
+import ConviteTerapeuta from './pages/ConviteTerapeuta.jsx';
 import Lixeira from './pages/Lixeira.jsx';
 import Pessoas from './pages/Pessoas.jsx';
 import { SONHO_DESTAQUE } from './lib/demoDados.js';
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/demo" element={<Navigate to={'/app/sonho/' + SONHO_DESTAQUE} replace />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/convite/:token" element={<Convite />} />
+          <Route path="/terapeuta/:token" element={<ConviteTerapeuta />} />
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Captura />} />
             <Route path="acervo" element={<Acervo />} />

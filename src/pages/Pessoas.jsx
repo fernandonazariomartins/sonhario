@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
-import { mudarCompartilhamento, desfazer, pessoa, temMarcaTerapeuta, marcarTerapeuta } from '../lib/compartilhar.js';
+import { mudarCompartilhamento, desfazer, pessoa, temMarcaTerapeuta, marcarTerapeuta, terapeutaDe } from '../lib/compartilhar.js';
+import { BotaoConvite } from '../components/Convidar.jsx';
 import { dataCurta, tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { LinhaPessoa, Pedidos } from '../components/Compartilhar.jsx';
@@ -90,6 +91,11 @@ export default function Pessoas() {
         </div>
       ) : (
         <>
+          {/* Convites para o app: ligam as pessoas sem mostrar nenhum sonho. */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {!terapeutaDe(meus) && <BotaoConvite tipo="paciente" />}
+            <BotaoConvite tipo="amigo" />
+          </div>
           <Pedidos pedidos={pedidos} perfis={perfis} />
           {!meus.length && !pedidos.length && (
             <div className="painel" style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -98,7 +104,7 @@ export default function Pessoas() {
             </div>
           )}
           {meus.length > 0 && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16, alignItems: 'start' }}>
-          {meus.map((c) => {
+          {[...meus].sort((a, b) => Number(!!b.eh_terapeuta) - Number(!!a.eh_terapeuta)).map((c) => {
             const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
             return (
               <section key={c.id} aria-label={p.nome} className="painel" style={{ padding: '10px 16px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>

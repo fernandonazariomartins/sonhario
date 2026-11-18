@@ -1,9 +1,21 @@
 {
   "functions": {
-    "api/og.js": { "includeFiles": "api/_fontes/**" }
+    "api/og.js": {
+      "includeFiles": "api/_fontes/**"
+    }
   },
   "rewrites": [
-    { "source": "/convite/:token", "destination": "/api/convite?token=:token" },
-    { "source": "/((?!assets/|api/|.*\\..*).*)", "destination": "/index.html" }
+    {
+      "source": "/convite/:token",
+      "destination": "/api/convite?token=:token"
+    },
+    {
+      "source": "/terapeuta/:token",
+      "destination": "/api/convite?token=:token&tipo=terapeuta"
+    },
+    {
+      "source": "/((?!assets/|api/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ]
 }

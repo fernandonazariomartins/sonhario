@@ -9,15 +9,16 @@ import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
 import { CriarFrase, MostrarCodigo, Destrancar, ErroCofre, TrocarFrase, TrancarAcervo, JanelaCriptografia } from '../components/Cofre.jsx';
 import JanelaIA from '../components/IA.jsx';
+import EscolherModo from '../components/EscolherModo.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
 import { primeiraVezInstalado } from '../lib/instalar.js';
 import { sairDaDemo } from '../lib/demo.js';
 import { semViuvas } from '../lib/tipografia.js';
-import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado } from '../components/Icones.jsx';
+import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado, Ok } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco, demo } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco, demo, modo, mudarModo } = useEstado();
   const navegar = useNavigate();
   const comigoTodos = [...compartilhamentos.comigo, ...compartilhamentos.aguardando];
   const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
@@ -46,7 +47,7 @@ export default function AppLayout() {
     if (!usuario && temLogin && pathname.startsWith('/app/compartilhados')) sessionStorage.setItem(DESTINO, pathname);
     if (usuario) {
       const convite = convitePendente.pegar();
-      if (convite) { navegar('/convite/' + convite, { replace: true }); return; }
+      if (convite) { navegar(convite, { replace: true }); return; }
       const destino = sessionStorage.getItem(DESTINO);
       if (destino) { sessionStorage.removeItem(DESTINO); if (destino !== pathname) navegar(destino, { replace: true }); }
     }
@@ -78,6 +79,8 @@ export default function AppLayout() {
   }
   const pedeFrase = usuario && cofre === 'trancado' && !naCaptura;
   const abrindoCofre = usuario && cofre === 'carregando' && !naCaptura;
+  // Quem atende vê a aba como Pacientes (lá também ficam os amigos que compartilham).
+  const rotulo = modo.atende ? 'Pacientes' : rotuloAba(comigoTodos);
   const aba = ({ isActive }) => 'aba' + (isActive ? ' ativa' : '');
   const abrir = (j) => { setMenu(false); setJanela(j); };
   // Sonhos que vieram do Notion com o cabeçalho ("# Sem título", "Data : …") dentro do relato.
@@ -104,7 +107,7 @@ export default function AppLayout() {
           <NavLink to="/app" end aria-label="Novo sonho" className={({ isActive }) => 'aba' + (isActive ? ' ativa' : ' aba-novo')}><Mais size={16} /> <span className="esconde-celular">Novo</span></NavLink>
           <NavLink to="/app/acervo" aria-label="Acervo" className={({ isActive }) => aba({ isActive: isActive || pathname.startsWith('/app/sonho') })}><Mural size={16} /> <span className="esconde-pequeno">Acervo</span></NavLink>
           <NavLink to="/app/observacoes" aria-label="Observações" className={aba}><Faisca size={16} /> <span className="esconde-celular">Observações</span></NavLink>
-          {comigoTodos.length > 0 && <NavLink to="/app/compartilhados" aria-label={rotuloAba(comigoTodos)} className={aba}><Pessoas size={16} /> <span className="esconde-celular">{rotuloAba(comigoTodos)}</span></NavLink>}
+          {(comigoTodos.length > 0 || modo.atende) && <NavLink to="/app/compartilhados" aria-label={rotulo} className={aba}><Pessoas size={16} /> <span className="esconde-celular">{rotulo}</span></NavLink>}
         </nav>
         <div ref={caixaMenu} style={{ position: 'relative' }}>
           <button type="button" className="btn-icone" onClick={() => setMenu(!menu)} aria-expanded={menu} aria-haspopup="menu" aria-label="Mais opções"><Pontos /></button>
@@ -113,7 +116,13 @@ export default function AppLayout() {
               <Link role="menuitem" className="menu-item" to="/app/importar"><Importar size={18} /> Importar sonhos</Link>
               <Link role="menuitem" className="menu-item" to="/" state={{ ficar: true }}><Voltar size={18} /> Página inicial</Link>
               {temLogin && <Link role="menuitem" className="menu-item" to="/app/pessoas"><Pessoas size={18} /> Pessoas com acesso{compartilhamentos.pedidos.length > 0 && <span style={{ marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 6px', borderRadius: 999, background: 'var(--azul)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{compartilhamentos.pedidos.length}</span>}</Link>}
-              {temLogin && usuario && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
+              {temLogin && usuario && !modo.atende && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
+              {temLogin && usuario && !demo && (
+                <button role="menuitemcheckbox" aria-checked={modo.atende} type="button" className="menu-item" onClick={() => { setMenu(false); mudarModo(!modo.atende); avisar(modo.atende ? 'Modo terapeuta desligado. Os vínculos com pacientes continuam.' : 'Pronto: agora você tem a aba Pacientes.'); }}>
+                  <Pessoas size={18} /> Atendo pacientes
+                  <span aria-hidden="true" style={{ marginLeft: 'auto', width: 22, height: 22, borderRadius: 6, border: modo.atende ? 0 : '1.5px solid var(--line)', background: modo.atende ? 'var(--azul)' : 'transparent', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{modo.atende && <Ok size={14} />}</span>
+                </button>
+              )}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
               {usuario && cofre === 'aberto' && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('cripto')}><Cadeado size={18} /> Criptografia</button>}
               {usuario && !demo && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('ia')}><Faisca size={18} /> Inteligência artificial</button>}
@@ -169,6 +178,8 @@ export default function AppLayout() {
       {janela === 'cripto' && <JanelaCriptografia aoFechar={() => setJanela('')} aoTrocarFrase={() => setJanela('frase')} />}
       {janela === 'trancar' && <TrancarAcervo aoFechar={() => setJanela('')} />}
       {janela === 'ia' && <JanelaIA aoFechar={() => setJanela('')} />}
+      {/* Pergunta uma vez só, fora da captura (de manhã a pessoa abre o app para gravar). */}
+      {usuario && !demo && cofre === 'aberto' && modo.carregado && modo.perguntar && !naCaptura && !janela && <EscolherModo />}
       {aviso && (
         <div className="toast" role="status" style={{ ...(naCaptura ? null : { bottom: 100 }), display: 'flex', alignItems: 'center', gap: 14 }}>
           <span>{aviso.msg}</span>

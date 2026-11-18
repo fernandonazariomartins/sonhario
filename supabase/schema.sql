@@ -784,3 +784,111 @@ create table if not exists public.recuperacoes (
 );
 -- Sem nenhuma regra de acesso: só a função (com a chave de serviço) lê e grava.
 alter table public.recuperacoes enable row level security;
+
+-- 16. Convites para o Sonhário: de terapeuta, de paciente e de amigo -----------
+-- Nenhum convite mostra sonho: só liga as pessoas. Cada um continua escolhendo,
+-- um sonho por vez, o que mostrar. Todos abrem em /terapeuta/:token.
+--   terapeuta: link fixo de quem atende. Quem entra fica com essa pessoa como terapeuta.
+--   paciente:  link de quem registra, para o próprio terapeuta. Vale uma vez.
+--   amigo:     link fixo. Quem entra e quem convidou aparecem um para o outro.
+-- Usa a marcação eh_terapeuta do bloco 12. Pode rodar de novo.
+
+-- null: ainda não respondeu; true: também atende pacientes; false: só registra os sonhos.
+alter table public.perfis add column if not exists atende boolean;
+
+create table if not exists public.convites_terapeuta (
+  token      text primary key,
+  tipo       text not null default 'terapeuta' check (tipo in ('terapeuta', 'paciente', 'amigo')),
+  dono_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  dono_nome  text not null default '',
+  dono_email text not null default '',
+  criado_em  timestamptz not null default now(),
+  unique (dono_id, tipo)
+);
+alter table public.convites_terapeuta enable row level security;
+drop policy if exists "convites_terapeuta: o meu" on public.convites_terapeuta;
+create policy "convites_terapeuta: o meu" on public.convites_terapeuta
+  for all using (auth.uid() = dono_id) with check (auth.uid() = dono_id);
+
+-- O que aparece antes de entrar: quem convidou e o tipo de convite.
+drop function if exists public.ver_convite_terapeuta(text);
+create function public.ver_convite_terapeuta(chave text)
+returns table (dono_nome text, dono_foto text, tipo text)
+language sql stable security definer set search_path = public as $$
+  select c.dono_nome, coalesce(p.foto, ''), c.tipo
+  from public.convites_terapeuta c left join public.perfis p on p.id = c.dono_id
+  where c.token = chave;
+$$;
+revoke all on function public.ver_convite_terapeuta(text) from public;
+grant execute on function public.ver_convite_terapeuta(text) to anon, authenticated;
+
+-- Liga "de" a "para" em Pessoas com acesso, sem nenhum sonho. terapeuta: marca "para" como
+-- o terapeuta de "de" (só um por vez: quem era antes deixa de ser). Devolve se já estavam ligados.
+create or replace function public.ligar_pessoas(de uuid, de_nome text, de_email text, para_email text, para_nome text, terapeuta boolean)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  ja public.compartilhamentos;
+begin
+  if terapeuta then
+    update public.compartilhamentos set eh_terapeuta = false
+     where dono_id = de and eh_terapeuta and convidado_email <> para_email;
+  end if;
+  select * into ja from public.compartilhamentos where dono_id = de and convidado_email = para_email;
+  if found then
+    update public.compartilhamentos
+       set pendente = false, eh_terapeuta = eh_terapeuta or terapeuta
+     where id = ja.id;
+    return case when terapeuta then ja.eh_terapeuta and not ja.pendente else not ja.pendente end;
+  end if;
+  insert into public.compartilhamentos (dono_id, dono_nome, dono_email, convidado_email, convidado_nome, papel, escopo, ver_amplificacoes, pendente, eh_terapeuta)
+  values (de, de_nome, de_email, para_email, para_nome, case when terapeuta then 'terapeuta' else 'amigo' end, 'escolhidos', false, false, terapeuta);
+  return false;
+end;
+$$;
+revoke all on function public.ligar_pessoas(uuid, text, text, text, text, boolean) from public, anon, authenticated;
+
+drop function if exists public.aceitar_convite_terapeuta(text);
+create function public.aceitar_convite_terapeuta(chave text)
+returns table (dono_nome text, tipo text, ja_estava boolean)
+language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
+declare
+  cv public.convites_terapeuta;
+  meu_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  meta jsonb := coalesce(auth.jwt() -> 'user_metadata', '{}'::jsonb);
+  meu_nome text;
+  estava boolean := false;
+  estava2 boolean;
+begin
+  if auth.uid() is null or meu_email = '' then raise exception 'Entre com Google para aceitar o convite.'; end if;
+  select * into cv from public.convites_terapeuta c where c.token = chave;
+  if not found then raise exception 'Esse link não existe mais. Peça um novo.'; end if;
+  if cv.dono_id = auth.uid() then raise exception 'Esse link é seu. Mande para quem você quer convidar.'; end if;
+
+  meu_nome := coalesce(nullif(meta ->> 'full_name', ''), nullif(meta ->> 'name', ''), split_part(meu_email, '@', 1));
+  insert into public.perfis (id, email, nome, foto)
+  values (auth.uid(), meu_email, meu_nome, coalesce(meta ->> 'avatar_url', meta ->> 'picture', ''))
+  on conflict (id) do nothing;
+
+  if cv.tipo = 'terapeuta' then
+    -- Quem entra é paciente: quem convidou vira o seu terapeuta.
+    update public.perfis set atende = coalesce(atende, false) where id = auth.uid();
+    estava := public.ligar_pessoas(auth.uid(), meu_nome, meu_email, lower(cv.dono_email), cv.dono_nome, true);
+  elsif cv.tipo = 'paciente' then
+    -- Quem entra é o terapeuta de quem convidou. O link vale uma vez.
+    update public.perfis set atende = true where id = auth.uid();
+    estava := public.ligar_pessoas(cv.dono_id, cv.dono_nome, lower(cv.dono_email), meu_email, meu_nome, true);
+    delete from public.convites_terapeuta c where c.token = chave;
+  else
+    -- Amigo: os dois aparecem um para o outro.
+    update public.perfis set atende = coalesce(atende, false) where id = auth.uid();
+    estava := public.ligar_pessoas(cv.dono_id, cv.dono_nome, lower(cv.dono_email), meu_email, meu_nome, false);
+    estava2 := public.ligar_pessoas(auth.uid(), meu_nome, meu_email, lower(cv.dono_email), cv.dono_nome, false);
+    estava := estava and estava2;
+  end if;
+  return query select cv.dono_nome, cv.tipo, estava;
+end;
+$$;
+revoke all on function public.aceitar_convite_terapeuta(text) from public, anon;
+grant execute on function public.aceitar_convite_terapeuta(text) to authenticated;
