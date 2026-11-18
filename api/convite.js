@@ -1,4 +1,4 @@
-// /convite/:token passa por aqui antes do app.
+// /convite/:token (link de um sonho) e /terapeuta/:token (convite de quem atende) passam por aqui antes do app.
 // O WhatsApp (e afins) não roda JavaScript: só lê as meta tags do HTML.
 // Então devolve o mesmo index.html do app, com título, texto e imagem do convite.
 import { buscarConvite, escapar } from './_convite.js';
@@ -12,12 +12,19 @@ export default async function handler(req) {
   const token = url.searchParams.get('token') || url.pathname.split('/').pop() || '';
   const origem = `${req.headers.get('x-forwarded-proto') || 'https'}://${req.headers.get('host') || url.host}`;
 
-  const convite = await buscarConvite(token);
+  const terapeuta = url.searchParams.get('tipo') === 'terapeuta';
+  const convite = await buscarConvite(token, terapeuta ? 'ver_convite_terapeuta' : 'ver_convite');
   const nome = (convite?.dono_nome || '').trim();
-  const titulo = convite ? `${nome || 'Alguém'} quer compartilhar um sonho com você` : 'Sonhário';
-  const descricao = convite ? 'Abra o link e entre com a sua conta Google para ver. ' + DESCRICAO_PADRAO : DESCRICAO_PADRAO;
-  const imagem = convite ? `${origem}/api/og?token=${encodeURIComponent(token)}` : `${origem}/icon-512.png`;
-  const endereco = `${origem}/convite/${encodeURIComponent(token)}`;
+  const titulo = !convite ? 'Sonhário'
+    : terapeuta ? `${nome || 'Alguém'} convidou você para registrar seus sonhos no Sonhário`
+    : `${nome || 'Alguém'} quer compartilhar um sonho com você`;
+  const descricao = !convite ? DESCRICAO_PADRAO
+    : terapeuta ? 'Entre com a sua conta Google. Você escolhe, um por vez, os sonhos que quer mostrar.'
+    : 'Abra o link e entre com a sua conta Google para ver. ' + DESCRICAO_PADRAO;
+  // A imagem grande é a do link de um sonho; o convite de terapeuta usa o ícone.
+  const grande = convite && !terapeuta;
+  const imagem = grande ? `${origem}/api/og?token=${encodeURIComponent(token)}` : `${origem}/icon-512.png`;
+  const endereco = `${origem}/${terapeuta ? 'terapeuta' : 'convite'}/${encodeURIComponent(token)}`;
 
   const metas = [
     ['property', 'og:type', 'website'],
@@ -28,11 +35,11 @@ export default async function handler(req) {
     ['property', 'og:image', imagem],
     ['property', 'og:image:secure_url', imagem],
     ['property', 'og:image:type', 'image/png'],
-    ['property', 'og:image:width', convite ? '1200' : '512'],
-    ['property', 'og:image:height', convite ? '630' : '512'],
+    ['property', 'og:image:width', grande ? '1200' : '512'],
+    ['property', 'og:image:height', grande ? '630' : '512'],
     ['property', 'og:image:alt', titulo],
     ['property', 'og:locale', 'pt_BR'],
-    ['name', 'twitter:card', convite ? 'summary_large_image' : 'summary'],
+    ['name', 'twitter:card', grande ? 'summary_large_image' : 'summary'],
     ['name', 'twitter:title', titulo],
     ['name', 'twitter:description', descricao],
     ['name', 'twitter:image', imagem],

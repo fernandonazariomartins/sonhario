@@ -108,8 +108,11 @@ export function rotuloAba() {
 /* ---------- link de convite ---------- */
 const PENDENTE = 'sonhario:convite';
 export const convitePendente = {
+  // Guarda o caminho do convite (ex.: /convite/abc ou /terapeuta/abc); um token solto é de /convite/.
   guardar: (t) => { try { localStorage.setItem(PENDENTE, t); } catch { /* sem armazenamento */ } },
-  pegar: () => { try { const t = localStorage.getItem(PENDENTE); localStorage.removeItem(PENDENTE); return t; } catch { return null; } },
+  pegar: () => {
+    try { const t = localStorage.getItem(PENDENTE); localStorage.removeItem(PENDENTE); return t && (t.startsWith('/') ? t : '/convite/' + t); } catch { return null; }
+  },
 };
 
 function novoToken() {
@@ -163,3 +166,69 @@ export async function aprovarPedido(id) {
   const { error } = await supabase.rpc('aprovar_pedido', { pedido: id });
   if (error) throw error;
 }
+
+/* ---------- modo terapeuta ---------- */
+// atende: null (ainda não respondeu), true (também atende pacientes) ou false.
+// Se o banco ainda não tem a coluna, conta como respondido, para não perguntar à toa.
+export async function meuModo(usuario) {
+  const { data, error } = await supabase.from('perfis').select('atende').eq('id', usuario.id).maybeSingle();
+  if (error) return { atende: false, perguntar: false };
+  return { atende: !!data?.atende, perguntar: data?.atende == null };
+}
+
+export async function definirModo(usuario, atende) {
+  const { error } = await supabase.from('perfis').upsert({
+    id: usuario.id, email: (usuario.email || '').toLowerCase(), nome: nomeDe(usuario), foto: fotoDe(usuario), atende,
+  });
+  if (error) throw error;
+}
+
+// O link fixo de quem atende: o mesmo para todos os pacientes, até ser trocado.
+export async function meuLinkTerapeuta(usuario, { trocar = false } = {}) {
+  if (!trocar) {
+    const { data, error } = await supabase.from('convites_terapeuta').select('token').eq('dono_id', usuario.id).maybeSingle();
+    if (error) throw error;
+    if (data) return location.origin + '/terapeuta/' + data.token;
+  }
+  const token = novoToken();
+  const { error } = await supabase.from('convites_terapeuta').upsert(
+    { token, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: (usuario.email || '').toLowerCase(), criado_em: new Date().toISOString() },
+    { onConflict: 'dono_id' },
+  );
+  if (error) throw error;
+  return location.origin + '/terapeuta/' + token;
+}
+
+export async function linkTerapeutaExiste(usuario) {
+  const { data } = await supabase.from('convites_terapeuta').select('token').eq('dono_id', usuario.id).maybeSingle();
+  return data ? location.origin + '/terapeuta/' + data.token : '';
+}
+
+export async function verConviteTerapeuta(token) {
+  const { data, error } = await supabase.rpc('ver_convite_terapeuta', { chave: token });
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+export async function aceitarConviteTerapeuta(token) {
+  const { data, error } = await supabase.rpc('aceitar_convite_terapeuta', { chave: token });
+  if (error) throw new Error(error.message);
+  return data?.[0];
+}
+
+export async function mandarLinkTerapeuta(url, avisar) {
+  const texto = 'Te convido para registrar seus sonhos no Sonhário. Entre pelo link com a sua conta Google: eu só vejo os sonhos que você escolher me mostrar.\n' + url;
+  try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(texto); avisar('Convite copiado. Cole no WhatsApp ou no e-mail.'); }
+  catch { prompt('Copie o link:', url); }
+}
+
+// Quantos sonhos cada pessoa já me mostrou. Se o banco não tem a função, fica vazio.
+export async function resumoCompartilhados() {
+  const { data, error } = await supabase.rpc('resumo_compartilhados');
+  if (error) return {};
+  return Object.fromEntries((data || []).map((r) => [r.dono, r]));
+}
+
+// Meus terapeutas: quem entrou na minha vida pelo link de convite.
+export const terapeutas = (meus) => meus.filter((c) => c.vinculo_terapeuta);

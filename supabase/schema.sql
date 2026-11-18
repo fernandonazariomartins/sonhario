@@ -511,3 +511,92 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.ver_trecho_convite(text) from public;
 grant execute on function public.ver_trecho_convite(text) to anon, authenticated;
+
+-- 12. Convite de terapeuta ----------------------------------------------------
+-- Quem atende pacientes gera um link fixo. O paciente entra com Google por ele e
+-- fica ligado a quem convidou como terapeuta. Ficar ligado não mostra nenhum sonho:
+-- o paciente continua escolhendo, um por vez, o que mostrar.
+
+-- null: ainda não respondeu; true: também atende pacientes; false: só registra os sonhos.
+alter table public.perfis add column if not exists atende boolean;
+
+-- Marca o acesso que nasceu do link de terapeuta (aparece como "terapeuta" para o paciente).
+alter table public.compartilhamentos add column if not exists vinculo_terapeuta boolean not null default false;
+
+-- Um link por terapeuta, que vale para quantos pacientes ele mandar.
+create table if not exists public.convites_terapeuta (
+  token     text primary key,
+  dono_id   uuid not null unique default auth.uid() references auth.users (id) on delete cascade,
+  dono_nome text not null default '',
+  dono_email text not null default '',
+  criado_em timestamptz not null default now()
+);
+alter table public.convites_terapeuta enable row level security;
+drop policy if exists "convites_terapeuta: o meu" on public.convites_terapeuta;
+create policy "convites_terapeuta: o meu" on public.convites_terapeuta
+  for all using (auth.uid() = dono_id) with check (auth.uid() = dono_id);
+
+-- O que aparece antes de entrar: quem convidou.
+create or replace function public.ver_convite_terapeuta(chave text)
+returns table (dono_nome text, dono_foto text)
+language sql stable security definer set search_path = public as $$
+  select c.dono_nome, coalesce(p.foto, '')
+  from public.convites_terapeuta c left join public.perfis p on p.id = c.dono_id
+  where c.token = chave;
+$$;
+revoke all on function public.ver_convite_terapeuta(text) from public;
+grant execute on function public.ver_convite_terapeuta(text) to anon, authenticated;
+
+-- O paciente aceita: quem convidou passa a aparecer como terapeuta, sem ver nenhum sonho.
+create or replace function public.aceitar_convite_terapeuta(chave text)
+returns table (terapeuta_nome text, terapeuta_email text, ja_estava boolean)
+language plpgsql security definer set search_path = public as $$
+declare
+  cv public.convites_terapeuta;
+  meu_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  meta jsonb := coalesce(auth.jwt() -> 'user_metadata', '{}'::jsonb);
+  meu_nome text;
+  ja public.compartilhamentos;
+  estava boolean := false;
+begin
+  if auth.uid() is null or meu_email = '' then raise exception 'Entre com Google para aceitar o convite.'; end if;
+  select * into cv from public.convites_terapeuta where token = chave;
+  if not found then raise exception 'Esse link não existe mais. Peça um novo.'; end if;
+  if cv.dono_id = auth.uid() then raise exception 'Esse link é seu. Mande para os seus pacientes.'; end if;
+
+  meu_nome := coalesce(nullif(meta ->> 'full_name', ''), nullif(meta ->> 'name', ''), split_part(meu_email, '@', 1));
+
+  -- Quem entra pelo convite já é paciente: não precisa responder se atende.
+  insert into public.perfis (id, email, nome, foto, atende)
+  values (auth.uid(), meu_email, meu_nome, coalesce(meta ->> 'avatar_url', meta ->> 'picture', ''), false)
+  on conflict (id) do update set atende = coalesce(public.perfis.atende, false);
+
+  select * into ja from public.compartilhamentos c where c.dono_id = auth.uid() and c.convidado_email = lower(cv.dono_email);
+  if found then
+    estava := ja.vinculo_terapeuta;
+    update public.compartilhamentos set vinculo_terapeuta = true, papel = 'terapeuta', pendente = false where id = ja.id;
+  else
+    insert into public.compartilhamentos (dono_id, dono_nome, dono_email, convidado_email, convidado_nome, papel, escopo, ver_amplificacoes, pendente, vinculo_terapeuta)
+    values (auth.uid(), meu_nome, meu_email, lower(cv.dono_email), cv.dono_nome, 'terapeuta', 'escolhidos', false, false, true);
+  end if;
+  return query select cv.dono_nome, lower(cv.dono_email), estava;
+end;
+$$;
+revoke all on function public.aceitar_convite_terapeuta(text) from public, anon;
+grant execute on function public.aceitar_convite_terapeuta(text) to authenticated;
+
+-- Resumo de quem compartilha comigo: quantos sonhos e quantos para a próxima sessão.
+create or replace function public.resumo_compartilhados()
+returns table (dono uuid, n int, n_sessao int, ultimo timestamptz)
+language sql stable security definer set search_path = public as $$
+  select c.dono_id,
+         count(s.id)::int,
+         count(s.id) filter (where s.levar_sessao)::int,
+         max(s.sonhado_em)
+  from public.compartilhamentos c
+  left join public.sonhos s on s.user_id = c.dono_id and s.apagado_em is null and c.convidado_email = any (s.compartilhado_com)
+  where c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', '')) and not c.pendente
+  group by c.dono_id;
+$$;
+revoke all on function public.resumo_compartilhados() from public, anon;
+grant execute on function public.resumo_compartilhados() to authenticated;

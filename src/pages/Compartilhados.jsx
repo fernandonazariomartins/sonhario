@@ -2,14 +2,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
-import { sonhosDe, urlAudioCompartilhado, urlImagemCompartilhada, desfazer, pessoa } from '../lib/compartilhar.js';
+import { sonhosDe, urlAudioCompartilhado, urlImagemCompartilhada, desfazer, pessoa, resumoCompartilhados, linkTerapeutaExiste, meuLinkTerapeuta, mandarLinkTerapeuta } from '../lib/compartilhar.js';
 import Imagens from '../components/Imagens.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import { Nota, Status, MuralEmLinhas } from './Acervo.jsx';
-import { Voltar, Avancar, Busca, Calendario, Pessoas } from '../components/Icones.jsx';
+import { Voltar, Avancar, Busca, Calendario, Pessoas, Copiar, Link as IconeLink } from '../components/Icones.jsx';
 
 function useSonhosDe(donoId) {
   const [estado, setEstado] = useState({ carregando: true, sonhos: [], erro: '' });
@@ -45,25 +45,94 @@ function Vazio({ texto }) {
   );
 }
 
+// Quem atende: o link fixo de convite, o mesmo para todos os pacientes.
+function ConvidarPacientes() {
+  const { usuario, avisar } = useEstado();
+  const [url, setUrl] = useState(undefined); // undefined: carregando; '': ainda não criou
+  const [ocupado, setOcupado] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    linkTerapeutaExiste(usuario).then((u) => vivo && setUrl(u)).catch(() => vivo && setUrl(''));
+    return () => { vivo = false; };
+  }, [usuario]);
+
+  async function gerar(trocar = false) {
+    if (trocar && !confirm('Trocar o link? O link atual para de funcionar. Quem já entrou por ele continua com você.')) return;
+    setOcupado(true);
+    try {
+      const u = await meuLinkTerapeuta(usuario, { trocar });
+      setUrl(u);
+      if (trocar) avisar('Link trocado. O antigo não funciona mais.');
+      else mandarLinkTerapeuta(u, avisar);
+    } catch (e) {
+      avisar(/convites_terapeuta/.test(e?.message || '') ? 'O convite de terapeuta ainda não está ativo no banco: rode o bloco 12 do supabase/schema.sql.' : 'Não deu para criar o link: ' + e.message);
+    }
+    setOcupado(false);
+  }
+  async function copiar() {
+    try { await navigator.clipboard.writeText(url); avisar('Link copiado'); } catch { prompt('Copie o link:', url); }
+  }
+
+  return (
+    <section aria-label="Convidar pacientes" className="painel" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <strong style={{ fontSize: 16, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={18} /> Convidar pacientes</strong>
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, maxWidth: 620 }}>{semViuvas('Um link só, para mandar a todos os pacientes. Quem entra por ele com a conta Google aparece aqui. Você não vê nenhum sonho até a pessoa escolher mostrar, um por vez.')}</p>
+      {url === undefined ? <span style={{ fontSize: 14, color: 'var(--muted)' }}>Carregando…</span>
+        : url ? (
+          <>
+            <div style={{ display: 'flex', gap: 8, maxWidth: 620 }}>
+              <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Link de convite para pacientes" style={{ fontSize: 13 }} />
+              <button type="button" className="btn btn-linha" onClick={copiar}><Copiar size={16} /> Copiar</button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              <button type="button" className="btn btn-azul" onClick={() => mandarLinkTerapeuta(url, avisar)}>Mandar</button>
+              <button type="button" onClick={() => gerar(true)} disabled={ocupado} style={{ border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 13, textDecoration: 'underline', padding: '8px 4px' }}>Trocar o link</button>
+            </div>
+          </>
+        ) : <button type="button" className="btn btn-azul" style={{ alignSelf: 'flex-start' }} onClick={() => gerar(false)} disabled={ocupado}><IconeLink size={16} /> {ocupado ? 'Criando…' : 'Gerar link de convite'}</button>}
+    </section>
+  );
+}
+
+function resumoDe(r) {
+  if (!r) return null;
+  if (!r.n) return 'ainda não mostrou nenhum sonho';
+  return (r.n === 1 ? '1 sonho' : r.n + ' sonhos') + (r.n_sessao ? ` · ${r.n_sessao} para a próxima sessão` : '');
+}
+
 function Pessoas_() {
-  const { compartilhamentos, usuario } = useEstado();
+  const { compartilhamentos, usuario, modo } = useEstado();
   const { comigo, aguardando } = compartilhamentos;
+  const [resumo, setResumo] = useState({});
+  useEffect(() => {
+    let vivo = true;
+    resumoCompartilhados().then((r) => vivo && setResumo(r));
+    return () => { vivo = false; };
+  }, [comigo.length]);
   const esperando = aguardando.length > 0 && (
     <div className="aviso">{semViuvas(aguardando.length === 1
       ? `Seu pedido para ver o sonho de ${aguardando[0].dono_nome || aguardando[0].dono_email} está esperando aprovação.`
       : `${aguardando.length} pedidos esperando aprovação.`)}</div>
   );
-  if (!comigo.length && esperando) return <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>{esperando}</div>;
-  if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando alguém (um paciente, um amigo) liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
-  const grupos = [['Pessoas', comigo]];
+  if (!modo.atende) {
+    if (!comigo.length && esperando) return <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '40px 20px' }}>{esperando}</div>;
+    if (!comigo.length) return <Vazio texto={`Ninguém compartilhou sonhos com ${usuario?.email || 'você'} ainda. Quando alguém (um paciente, um amigo) liberar o acesso para esse e-mail, os sonhos aparecem aqui.`} />;
+  }
+  const pacientes = comigo.filter((c) => c.vinculo_terapeuta);
+  const outros = comigo.filter((c) => !c.vinculo_terapeuta);
+  const grupos = modo.atende
+    ? [['Pacientes', pacientes], [pacientes.length ? 'Outras pessoas' : 'Pessoas', outros]]
+    : [['Pessoas', comigo]];
   return (
     <div style={{ width: '100%', maxWidth: 960, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
-        <h1 className="titulo-m">Compartilhados com você</h1>
+        <h1 className="titulo-m">{modo.atende ? 'Pacientes' : 'Compartilhados com você'}</h1>
         <p style={{ margin: '6px 0 0', color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Você vê só os sonhos que cada pessoa escolheu mostrar, um por um. Aqui é só leitura.')}</p>
       </div>
+      {modo.atende && <ConvidarPacientes />}
       {esperando}
-      {grupos.map(([nome, lista]) => (
+      {modo.atende && !comigo.length && <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Ninguém entrou pelo seu link ainda. Quando alguém entrar, aparece aqui.')}</p>}
+      {grupos.filter(([, lista]) => lista.length).map(([nome, lista]) => (
         <section key={nome} aria-label={nome} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h2 className="rotulo">{nome}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
@@ -72,7 +141,7 @@ function Pessoas_() {
                 <Avatar nome={c.dono_nome || c.dono_email} foto={pessoa(compartilhamentos.perfis, c.dono_email).foto} size={48} />
                 <span style={{ minWidth: 0, marginRight: 'auto' }}>
                   <strong style={{ display: 'block', fontSize: 16 }}>{c.dono_nome || c.dono_email}</strong>
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>sonhos que {(c.dono_nome || 'a pessoa').split(' ')[0]} escolheu mostrar</span>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>{resumoDe(resumo[c.dono_id]) || `sonhos que ${(c.dono_nome || 'a pessoa').split(' ')[0]} escolheu mostrar`}</span>
                 </span>
                 <Avancar size={18} />
               </Link>
@@ -86,7 +155,7 @@ function Pessoas_() {
 
 function SonhosDaPessoa({ c }) {
   const { carregando, sonhos, erro } = useSonhosDe(c.dono_id);
-  const { recarregarCompartilhamentos, avisar, compartilhamentos } = useEstado();
+  const { recarregarCompartilhamentos, avisar, compartilhamentos, modo } = useEstado();
   const foto = pessoa(compartilhamentos.perfis, c.dono_email).foto;
   const navegar = useNavigate();
   const [busca, setBusca] = useState('');
@@ -115,11 +184,11 @@ function SonhosDaPessoa({ c }) {
 
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div><Link to="/app/compartilhados" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Compartilhados</Link></div>
+      <div><Link to="/app/compartilhados" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> {modo.atende ? 'Pacientes' : 'Compartilhados'}</Link></div>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <Avatar nome={nome} foto={foto} size={56} />
         <div style={{ marginRight: 'auto' }}>
-          <span className="rotulo">Compartilhou com você · só leitura</span>
+          <span className="rotulo">{c.vinculo_terapeuta && modo.atende ? 'Paciente · só leitura' : 'Compartilhou com você · só leitura'}</span>
           <h1 className="titulo-m">{nome}</h1>
           {!carregando && <span style={{ fontSize: 14, color: 'var(--muted)' }}>{sonhos.length === 1 ? '1 sonho compartilhado' : sonhos.length + ' sonhos compartilhados'}</span>}
         </div>

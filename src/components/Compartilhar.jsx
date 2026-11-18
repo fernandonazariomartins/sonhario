@@ -32,6 +32,9 @@ export function LinhaPessoa({ p, sub, children }) {
   );
 }
 
+// Quem entrou pelo link de terapeuta aparece primeiro.
+const terapeutaPrimeiro = (lista) => [...lista].sort((a, b) => Number(!!b.vinculo_terapeuta) - Number(!!a.vinculo_terapeuta));
+
 // O aviso que deixa claro o que vai: só este sonho.
 function SoEsteSonho({ s }) {
   return (
@@ -249,12 +252,12 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
       {meus.length > 0 && (
         <div role="group" aria-label="Com quem" style={{ display: 'flex', flexDirection: 'column' }}>
           <span className="rotulo" style={{ marginBottom: 2 }}>Com quem</span>
-          {meus.map((c) => {
+          {terapeutaPrimeiro(meus).map((c) => {
             const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
             const marcado = com.includes(c.convidado_email);
             return (
               <label key={c.id} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: '4px 0' }}>
-                <LinhaPessoa p={p} sub={marcado ? 'vê este sonho' : c.convidado_email}>
+                <LinhaPessoa p={p} sub={(c.vinculo_terapeuta ? 'terapeuta · ' : '') + (marcado ? 'vê este sonho' : c.vinculo_terapeuta ? 'não vê este sonho' : c.convidado_email)}>
                   <input type="checkbox" checked={marcado} onChange={(e) => alternar(c.convidado_email, e.target.checked)}
                     aria-label={(marcado ? 'Deixar de mostrar este sonho para ' : 'Mostrar este sonho para ') + p.nome} style={{ width: 22, height: 22, accentColor: 'var(--azul)' }} />
                 </LinhaPessoa>
@@ -282,8 +285,10 @@ export default function Compartilhar({ aoFechar }) {
     try { await mudarCompartilhamento(c.id, parcial); await recarregarCompartilhamentos(); } catch (e) { avisar('Não deu para mudar: ' + e.message); }
   }
   async function tirar(c, nome) {
-    if (!confirm(`Tirar o acesso de ${nome}? A pessoa deixa de ver todos os sonhos que você mostrou para ela.`)) return;
-    try { await desfazer(c.id); await recarregarCompartilhamentos(); avisar('Acesso retirado'); } catch (e) { avisar('Não deu para tirar: ' + e.message); }
+    if (!confirm(c.vinculo_terapeuta
+      ? `Desfazer a ligação com ${nome}? ${nome.split(' ')[0]} deixa de aparecer como terapeuta e de ver os sonhos que você mostrou.`
+      : `Tirar o acesso de ${nome}? A pessoa deixa de ver todos os sonhos que você mostrou para ela.`)) return;
+    try { await desfazer(c.id); await recarregarCompartilhamentos(); avisar(c.vinculo_terapeuta ? 'Ligação desfeita' : 'Acesso retirado'); } catch (e) { avisar('Não deu para tirar: ' + e.message); }
   }
 
   return (
@@ -291,13 +296,13 @@ export default function Compartilhar({ aoFechar }) {
       <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Você compartilha um sonho por vez, pelo botão Compartilhar dentro do sonho. Cada pessoa vê só os sonhos que você mostrou para ela.')}</p>
       <Pedidos pedidos={pedidos} perfis={perfis} />
       {!meus.length && !pedidos.length && <div className="painel" style={{ padding: 16, fontSize: 14, color: 'var(--muted)' }}>Você ainda não compartilhou nenhum sonho.</div>}
-      {meus.map((c) => {
+      {terapeutaPrimeiro(meus).map((c) => {
         const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
         const n = sonhos.filter((x) => x.compartilhado_com?.includes(c.convidado_email)).length;
         return (
           <div key={c.id} className="painel" style={{ padding: '8px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <LinhaPessoa p={p} sub={(n === 1 ? 'vê 1 sonho' : n ? 'vê ' + n + ' sonhos' : 'não vê nenhum sonho') + (p.temConta ? '' : ' · ainda não entrou')}>
-              <button type="button" className="btn-icone" style={{ width: 36, height: 36, color: 'var(--danger)' }} onClick={() => tirar(c, p.nome)} aria-label={'Tirar o acesso de ' + p.nome} title="Tirar o acesso"><Lixo size={16} /></button>
+            <LinhaPessoa p={p} sub={(c.vinculo_terapeuta ? 'terapeuta · ' : '') + (n === 1 ? 'vê 1 sonho' : n ? 'vê ' + n + ' sonhos' : 'não vê nenhum sonho') + (p.temConta ? '' : ' · ainda não entrou')}>
+              <button type="button" className="btn-icone" style={{ width: 36, height: 36, color: 'var(--danger)' }} onClick={() => tirar(c, p.nome)} aria-label={(c.vinculo_terapeuta ? 'Desfazer a ligação com ' : 'Tirar o acesso de ') + p.nome} title={c.vinculo_terapeuta ? 'Desfazer a ligação' : 'Tirar o acesso'}><Lixo size={16} /></button>
             </LinhaPessoa>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
               <input type="checkbox" checked={c.ver_amplificacoes} onChange={(e) => mudar(c, { ver_amplificacoes: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
