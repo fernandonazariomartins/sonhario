@@ -4,7 +4,7 @@ import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
 import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario } from '../components/Icones.jsx';
-import { LinhaDoTempo, VizinhosNoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
+import { LinhaDoTempo, Calendario, MESES_LONGOS, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import Realce from '../components/Realce.jsx';
@@ -324,11 +324,11 @@ export default function Acervo() {
             </div>
           )}
 
-          {(vista === 'mural' || vista === 'lista') && filtrados.length > 0 && (anos.length > 1 || filtrados.length > POR_VEZ) && (
-            <LinhaDoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={escolherPeriodo} comTodos={comFiltro || anos.length > 1} />
-          )}
-          {vista === 'calendario' && filtrados.length > 0 && (
-            <LinhaDoTempo contagem={contagem} ano={calAno} mes={calMes} aoEscolher={(a, m) => mudarMes(a, m || ultimoMes(a))} mesObrigatorio />
+          {(vista === 'mural' || vista === 'lista') && ano !== 'todos' && (anos.length > 1 || filtrados.length > POR_VEZ) && (
+            <p style={{ margin: '-4px 0 0', fontSize: 14, color: 'var(--muted)' }}>
+              <strong style={{ color: 'var(--ink)' }}>{mes ? MESES_LONGOS[mes - 1] + ' de ' + ano : ano}</strong> · {doPeriodo.length === 1 ? '1 sonho' : doPeriodo.length + ' sonhos'}
+              {' · '}<a href="#outros-periodos" onClick={(e) => { e.preventDefault(); document.getElementById('outros-periodos')?.scrollIntoView({ behavior: 'smooth' }); }}>outros períodos</a>
+            </p>
           )}
           {vista === 'mural' && <MuralEmLinhas>{visiveis.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>}
           {vista === 'lista' && <ListaSonhos sonhos={visiveis} achados={achados} />}
@@ -340,7 +340,19 @@ export default function Acervo() {
               <span style={{ fontSize: 13, color: 'var(--muted)' }}>{limite} de {doPeriodo.length}</span>
             </div>
           )}
-          {(vista === 'mural' || vista === 'lista') && doPeriodo.length <= limite && <VizinhosNoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={escolherPeriodo} />}
+          {/* A linha do tempo fica no fim: quem chegou ao fim do período escolhe o próximo. */}
+          {(vista === 'mural' || vista === 'lista') && filtrados.length > 0 && (anos.length > 1 || filtrados.length > POR_VEZ) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 18, marginBottom: 16 }}>
+              <span className="rotulo" id="outros-periodos" style={{ scrollMarginTop: 90 }}>Outros períodos</span>
+              <LinhaDoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={(a, m) => { escolherPeriodo(a, m); window.scrollTo({ top: 0, behavior: 'smooth' }); }} comTodos={comFiltro || anos.length > 1} />
+            </div>
+          )}
+          {vista === 'calendario' && filtrados.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 18, marginBottom: 16 }}>
+              <span className="rotulo">Ir para outro mês</span>
+              <LinhaDoTempo contagem={contagem} ano={calAno} mes={calMes} aoEscolher={(a, m) => { mudarMes(a, m || ultimoMes(a)); window.scrollTo({ top: 0, behavior: 'smooth' }); }} mesObrigatorio />
+            </div>
+          )}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} achados={achados} />}
           {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? 'Nenhum sonho com esse filtro.' : semViuvas('Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras.')}</p>}
         </>

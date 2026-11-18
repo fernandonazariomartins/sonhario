@@ -40,8 +40,10 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
   const anos = Object.keys(contagem).map(Number).sort((a, b) => a - b);
   const trilho = useRef(null);
   useEffect(() => {
-    const el = trilho.current?.querySelector('[aria-current="true"]');
-    if (el) el.scrollIntoView({ block: 'nearest', inline: 'center' });
+    // Centraliza o ano escolhido só na faixa dos anos, sem rolar a página.
+    const caixa = trilho.current;
+    const el = caixa?.querySelector('[aria-current="true"]');
+    if (el) caixa.scrollLeft = el.offsetLeft - caixa.offsetLeft - (caixa.clientWidth - el.clientWidth) / 2;
   }, [ano]);
   if (!anos.length) return null;
   const doAno = ano !== 'todos' && contagem[ano];
@@ -77,30 +79,6 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
           })}
         </div>
       )}
-    </nav>
-  );
-}
-
-// Ao pé da lista: segue para o ano (ou mês) vizinho.
-export function VizinhosNoTempo({ contagem, ano, mes, aoEscolher }) {
-  if (ano === 'todos') return null;
-  const anos = Object.keys(contagem).map(Number).sort((a, b) => a - b);
-  let antes = null; let depois = null;
-  if (mes) {
-    const meses = anos.flatMap((a) => contagem[a].meses.map((n, i) => (n ? [a, i + 1] : null)).filter(Boolean));
-    const k = meses.findIndex(([a, m]) => a === ano && m === mes);
-    antes = meses[k - 1] || null; depois = meses[k + 1] || null;
-  } else {
-    const k = anos.indexOf(ano);
-    antes = anos[k - 1] ? [anos[k - 1], 0] : null; depois = anos[k + 1] ? [anos[k + 1], 0] : null;
-  }
-  if (!antes && !depois) return null;
-  const nome = ([a, m]) => (m ? MESES_LONGOS[m - 1] + (a !== ano ? ' de ' + a : '') : String(a));
-  const ir = (p) => { aoEscolher(p[0], p[1]); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  return (
-    <nav aria-label="Período vizinho" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0 16px' }}>
-      {antes && <button type="button" className="btn btn-linha" onClick={() => ir(antes)}><Voltar size={16} /> {nome(antes)}</button>}
-      {depois && <button type="button" className="btn btn-linha" style={{ marginLeft: 'auto' }} onClick={() => ir(depois)}>{nome(depois)} <Avancar size={16} /></button>}
     </nav>
   );
 }
