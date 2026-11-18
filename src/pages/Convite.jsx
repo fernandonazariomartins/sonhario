@@ -70,6 +70,13 @@ export default function Convite() {
       <>
         <Avatar nome={nome} foto={convite.dono_foto} size={72} />
         <h1 className="titulo-m">{semViuvas(`${nome} quer te mostrar um sonho`)}</h1>
+        {convite.sonho_trecho?.trim() && (
+          <figure className="trecho-convite" aria-label="Começo do sonho">
+            {convite.sonho_titulo?.trim() && <strong>{semViuvas(convite.sonho_titulo)}</strong>}
+            <p>{semViuvas(convite.sonho_trecho)}</p>
+            <span className="trecho-veu" aria-hidden="true" />
+          </figure>
+        )}
         <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(convite.aprovar === false
           ? 'Entre com a sua conta Google para ver este sonho, e só ele. É de graça.'
           : `Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça.`)}</p>

@@ -127,8 +127,8 @@ function LinkConvite({ s }) {
     <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
       <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas((url ? comAprovacao : aprovar)
-        ? 'Quem abrir o link entra com a conta Google e pede para ver este sonho. Você aprova cada pessoa.'
-        : 'Quem abrir o link entra com a conta Google e já vê este sonho, sem esperar a sua aprovação.')}</p>
+        ? 'Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google e pede para ver. Você aprova cada pessoa.'
+        : 'Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google e já vê, sem esperar a sua aprovação.')}</p>
       {url ? (
         <>
           <div style={{ display: 'flex', gap: 8 }}>
