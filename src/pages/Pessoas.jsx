@@ -9,7 +9,7 @@ import { LinhaPessoa, Pedidos } from '../components/Compartilhar.jsx';
 import { Lixo, Fechar } from '../components/Icones.jsx';
 
 const plural = (n, um, varios) => (n === 1 ? '1 ' + um : n + ' ' + varios);
-const VISIVEIS = 4;
+const VISIVEIS = 3;
 
 function Etiqueta({ children }) {
   return <span style={{ height: 24, padding: '0 10px', borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>{children}</span>;
@@ -35,7 +35,7 @@ function SonhosDaPessoa({ c, nome, sonhos }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span className="rotulo">{resumo.map((t) => t.replace(/ /g, '\u00a0')).join(' · ')}</span>
+      <span className="rotulo">{resumo.map((t) => t.replace(/ /g, '\u00a0')).join(' ·\u00a0')}</span>
       <ul style={{ margin: 0, padding: 0, listStyle: 'none', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
         {mostrados.map((s, i) => (
           <li key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px', borderTop: i ? '1px solid var(--line)' : 0 }}>
@@ -79,7 +79,7 @@ export default function Pessoas() {
   }
 
   return (
-    <div style={{ width: '100%', maxWidth: 880, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ width: '100%', maxWidth: 1120, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <h1 className="titulo-m">Pessoas com acesso</h1>
       <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 560 }}>{semViuvas('Você compartilha um sonho por vez, pelo botão Compartilhar dentro do sonho. Cada pessoa vê só os sonhos que você mostrou para ela.')}</p>
 
@@ -97,31 +97,32 @@ export default function Pessoas() {
               <Link className="btn btn-linha" to="/app/acervo">Ir para o acervo</Link>
             </div>
           )}
+          {meus.length > 0 && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 16, alignItems: 'start' }}>
           {meus.map((c) => {
             const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
             return (
-              <section key={c.id} aria-label={p.nome} className="painel" style={{ padding: '10px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <section key={c.id} aria-label={p.nome} className="painel" style={{ padding: '10px 16px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <LinhaPessoa p={p} sub={p.nome !== c.convidado_email ? c.convidado_email + (p.temConta ? '' : ' · ainda não entrou') : (p.temConta ? '' : 'ainda não entrou')}>
                   {c.eh_terapeuta && <Etiqueta>Terapeuta</Etiqueta>}
                   <button type="button" className="btn-icone" style={{ width: 36, height: 36, color: 'var(--danger)', flex: 'none' }} onClick={() => tirar(c, p.nome)} aria-label={'Tirar o acesso de ' + p.nome} title="Tirar o acesso"><Lixo size={16} /></button>
                 </LinhaPessoa>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
+                <SonhosDaPessoa c={c} nome={p.nome} sonhos={sonhos} />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', paddingTop: 10, borderTop: '1px solid var(--line)', fontSize: 13, color: 'var(--muted)' }}>
                   {marcaTerapeuta && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
-                      <input type="checkbox" checked={!!c.eh_terapeuta} onChange={(e) => terapeuta(c, e.target.checked, p.nome)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} title={'Com essa marcação, “Levar para a próxima sessão” já compartilha o sonho com ' + p.nome}>
+                      <input type="checkbox" checked={!!c.eh_terapeuta} onChange={(e) => terapeuta(c, e.target.checked, p.nome)} style={{ width: 14, height: 14, accentColor: 'var(--azul)' }} />
                       É terapeuta
                     </label>
                   )}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={c.ver_amplificacoes} onChange={(e) => mudar(c, { ver_amplificacoes: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
-                    Mostrar as amplificações
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={c.ver_amplificacoes} onChange={(e) => mudar(c, { ver_amplificacoes: e.target.checked })} style={{ width: 14, height: 14, accentColor: 'var(--azul)' }} />
+                    Vê as amplificações
                   </label>
                 </div>
-                {c.eh_terapeuta && <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Ao marcar “Levar para a próxima sessão” num sonho, ele já é compartilhado com ' + p.nome + '.')}</p>}
-                <SonhosDaPessoa c={c} nome={p.nome} sonhos={sonhos} />
               </section>
             );
           })}
+          </div>}
         </>
       )}
     </div>
