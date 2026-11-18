@@ -132,7 +132,14 @@ export function remoto(userId) {
     },
     async salvarVarios(sonhos) {
       for (let i = 0; i < sonhos.length; i += 200) {
-        const { error } = await supabase.from('sonhos').upsert(sonhos.slice(i, i + 200).map((s) => linha(s, userId)));
+        const linhas = sonhos.slice(i, i + 200).map((s) => linha(s, userId));
+        // Num lote, o supabase-js manda as colunas de todas as linhas juntas: a linha que não
+        // tem o campo vai com null. "imagens" e "compartilhado_com" não aceitam null, então quem
+        // não tem recebe o vazio (ex.: importação com só alguns sonhos com imagem).
+        for (const [campo, vazio] of [['imagens', []], ['compartilhado_com', []]]) {
+          if (linhas.some((l) => campo in l)) for (const l of linhas) if (!(campo in l)) l[campo] = vazio;
+        }
+        const { error } = await supabase.from('sonhos').upsert(linhas);
         if (error) throw error;
       }
     },
