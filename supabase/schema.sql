@@ -430,3 +430,71 @@ grant execute on function public.aceitar_convite(text) to authenticated;
 
 -- 9. Favoritos ---------------------------------------------------------------
 alter table public.sonhos add column if not exists favorito boolean not null default false;
+
+-- 10. Imagens e áudios importados ---------------------------------------------
+-- Notas do Keep e páginas do Notion trazem imagens e áudios. As imagens ficam num
+-- bucket privado próprio, uma pasta por pessoa, como os áudios.
+alter table public.sonhos add column if not exists imagens jsonb not null default '[]'::jsonb; -- [{ ref, largura, altura, nome }]
+
+-- O áudio do Keep vem em .3gp; quando o navegador consegue, ele vira .wav antes de subir.
+update storage.buckets
+   set allowed_mime_types = array['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/x-m4a',
+                                  'audio/wav', 'audio/x-wav', 'audio/3gpp', 'audio/amr', 'audio/aac', 'audio/flac']
+ where id = 'audios';
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('imagens', 'imagens', false, 15728640, array['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'])
+on conflict (id) do nothing;
+
+drop policy if exists "imagens: ler as minhas" on storage.objects;
+create policy "imagens: ler as minhas" on storage.objects
+  for select using (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "imagens: enviar as minhas" on storage.objects;
+create policy "imagens: enviar as minhas" on storage.objects
+  for insert with check (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "imagens: trocar as minhas" on storage.objects;
+create policy "imagens: trocar as minhas" on storage.objects
+  for update using (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "imagens: apagar as minhas" on storage.objects;
+create policy "imagens: apagar as minhas" on storage.objects
+  for delete using (bucket_id = 'imagens' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Quem recebeu o sonho vê as imagens dele.
+drop function if exists public.sonhos_compartilhados(uuid);
+create function public.sonhos_compartilhados(dono uuid)
+returns table (
+  id uuid, sonhado_em timestamptz, atualizado_em timestamptz, titulo text, texto text,
+  temas text[], status text, cor text, conclusoes jsonb, levar_sessao boolean, audio jsonb, imagens jsonb
+)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.sonhado_em, s.atualizado_em, s.titulo, s.texto, s.temas, s.status, s.cor,
+         case when c.ver_amplificacoes then s.conclusoes else '[]'::jsonb end,
+         s.levar_sessao, s.audio, s.imagens
+  from public.sonhos s
+  join public.compartilhamentos c on c.dono_id = s.user_id
+  where s.user_id = dono and not c.pendente and s.apagado_em is null
+    and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+    and c.convidado_email = any (s.compartilhado_com)
+  order by s.sonhado_em desc;
+$$;
+revoke all on function public.sonhos_compartilhados(uuid) from public, anon;
+grant execute on function public.sonhos_compartilhados(uuid) to authenticated;
+
+create or replace function public.posso_ver_imagem(caminho text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.sonhos s
+    join public.compartilhamentos c on c.dono_id = s.user_id
+    where s.imagens @> jsonb_build_array(jsonb_build_object('ref', caminho))
+      and not c.pendente and s.apagado_em is null
+      and c.convidado_email = lower(coalesce(auth.jwt() ->> 'email', ''))
+      and c.convidado_email = any (s.compartilhado_com)
+  );
+$$;
+revoke all on function public.posso_ver_imagem(text) from public, anon;
+grant execute on function public.posso_ver_imagem(text) to authenticated;
+
+drop policy if exists "imagens: ver as compartilhadas" on storage.objects;
+create policy "imagens: ver as compartilhadas" on storage.objects
+  for select using (bucket_id = 'imagens' and public.posso_ver_imagem(name));

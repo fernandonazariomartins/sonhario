@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import Realce from '../components/Realce.jsx';
@@ -62,13 +62,14 @@ export function Nota({ s, comTemas = true, para, achado }) {
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           {achado?.ocorrencias > 0 && <span className="contagem-achados" title="Vezes que a busca aparece neste sonho">{achado.ocorrencias}×</span>}
           {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
+          {(s.imagens || []).length > 0 && <span title={s.imagens.length === 1 ? '1 imagem' : s.imagens.length + ' imagens'} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Imagem size={12} w={2.4} />{s.imagens.length > 1 && s.imagens.length}</span>}
           {!para ? <BotaoFavorito s={s} size={16} style={{ margin: '-6px -6px -6px 0' }} /> : s.favorito && <span className="btn-favorito ligado" aria-label="Favorito"><Estrela size={16} cheia /></span>}
         </span>
       </div>
       {s.titulo?.trim() && <h3><Realce texto={s.titulo} termos={termos} /></h3>}
       {achado?.trecho
         ? <p>{achado.onde === 'amplificacoes' && <span className="rotulo-forte" style={{ display: 'block', color: c.rotulo, fontFamily: 'var(--sans, inherit)', fontStyle: 'normal' }}>Nas amplificações</span>}<Realce texto={achado.trecho} termos={termos} /></p>
-        : s.texto ? <p><Realce texto={s.texto} termos={termos} /></p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : 'Sem título'}</p>}
+        : s.texto ? <p><Realce texto={s.texto} termos={termos} /></p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : (s.imagens || []).length ? 'Só a imagem' : 'Sem título'}</p>}
       {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}><Realce texto={t} termos={termos} viuvas={false} /></span>)}</div>}
       <Status s={s.status} cor={c.rotulo} />
     </Link>

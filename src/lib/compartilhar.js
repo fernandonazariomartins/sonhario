@@ -1,6 +1,6 @@
 // Compartilhar sonhos com o terapeuta ou com amigos.
 // Quem compartilha convida pelo e-mail; quem foi convidado entra com Google e lê (sem editar).
-import { supabase, AUDIO_BUCKET } from './supabase.js';
+import { supabase, AUDIO_BUCKET, IMAGEM_BUCKET } from './supabase.js';
 
 export const PAPEIS = {
   // Terapeuta e amigo funcionam igual: o papel fica guardado só por compatibilidade.
@@ -77,6 +77,11 @@ export async function sonhosDe(donoId) {
   const { data, error } = await supabase.rpc('sonhos_compartilhados', { dono: donoId });
   if (error) throw error;
   return data;
+}
+
+export async function urlImagemCompartilhada(ref) {
+  const { data, error } = await supabase.storage.from(IMAGEM_BUCKET).createSignedUrl(ref, 60 * 60);
+  return error ? null : data.signedUrl;
 }
 
 export async function urlAudioCompartilhado(ref) {

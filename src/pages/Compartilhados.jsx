@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
-import { sonhosDe, urlAudioCompartilhado, desfazer, pessoa } from '../lib/compartilhar.js';
+import { sonhosDe, urlAudioCompartilhado, urlImagemCompartilhada, desfazer, pessoa } from '../lib/compartilhar.js';
+import Imagens from '../components/Imagens.jsx';
 import Avatar from '../components/Avatar.jsx';
 import { STATUS, dataLonga, dataCurta, tituloDe, duracao, contarTemas } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
@@ -188,6 +189,7 @@ function SonhoLido({ c, id }) {
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>{duracao(s.audio.duracao)}</span>
           </div>
         )}
+        <Imagens imagens={s.imagens || []} urlDe={urlImagemCompartilhada} />
         {s.texto ? s.texto.split(/\n{2,}/).map((p, k) => <p key={k} className="leitura" style={{ margin: 0, maxWidth: 680, fontSize: 19, lineHeight: 1.75, whiteSpace: 'pre-line' }}>{semViuvas(p)}</p>)
           : <p style={{ margin: 0, color: 'var(--muted)', fontStyle: 'italic' }}>Sem relato escrito.</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 18 }}>

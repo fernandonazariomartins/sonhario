@@ -11,12 +11,15 @@ import { CompartilharSonho } from '../components/Compartilhar.jsx';
 import { BotaoFavorito } from './Acervo.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Janela from '../components/Janela.jsx';
+import Imagens from '../components/Imagens.jsx';
+import { prepararImagem } from '../lib/midia.js';
 
 export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio, usuario, avisar, compartilhamentos, temLogin } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, urlImagem, salvarImagem, apagarImagem, usuario, avisar, compartilhamentos, temLogin } = useEstado();
+  const [audioFalhou, setAudioFalhou] = useState(false);
   const [compartilhando, setCompartilhando] = useState(false);
   const estiloTema = useCorTema();
   const original = sonhos.find((s) => s.id === id);
@@ -47,6 +50,7 @@ export default function Sonho() {
   }, [original]);
   useEffect(() => {
     let vivo = true;
+    setAudioFalhou(false);
     if (s?.audio?.ref) urlAudio(s.audio.ref).then((u) => vivo && setAudioUrl(u));
     return () => { vivo = false; };
   }, [s?.audio?.ref]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -117,6 +121,22 @@ export default function Sonho() {
     setConclusao('');
   };
 
+  async function adicionarImagens(arquivos) {
+    const novas = [];
+    for (const f of arquivos) {
+      try {
+        const { blob, largura, altura } = await prepararImagem(f, f.name);
+        const ref = await salvarImagem(s.id + '-' + novoId().slice(0, 8), blob);
+        novas.push({ ref, largura, altura, nome: f.name });
+      } catch (e) { avisar('Não deu para guardar a imagem: ' + e.message); }
+    }
+    if (novas.length) mudar({ imagens: [...(s.imagens || []), ...novas] }, true);
+  }
+  function tirarImagem(im) {
+    mudar({ imagens: (s.imagens || []).filter((x) => x.ref !== im.ref) }, true);
+    apagarImagem(im.ref);
+  }
+
   const veem = quemVe(compartilhamentos.meus, s).map((c) => pessoa(compartilhamentos.perfis, c.convidado_email, c.convidado_nome));
 
   return (
@@ -180,10 +200,13 @@ export default function Sonho() {
 
         {s.audio && (
           <div style={{ background: '#F7F8FA', borderRadius: 12, padding: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-            {audioUrl ? <audio src={audioUrl} controls style={{ flex: 1, height: 40 }} /> : <span style={{ fontSize: 13, color: 'var(--muted)', padding: 8 }}>Carregando o áudio…</span>}
+            {audioFalhou
+              ? <span style={{ flex: 1, fontSize: 13, color: 'var(--muted)', padding: 8 }}>Este navegador não toca esse formato de áudio. <a href={audioUrl} download={s.audio.nome || 'audio'}>Baixar o áudio</a></span>
+              : audioUrl ? <audio src={audioUrl} controls onError={() => setAudioFalhou(true)} style={{ flex: 1, height: 40 }} /> : <span style={{ fontSize: 13, color: 'var(--muted)', padding: 8 }}>Carregando o áudio…</span>}
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>{duracao(s.audio.duracao)}</span>
           </div>
         )}
+        <Imagens imagens={s.imagens || []} urlDe={urlImagem} aoAdicionar={adicionarImagens} aoTirar={tirarImagem} />
         {s.audio && transcricaoNoServidor && usuario && (
           <button type="button" className="btn btn-tracejado" style={{ alignSelf: 'flex-start' }} onClick={transcrever} disabled={transcrevendo}>
             {transcrevendo ? 'Transcrevendo o áudio…' : s.texto ? 'Transcrever o áudio de novo (soma ao texto)' : 'Transformar o áudio em texto'}
