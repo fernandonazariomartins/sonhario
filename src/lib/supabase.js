@@ -7,6 +7,7 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const supabase = url && key ? createClient(url, key) : null;
 
 export const AUDIO_BUCKET = 'audios';
+export const IMAGEM_BUCKET = 'imagens';
 
 export function entrarComGoogle() {
   return supabase.auth.signInWithOAuth({
