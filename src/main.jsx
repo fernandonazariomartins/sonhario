@@ -17,6 +17,7 @@ import Privacidade from './pages/Privacidade.jsx';
 import Compartilhados from './pages/Compartilhados.jsx';
 import Convite from './pages/Convite.jsx';
 import Lixeira from './pages/Lixeira.jsx';
+import Pessoas from './pages/Pessoas.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="importar" element={<Importar />} />
             <Route path="insights" element={<Insights />} />
             <Route path="lixeira" element={<Lixeira />} />
+            <Route path="pessoas" element={<Pessoas />} />
             <Route path="compartilhados" element={<Compartilhados />} />
             <Route path="compartilhados/:dono" element={<Compartilhados />} />
             <Route path="compartilhados/:dono/:id" element={<Compartilhados />} />

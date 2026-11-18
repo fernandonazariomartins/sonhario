@@ -163,3 +163,15 @@ export async function aprovarPedido(id) {
   const { error } = await supabase.rpc('aprovar_pedido', { pedido: id });
   if (error) throw error;
 }
+
+/* ---------- terapeuta ---------- */
+// A marcação só existe depois que a coluna eh_terapeuta for criada no banco (schema.sql, parte 12).
+export const temMarcaTerapeuta = (meus) => meus.some((c) => 'eh_terapeuta' in c);
+export const terapeutaDe = (meus) => meus.find((c) => c.eh_terapeuta) || null;
+
+// Só uma pessoa por vez: desmarca quem era antes e marca a nova.
+export async function marcarTerapeuta(meus, c, ligar) {
+  const antes = terapeutaDe(meus);
+  if (antes && antes.id !== c.id) await mudarCompartilhamento(antes.id, { eh_terapeuta: false });
+  await mudarCompartilhamento(c.id, { eh_terapeuta: ligar });
+}

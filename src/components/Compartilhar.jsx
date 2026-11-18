@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import Janela from './Janela.jsx';
 import Avatar from './Avatar.jsx';
 import { useEstado } from '../lib/estado.jsx';
-import { convidar, mudarCompartilhamento, desfazer, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink, aprovarPedido, recusarPedido } from '../lib/compartilhar.js';
+import { convidar, textoConvite, perfilPorEmail, pessoa, criarLink, mandarLink, aprovarPedido, recusarPedido } from '../lib/compartilhar.js';
 import { tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
-import { Copiar, Lixo, Mais, Ok, Link as IconeLink } from './Icones.jsx';
+import { Copiar, Mais, Ok, Link as IconeLink } from './Icones.jsx';
 
 
 async function enviarConvite(c, sonho, avisar) {
@@ -46,7 +46,7 @@ function SoEsteSonho({ s }) {
 }
 
 // Pedidos de quem abriu um link: aprovar ou recusar.
-function Pedidos({ pedidos, perfis, sonhoId }) {
+export function Pedidos({ pedidos, perfis, sonhoId }) {
   const { avisar, recarregarCompartilhamentos } = useEstado();
   const lista = sonhoId ? pedidos.filter((c) => c.sonhos_pedidos?.includes(sonhoId)) : pedidos;
   if (!lista.length) return null;
@@ -296,7 +296,7 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
             const marcado = com.includes(c.convidado_email);
             return (
               <label key={c.id} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: '4px 0' }}>
-                <LinhaPessoa p={p} sub={marcado ? 'vê este sonho' : c.convidado_email}>
+                <LinhaPessoa p={p} sub={(c.eh_terapeuta ? 'terapeuta · ' : '') + (marcado ? 'vê este sonho' : c.convidado_email)}>
                   <input type="checkbox" checked={marcado} onChange={(e) => alternar(c.convidado_email, e.target.checked)}
                     aria-label={(marcado ? 'Deixar de mostrar este sonho para ' : 'Mostrar este sonho para ') + p.nome} style={{ width: 22, height: 22, accentColor: 'var(--azul)' }} />
                 </LinhaPessoa>
@@ -310,44 +310,6 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
         : <button type="button" className="btn btn-tracejado" onClick={() => setConvidando(true)}><Mais size={16} /> {meus.length ? 'Outra pessoa, pelo e-mail' : 'Convidar pelo e-mail'}</button>}
       {!convidando && <LinkConvite s={s} />}
       {meus.length > 0 && !convidando && <button type="button" className="btn btn-azul btn-grande" onClick={aoFechar}>Pronto</button>}
-    </Janela>
-  );
-}
-
-// Menu ⋯: quem vê seus sonhos e os pedidos. Compartilhar mesmo é sempre pelo botão do sonho.
-export default function Compartilhar({ aoFechar }) {
-  const { usuario, avisar, sonhos, compartilhamentos, recarregarCompartilhamentos } = useEstado();
-  const { meus, pedidos, perfis } = compartilhamentos;
-  if (!usuario) return <PedirLogin aoFechar={aoFechar} titulo="Pessoas com acesso" />;
-
-  async function mudar(c, parcial) {
-    try { await mudarCompartilhamento(c.id, parcial); await recarregarCompartilhamentos(); } catch (e) { avisar('Não deu para mudar: ' + e.message); }
-  }
-  async function tirar(c, nome) {
-    if (!confirm(`Tirar o acesso de ${nome}? A pessoa deixa de ver todos os sonhos que você mostrou para ela.`)) return;
-    try { await desfazer(c.id); await recarregarCompartilhamentos(); avisar('Acesso retirado'); } catch (e) { avisar('Não deu para tirar: ' + e.message); }
-  }
-
-  return (
-    <Janela titulo="Pessoas com acesso" aoFechar={aoFechar}>
-      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Você compartilha um sonho por vez, pelo botão Compartilhar dentro do sonho. Cada pessoa vê só os sonhos que você mostrou para ela.')}</p>
-      <Pedidos pedidos={pedidos} perfis={perfis} />
-      {!meus.length && !pedidos.length && <div className="painel" style={{ padding: 16, fontSize: 14, color: 'var(--muted)' }}>Você ainda não compartilhou nenhum sonho.</div>}
-      {meus.map((c) => {
-        const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
-        const n = sonhos.filter((x) => x.compartilhado_com?.includes(c.convidado_email)).length;
-        return (
-          <div key={c.id} className="painel" style={{ padding: '8px 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <LinhaPessoa p={p} sub={(n === 1 ? 'vê 1 sonho' : n ? 'vê ' + n + ' sonhos' : 'não vê nenhum sonho') + (p.temConta ? '' : ' · ainda não entrou')}>
-              <button type="button" className="btn-icone" style={{ width: 36, height: 36, color: 'var(--danger)' }} onClick={() => tirar(c, p.nome)} aria-label={'Tirar o acesso de ' + p.nome} title="Tirar o acesso"><Lixo size={16} /></button>
-            </LinhaPessoa>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
-              <input type="checkbox" checked={c.ver_amplificacoes} onChange={(e) => mudar(c, { ver_amplificacoes: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
-              Mostrar as amplificações
-            </label>
-          </div>
-        );
-      })}
     </Janela>
   );
 }

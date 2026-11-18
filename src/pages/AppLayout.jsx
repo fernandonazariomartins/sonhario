@@ -7,7 +7,6 @@ import Assinatura from '../components/Assinatura.jsx';
 import Entrar from './Entrar.jsx';
 import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
-import Compartilhar from '../components/Compartilhar.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
 import { primeiraVezInstalado } from '../lib/instalar.js';
@@ -22,7 +21,7 @@ export default function AppLayout() {
   const [arrumando, setArrumando] = useState(false);
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
-  const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'compartilhar'
+  const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete'
   const caixaMenu = useRef(null);
 
   useEffect(() => { setMenu(false); setJanela(''); }, [pathname]);
@@ -99,7 +98,7 @@ export default function AppLayout() {
             <div className="menu" role="menu">
               <Link role="menuitem" className="menu-item" to="/app/importar"><Importar size={18} /> Importar sonhos</Link>
               <Link role="menuitem" className="menu-item" to="/" state={{ ficar: true }}><Voltar size={18} /> Página inicial</Link>
-              {temLogin && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('compartilhar')}><Pessoas size={18} /> Pessoas com acesso{compartilhamentos.pedidos.length > 0 && <span style={{ marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 6px', borderRadius: 999, background: 'var(--azul)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{compartilhamentos.pedidos.length}</span>}</button>}
+              {temLogin && <Link role="menuitem" className="menu-item" to="/app/pessoas"><Pessoas size={18} /> Pessoas com acesso{compartilhamentos.pedidos.length > 0 && <span style={{ marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 6px', borderRadius: 999, background: 'var(--azul)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{compartilhamentos.pedidos.length}</span>}</Link>}
               {temLogin && usuario && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
@@ -116,8 +115,8 @@ export default function AppLayout() {
           )}
         </div>
       </header>
-      {!naCaptura && compartilhamentos.pedidos.length > 0 && (
-        <button type="button" onClick={() => setJanela('compartilhar')} style={{ border: 0, borderBottom: '1px solid #F3DDB5', background: 'var(--warn-bg)', color: 'var(--warn-ink)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      {!naCaptura && pathname !== '/app/pessoas' && compartilhamentos.pedidos.length > 0 && (
+        <button type="button" onClick={() => navegar('/app/pessoas')} style={{ border: 0, borderBottom: '1px solid #F3DDB5', background: 'var(--warn-bg)', color: 'var(--warn-ink)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Pessoas size={16} /> {compartilhamentos.pedidos.length === 1 ? '1 pessoa abriu seu link e quer ver um sonho' : compartilhamentos.pedidos.length + ' pessoas abriram seu link e querem ver um sonho'} · <span style={{ textDecoration: 'underline' }}>ver pedidos</span>
         </button>
       )}
@@ -138,7 +137,6 @@ export default function AppLayout() {
       {!naCaptura && <Link to="/app" className="fab" aria-label="Novo sonho"><Mais size={26} w={2.6} /><span className="esconde-celular">Novo sonho</span></Link>}
       {janela === 'contribuir' && <Contribuir aoFechar={() => setJanela('')} />}
       {janela === 'lembrete' && <Lembrete aoFechar={() => setJanela('')} />}
-      {janela === 'compartilhar' && <Compartilhar aoFechar={() => setJanela('')} />}
       {aviso && (
         <div className="toast" role="status" style={{ ...(naCaptura ? null : { bottom: 100 }), display: 'flex', alignItems: 'center', gap: 14 }}>
           <span>{aviso.msg}</span>

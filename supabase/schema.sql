@@ -511,3 +511,9 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.ver_trecho_convite(text) from public;
 grant execute on function public.ver_trecho_convite(text) to anon, authenticated;
+
+-- 12. Terapeuta ---------------------------------------------------------------
+-- Uma pessoa em "Pessoas com acesso" pode ser marcada como terapeuta. Marcar
+-- "Levar para a próxima sessão" num sonho já compartilha o sonho com essa pessoa.
+alter table public.compartilhamentos add column if not exists eh_terapeuta boolean not null default false;
+create unique index if not exists compartilhamentos_um_terapeuta on public.compartilhamentos (dono_id) where eh_terapeuta;

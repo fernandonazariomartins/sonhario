@@ -6,7 +6,7 @@ import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { sugerirTemas, sugerirTemasIA, juntarIA } from '../lib/temasAuto.js';
 import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca, Compartilhar } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
-import { quemVe, pessoa } from '../lib/compartilhar.js';
+import { quemVe, pessoa, terapeutaDe } from '../lib/compartilhar.js';
 import { CompartilharSonho } from '../components/Compartilhar.jsx';
 import { BotaoFavorito } from './Acervo.jsx';
 import Avatar from '../components/Avatar.jsx';
@@ -138,6 +138,18 @@ export default function Sonho() {
   }
 
   const veem = quemVe(compartilhamentos.meus, s).map((c) => pessoa(compartilhamentos.perfis, c.convidado_email, c.convidado_nome));
+  // Com um terapeuta marcado em Pessoas com acesso, levar para a sessão já compartilha com essa pessoa.
+  const terapeuta = terapeutaDe(compartilhamentos.meus);
+  const nomeTerapeuta = terapeuta && pessoa(compartilhamentos.perfis, terapeuta.convidado_email, terapeuta.convidado_nome).nome;
+  const terapeutaVe = terapeuta && (s.compartilhado_com || []).includes(terapeuta.convidado_email);
+  function levarSessao(ligar) {
+    if (!ligar || !terapeuta || terapeutaVe) return mudar({ levar_sessao: ligar }, true);
+    mudar({ levar_sessao: true, compartilhado_com: [...(s.compartilhado_com || []), terapeuta.convidado_email] }, true);
+    avisar('Compartilhado com ' + nomeTerapeuta);
+  }
+  const dicaSessao = !terapeuta ? 'Fica marcado para você lembrar antes da análise.'
+    : s.levar_sessao && terapeutaVe ? nomeTerapeuta + ' já vê este sonho.'
+    : 'Ao marcar, este sonho já é compartilhado com ' + nomeTerapeuta + '.';
 
   return (
     <div style={{ width: '100%', maxWidth: 1280, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
@@ -302,8 +314,8 @@ export default function Sonho() {
           </ol>
         </div>
         <label className="painel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
-          <input type="checkbox" checked={!!s.levar_sessao} onChange={(e) => mudar({ levar_sessao: e.target.checked }, true)} style={{ width: 20, height: 20, accentColor: 'var(--azul)', flex: 'none' }} />
-          <span style={{ fontSize: 14, lineHeight: 1.45 }}><strong>Levar para a próxima sessão</strong><br /><span style={{ color: 'var(--muted)' }}>Fica marcado para você lembrar antes da análise.</span></span>
+          <input type="checkbox" checked={!!s.levar_sessao} onChange={(e) => levarSessao(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--azul)', flex: 'none' }} />
+          <span style={{ fontSize: 14, lineHeight: 1.45 }}><strong>Levar para a próxima sessão</strong><br /><span style={{ color: 'var(--muted)' }}>{semViuvas(dicaSessao)}</span></span>
         </label>
         <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('As amplificações são suas. O Sonhário não interpreta sonhos e não substitui a sua análise.')}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '4px 4px 0' }}>
