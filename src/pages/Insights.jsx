@@ -7,7 +7,7 @@ import { Cadeado } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 
 const plural = (n) => n + (n === 1 ? ' insight' : ' insights');
-const linkTema = (t) => '/app/acervo?v=temas&t=' + encodeURIComponent(t);
+const linkTema = (t) => '/app/acervo?tema=' + encodeURIComponent(t);
 
 function Barras({ barras }) {
   const max = Math.max(1, ...barras.map((m) => m.n));
@@ -45,7 +45,9 @@ function Cartao({ i, modo = 'real', trava }) {
             <li key={k} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}>
               {x.tema && <Chip t={x.tema} />}
               {x.par && <><span style={{ color: 'var(--muted)' }}>+</span><Chip t={x.par} /></>}
-              {x.palavra && <span className="chip" style={{ ...estiloTema(x.palavra), ...chip }}>{x.palavra}</span>}
+              {x.palavra && (real
+                ? <Link to={'/app/acervo?q=' + encodeURIComponent(x.palavra)} className="chip" style={{ ...estiloTema(x.palavra), ...chip }}>{x.palavra}</Link>
+                : <span className="chip" style={{ ...estiloTema(x.palavra), ...chip }}>{x.palavra}</span>)}
               {x.sonho && (real
                 ? <Link to={'/app/sonho/' + x.sonho.id} style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || 'Sem título'}</Link>
                 : <span style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || 'Sem título'}</span>)}

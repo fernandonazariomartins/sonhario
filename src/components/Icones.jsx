@@ -20,6 +20,10 @@ export const Voltar = (p) => <I {...p} d="M15 6l-6 6 6 6" />;
 export const Avancar = (p) => <I {...p} d="M9 6l6 6-6 6" />;
 export const Mais = (p) => <I {...p} w={2.4} d="M12 5v14M5 12h14" />;
 export const Fechar = (p) => <I {...p} w={2.6} d="M6 6l12 12M18 6L6 18" />;
+// Estrela: vazada por padrão; "cheia" preenche (sonho favorito).
+export const Estrela = ({ size = 18, cheia = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" strokeWidth={2} {...base} fill={cheia ? 'currentColor' : 'none'}><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" /></svg>
+);
 export const Ok = (p) => <I {...p} w={2.6} d="M5 12l5 5L20 7" />;
 export const Lixo = (p) => <I {...p} d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" />;
 export const Importar = (p) => <I {...p} d="M12 4v11M7 10l5 5 5-5M5 20h14" />;

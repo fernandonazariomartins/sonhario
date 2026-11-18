@@ -427,3 +427,6 @@ end;
 $$;
 revoke all on function public.aceitar_convite(text) from public, anon;
 grant execute on function public.aceitar_convite(text) to authenticated;
+
+-- 9. Favoritos ---------------------------------------------------------------
+alter table public.sonhos add column if not exists favorito boolean not null default false;

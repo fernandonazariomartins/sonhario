@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Busca, Mic } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import Realce from '../components/Realce.jsx';
@@ -37,6 +37,20 @@ export function MuralEmLinhas({ children, largura = 250, vao = 16 }) {
   );
 }
 
+// Botão de favoritar: fica dentro do card (que é um link), então não deixa o clique abrir o sonho.
+export function BotaoFavorito({ s, size = 18, style, aoMudar }) {
+  const { salvar } = useEstado();
+  const fav = !!s.favorito;
+  return (
+    <button type="button" className={'btn-favorito' + (fav ? ' ligado' : '')} aria-pressed={fav}
+      aria-label={fav ? 'Tirar dos favoritos' : 'Favoritar este sonho'} title={fav ? 'Tirar dos favoritos' : 'Favoritar'}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (aoMudar) aoMudar(!fav); else salvar({ ...s, favorito: !fav }); }} style={style}>
+      <Estrela size={size} cheia={fav} />
+    </button>
+  );
+}
+
+// Sem "para" é sonho meu: dá para favoritar. Com "para" (compartilhado comigo), só mostra.
 export function Nota({ s, comTemas = true, para, achado }) {
   const estiloTema = useCorTema();
   const c = CORES[s.cor] || CORES.branco;
@@ -48,6 +62,7 @@ export function Nota({ s, comTemas = true, para, achado }) {
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           {achado?.ocorrencias > 0 && <span className="contagem-achados" title="Vezes que a busca aparece neste sonho">{achado.ocorrencias}×</span>}
           {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
+          {!para ? <BotaoFavorito s={s} size={16} style={{ margin: '-6px -6px -6px 0' }} /> : s.favorito && <span className="btn-favorito ligado" aria-label="Favorito"><Estrela size={16} cheia /></span>}
         </span>
       </div>
       {s.titulo?.trim() && <h3><Realce texto={s.titulo} termos={termos} /></h3>}
@@ -142,6 +157,7 @@ function Vazio() {
 
 export default function Acervo() {
   const { sonhos, exemplos, esconderExemplos } = useEstado();
+  const estiloTema = useCorTema();
   const [exemploAberto, setExemploAberto] = useState(null);
   const [params, setParams] = useSearchParams();
   const vista = params.get('v') || 'mural';
@@ -164,6 +180,11 @@ export default function Acervo() {
     return () => window.removeEventListener('keydown', tecla);
   }, []);
   const [soAtencao, setSoAtencao] = useState(false);
+  const [soFavoritos, setSoFavoritos] = useState(() => params.get('f') === '1');
+  const nFavoritos = useMemo(() => sonhos.filter((s) => s.favorito).length, [sonhos]);
+  // ?tema=X: só os sonhos com esse tema (é para onde vão as tags das Observações).
+  const temaFiltro = params.get('tema') || '';
+  const tirarTema = () => { const novo = new URLSearchParams(params); novo.delete('tema'); novo.delete('p'); setParams(novo); };
   const [soSemTitulo, setSoSemTitulo] = useState(false);
   const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
   const POR_PAGINA = 100;
@@ -182,6 +203,8 @@ export default function Acervo() {
     const achados = new Map();
     let totalOcorrencias = 0;
     const filtrados = sonhos.filter((s) => {
+      if (temaFiltro && !s.temas?.includes(temaFiltro)) return false;
+      if (vista !== 'temas' && soFavoritos && !s.favorito) return false;
       if (vista !== 'temas' && soAtencao && s.status !== 'dar_atencao') return false;
       if (vista !== 'temas' && soSemTitulo && s.titulo?.trim()) return false;
       if (consulta.vazia) return true;
@@ -192,9 +215,9 @@ export default function Acervo() {
       return true;
     });
     return { filtrados, achados, totalOcorrencias };
-  }, [sonhos, consulta, soAtencao, soSemTitulo, vista]);
+  }, [sonhos, consulta, soAtencao, soSemTitulo, soFavoritos, temaFiltro, vista]);
 
-  const comFiltro = !!busca.trim() || soAtencao || soSemTitulo;
+  const comFiltro = !!busca.trim() || soAtencao || soSemTitulo || soFavoritos || !!temaFiltro;
   const mostrarExemplos = exemplos.length > 0 && !comFiltro && (pagina0(params) || sonhos.length === 0);
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
@@ -205,6 +228,7 @@ export default function Acervo() {
     const novo = {};
     if (v !== 'mural') novo.v = v;
     if (busca) novo.q = busca;
+    if (temaFiltro && v !== 'temas') novo.tema = temaFiltro;
     setParams(novo);
   };
   const aba = (v, Icone, nome) => (
@@ -238,8 +262,22 @@ export default function Acervo() {
               <span className="busca-dica">{semViuvas('"entre aspas" acha a expressão exata; -palavra tira da busca')}</span>
             </div>
           )}
-          {vista !== 'temas' && (semTitulo > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
+          {temaFiltro && vista !== 'temas' && (
+            <div className="busca-resumo" role="status">
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <strong>{filtrados.length === 1 ? '1 sonho' : filtrados.length + ' sonhos'}</strong> com o tema
+                <span className="chip" style={{ ...estiloTema(temaFiltro), height: 28, fontSize: 14 }}>{temaFiltro}</span>
+              </span>
+              <button type="button" className="btn btn-linha" style={{ minHeight: 34 }} onClick={tirarTema}><Fechar size={12} /> Ver todos</button>
+            </div>
+          )}
+          {vista !== 'temas' && (semTitulo > 0 || nFavoritos > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
+              {nFavoritos > 0 && (
+                <button type="button" className="btn btn-linha" onClick={() => { setSoFavoritos(!soFavoritos); voltarPrimeira(); }} aria-pressed={soFavoritos} style={{ minHeight: 36, background: soFavoritos ? '#FFF4D6' : '#fff' }}>
+                  <span style={{ color: '#C98A00', display: 'inline-flex' }}><Estrela size={15} cheia /></span>favoritos · {nFavoritos}
+                </button>
+              )}
               {semTitulo > 0 && (
                 <button type="button" className="btn btn-linha" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
                   sem título · {semTitulo}
@@ -327,6 +365,7 @@ function ListaSonhos({ sonhos, achados }) {
               <tr key={s.id} className="linha-clicavel" onClick={(e) => { if (!e.target.closest('a')) navegar('/app/sonho/' + s.id); }} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
                 <td style={{ padding: '12px 14px' }}>
+                  {s.favorito && <span style={{ color: '#C98A00', marginRight: 6, verticalAlign: '-2px', display: 'inline-flex' }} aria-label="Favorito"><Estrela size={15} cheia /></span>}
                   <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
                   {a?.ocorrencias > 0 && <span className="contagem-achados" style={{ marginLeft: 8 }}>{a.ocorrencias}×</span>}
                   {(a?.trecho || s.texto) && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, ...(a?.trecho ? { lineHeight: 1.5 } : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }) }}>
@@ -346,8 +385,71 @@ function ListaSonhos({ sonhos, achados }) {
   );
 }
 
+// Juntar temas: troca os temas marcados por um só, em todos os sonhos de uma vez.
+// Com um tema marcado, serve para renomear.
+function JuntarTemas({ temas, aoFechar }) {
+  const { sonhos, salvarVarios, avisar } = useEstado();
+  const estiloTema = useCorTema();
+  const [marcados, setMarcados] = useState([]);
+  const [nome, setNome] = useState('');
+  const [filtro, setFiltro] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const alternar = (t) => setMarcados((m) => {
+    const prox = m.includes(t) ? m.filter((x) => x !== t) : [...m, t];
+    // O nome sugerido é o do tema mais usado entre os marcados.
+    if (!nome.trim() || m.includes(nome.trim())) setNome(temas.find((x) => prox.includes(x.nome))?.nome || '');
+    return prox;
+  });
+  const final = nome.trim();
+  const afetados = sonhos.filter((s) => s.temas?.some((t) => marcados.includes(t)));
+  const visiveis = temas.filter((t) => !filtro.trim() || t.nome.toLowerCase().includes(filtro.trim().toLowerCase()));
+  const pode = final && marcados.length && !(marcados.length === 1 && marcados[0] === final);
+
+  async function juntar() {
+    if (!pode) return;
+    const msg = marcados.length === 1 ? `Renomear “${marcados[0]}” para “${final}” em ${afetados.length === 1 ? '1 sonho' : afetados.length + ' sonhos'}?`
+      : `Juntar ${marcados.length} temas em “${final}”? Muda ${afetados.length === 1 ? '1 sonho' : afetados.length + ' sonhos'}.`;
+    if (!confirm(msg)) return;
+    setOcupado(true);
+    const novos = afetados.map((s) => ({ ...s, temas: [...new Set(s.temas.map((t) => (marcados.includes(t) ? final : t)))] }));
+    await salvarVarios(novos);
+    setOcupado(false);
+    avisar(marcados.length === 1 ? 'Tema renomeado' : marcados.length + ' temas viraram “' + final + '”');
+    aoFechar();
+  }
+
+  return (
+    <Janela titulo="Juntar ou renomear temas" aoFechar={aoFechar}>
+      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Marque os temas que são a mesma coisa (ex.: “mãe” e “minha mãe”) e escolha o nome que fica. Para renomear, marque só um.')}</p>
+      {temas.length > 12 && <input className="campo" value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Procurar tema" style={{ fontSize: 16 }} />}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 280, overflowY: 'auto', padding: 2 }}>
+        {visiveis.map((t) => { const on = marcados.includes(t.nome); return (
+          <button key={t.nome} type="button" aria-pressed={on} onClick={() => alternar(t.nome)}
+            style={{ ...estiloTema(t.nome), height: 34, padding: '0 12px 0 8px', borderRadius: 6, border: 0, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: on ? 1 : 0.6 }}>
+            <span style={{ width: 18, height: 18, borderRadius: 4, border: '1.5px solid currentColor', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{on && '✓'}</span>
+            {t.nome} <span style={{ opacity: 0.7, fontWeight: 500 }}>{t.n}</span>
+          </button>); })}
+      </div>
+      {marcados.length > 0 && (
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 700 }}>
+          {marcados.length === 1 ? 'Novo nome' : 'Nome do tema que fica'}
+          <input className="campo" value={nome} onChange={(e) => setNome(e.target.value)} list="temas-juntar" style={{ fontWeight: 400, fontSize: 16 }} />
+          <datalist id="temas-juntar">{marcados.map((t) => <option key={t} value={t} />)}</datalist>
+        </label>
+      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+        <button type="button" className="btn btn-linha" onClick={aoFechar}>Cancelar</button>
+        <button type="button" className="btn btn-azul" onClick={juntar} disabled={!pode || ocupado}>
+          {ocupado ? 'Salvando…' : marcados.length > 1 ? `Juntar ${marcados.length} temas` : 'Renomear'}
+        </button>
+      </div>
+    </Janela>
+  );
+}
+
 function PorTema({ sonhos, temas, achados }) {
   const estiloTema = useCorTema();
+  const [juntando, setJuntando] = useState(false);
   const [params] = useSearchParams();
   const alvo = params.get('t');
   useEffect(() => {
@@ -358,9 +460,11 @@ function PorTema({ sonhos, temas, achados }) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <aside className="painel" style={{ flex: '1 1 220px', maxWidth: 280, padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span className="rotulo" style={{ margin: '0 8px 8px' }}>Temas por frequência</span>
+        {temas.length > 1 && <button type="button" className="btn btn-tracejado" style={{ margin: '0 8px 10px', minHeight: 36, fontSize: 13 }} onClick={() => setJuntando(true)}>Juntar ou renomear temas</button>}
         {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} onClick={(e) => { e.preventDefault(); document.getElementById('tema-' + encodeURIComponent(t.nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}><span className="chip" style={estiloTema(t.nome)}>{t.nome}</span><span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
         {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{semTema.length} sem tema.</strong> Abra o sonho para etiquetar.</div>}
       </aside>
+      {juntando && <JuntarTemas temas={temas} aoFechar={() => setJuntando(false)} />}
       <div style={{ flex: '999 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
         {temas.map((t) => {
           const lista = sonhos.filter((s) => s.temas?.includes(t.nome));
@@ -375,6 +479,7 @@ function PorTema({ sonhos, temas, achados }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {lista.slice(0, achados?.size ? 24 : 8).map((s) => <Nota key={s.id} s={s} comTemas achado={achados?.get(s.id)} />)}
               </div>
+              {lista.length > (achados?.size ? 24 : 8) && <Link className="btn btn-linha" style={{ alignSelf: 'flex-start' }} to={'/app/acervo?tema=' + encodeURIComponent(t.nome)}>Ver os {lista.length} sonhos</Link>}
             </section>
           );
         })}

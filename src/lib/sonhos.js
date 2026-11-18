@@ -35,6 +35,7 @@ export function novoSonho(parcial = {}) {
     cor: 'branco',
     conclusoes: [],
     levar_sessao: false,
+    favorito: false,
     audio: null, // { ref, duracao }
     ...parcial,
   };
