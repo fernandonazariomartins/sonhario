@@ -501,16 +501,13 @@ create policy "imagens: ver as compartilhadas" on storage.objects
 
 -- 11. Link de um sonho mostra o começo antes de entrar ------------------------
 -- Só o título e os primeiros 400 caracteres saem do banco; a tela desfoca o fim.
-drop function if exists public.ver_convite(text);
-create function public.ver_convite(chave text)
-returns table (dono_nome text, dono_foto text, de_um_sonho boolean, aprovar boolean, sonho_titulo text, sonho_trecho text)
+create or replace function public.ver_trecho_convite(chave text)
+returns table (sonho_titulo text, sonho_trecho text)
 language sql stable security definer set search_path = public as $$
-  select c.dono_nome, coalesce(p.foto, ''), c.sonho_id is not null, c.aprovar,
-         coalesce(s.titulo, ''), coalesce(left(s.texto, 400), '')
+  select coalesce(s.titulo, ''), coalesce(left(s.texto, 400), '')
   from public.convites c
-  left join public.perfis p on p.id = c.dono_id
-  left join public.sonhos s on s.id = c.sonho_id and s.user_id = c.dono_id and s.apagado_em is null
+  join public.sonhos s on s.id = c.sonho_id and s.user_id = c.dono_id and s.apagado_em is null
   where c.token = chave;
 $$;
-revoke all on function public.ver_convite(text) from public;
-grant execute on function public.ver_convite(text) to anon, authenticated;
+revoke all on function public.ver_trecho_convite(text) from public;
+grant execute on function public.ver_trecho_convite(text) to anon, authenticated;
