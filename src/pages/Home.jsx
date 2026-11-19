@@ -184,7 +184,7 @@ export default function Home() {
 
       <section className="secao" style={{ background: 'var(--cinza)' }}>
         <div className="miolo grade">
-          <figure className="depoimento c-8">
+          <figure className="depoimento c-12">
             <Retrato />
             <div>
               <blockquote>“{n('Esse é o método que me ajudou a registrar mais de 1.000 sonhos nos últimos 6 anos.')}”</blockquote>

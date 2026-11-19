@@ -126,9 +126,8 @@ mark.achado { background: #FFE58A; color: inherit; border-radius: 3px; padding: 
 .janela { width: 100%; max-width: 480px; max-height: calc(100dvh - 32px); overflow: auto; background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-pop); }
 @media (min-width: 641px) { .fundo-janela { align-items: center; } }
 
-.depoimento { margin: 0; display: flex; align-items: center; gap: 28px; text-align: left; }
-.depoimento > div { display: flex; flex-direction: column; gap: 12px; }
-@media (max-width: 640px) { .depoimento { flex-direction: column; align-items: flex-start; gap: 18px; } }
+.depoimento { margin: 0 auto; max-width: 760px; display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
+.depoimento > div { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .depoimento-foto { width: 104px; height: 104px; border-radius: 999px; object-fit: cover; display: inline-flex; align-items: center; justify-content: center; background: var(--azul); color: #fff; font-weight: 800; font-size: 28px; letter-spacing: -0.02em; }
 .depoimento blockquote { margin: 0; font-family: var(--serif); font-size: 22px; line-height: 1.55; color: var(--ink); }
 .depoimento figcaption { font-size: 14px; color: var(--muted); }
