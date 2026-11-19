@@ -284,3 +284,8 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
   .cal-pontos i { width: 6px; height: 6px; border-radius: 999px; background: var(--azul); }
   .cal-dia.tem { background: var(--azul-claro); }
 }
+
+/* Modo demonstração (/demo) */
+.faixa-demo { background: var(--preto); color: #fff; padding: 9px 20px; font-size: 13px; font-weight: 600; line-height: 1.4; display: flex; align-items: center; justify-content: center; gap: 8px 16px; flex-wrap: wrap; text-align: center; }
+.faixa-demo button { border: 1.5px solid rgba(255,255,255,0.6); background: transparent; color: #fff; border-radius: 999px; padding: 5px 14px; font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.faixa-demo button:hover { background: #fff; color: var(--preto); }

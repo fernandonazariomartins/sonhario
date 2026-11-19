@@ -10,6 +10,7 @@ import { sonhosDeExemplo } from './exemplos.js';
 import { usaBotaoGoogle } from './googleLogin.js';
 import EntrarGoogle from '../components/EntrarGoogle.jsx';
 import * as cofreLib from './cofre.js';
+import { DEMO } from './demo.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -26,7 +27,8 @@ export function EstadoProvider({ children }) {
   const sonhos = useMemo(() => todos.filter((s) => !s.apagado_em), [todos]);
   const lixeira = useMemo(() => todos.filter((s) => s.apagado_em).sort((a, b) => b.apagado_em.localeCompare(a.apagado_em)), [todos]);
   const [carregado, setCarregado] = useState(false);
-  const [semExemplos, setSemExemplos] = useState(() => localStorage.getItem(SEM_EXEMPLOS) === '1');
+  // Na demonstração, o acervo inventado já faz o papel dos exemplos.
+  const [semExemplos, setSemExemplos] = useState(() => DEMO || localStorage.getItem(SEM_EXEMPLOS) === '1');
   const [janelaLogin, setJanelaLogin] = useState(false);
   const [aviso, setAviso] = useState(null); // { msg, acao?: { rotulo, fn } }
   const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} });
@@ -234,6 +236,7 @@ export function EstadoProvider({ children }) {
     urlImagem: (ref) => loja.urlImagem(ref),
     apagarImagem: (ref) => loja.apagarImagem(ref),
     temLogin: !!supabase,
+    demo: DEMO,
     semConta,
     entrar: () => (usaBotaoGoogle() ? setJanelaLogin(true) : entrarComGoogle()),
     pularLogin: () => { localStorage.setItem(PULOU, '1'); setSemConta(true); },

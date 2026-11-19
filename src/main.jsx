@@ -18,6 +18,7 @@ import Compartilhados from './pages/Compartilhados.jsx';
 import Convite from './pages/Convite.jsx';
 import Lixeira from './pages/Lixeira.jsx';
 import Pessoas from './pages/Pessoas.jsx';
+import { SONHO_DESTAQUE } from './lib/demoDados.js';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -25,6 +26,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Roteador>
         <Routes>
           <Route path="/" element={<Home />} />
+          {/* Demonstração: abre um sonho de exemplo, com o app inteiro para explorar (lib/demo.js). */}
+          <Route path="/demo" element={<Navigate to={'/app/sonho/' + SONHO_DESTAQUE} replace />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/convite/:token" element={<Convite />} />
           <Route path="/app" element={<AppLayout />}>

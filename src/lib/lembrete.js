@@ -2,12 +2,13 @@
 // O aparelho se inscreve no push e a assinatura vai para a tabela "lembretes" do Supabase.
 // A função "lembrete-manha" roda a cada 5 minutos e avisa quem chegou na hora de acordar.
 import { supabase } from './supabase.js';
+import { DEMO } from './demo.js';
 
 const VAPID = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 const CHAVE = 'sonhario:lembrete';
 
 export const lembreteDisponivel = () =>
-  !!supabase && !!VAPID && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  !DEMO && !!supabase && !!VAPID && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 export const ehIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
 export const instalado = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;

@@ -12,10 +12,12 @@ import JanelaIA from '../components/IA.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
 import { primeiraVezInstalado } from '../lib/instalar.js';
+import { sairDaDemo } from '../lib/demo.js';
+import { semViuvas } from '../lib/tipografia.js';
 import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado } from '../components/Icones.jsx';
 
 export default function AppLayout() {
-  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco } = useEstado();
+  const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco, demo } = useEstado();
   const navegar = useNavigate();
   const comigoTodos = [...compartilhamentos.comigo, ...compartilhamentos.aguardando];
   const vazios = useMemo(() => sonhos.filter(ehVazio), [sonhos]);
@@ -114,14 +116,15 @@ export default function AppLayout() {
               {temLogin && usuario && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('lembrete')}><Sino size={18} /> Lembrete da manhã</button>
               {usuario && cofre === 'aberto' && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('cripto')}><Cadeado size={18} /> Criptografia</button>}
-              {usuario && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('ia')}><Faisca size={18} /> Inteligência artificial</button>}
+              {usuario && !demo && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('ia')}><Faisca size={18} /> Inteligência artificial</button>}
               <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('contribuir')}><Mensagem size={18} /> Contribuir com uma ideia</button>
               <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: '6px 4px' }} />
               {doNotion.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={arrumarNotion}><Importar size={18} /> Arrumar sonhos vindos do Notion ({doNotion.length})</button>}
               {vazios.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={apagarVazios}><Lixo size={18} /> Apagar sonhos vazios ({vazios.length})</button>}
               <Link role="menuitem" className="menu-item" to="/app/lixeira"><Lixo size={18} /> Lixeira{lixeira.length > 0 && <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)' }}>{lixeira.length}</span>}</Link>
               {usuario ? (
-                <button role="menuitem" type="button" className="menu-item" onClick={sair}><Sair size={18} /> <span>Sair<br /><span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{usuario.email}</span></span></button>
+                demo ? <button role="menuitem" type="button" className="menu-item" onClick={() => sairDaDemo('/')}><Sair size={18} /> Sair da demonstração</button>
+                : <button role="menuitem" type="button" className="menu-item" onClick={sair}><Sair size={18} /> <span>Sair<br /><span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{usuario.email}</span></span></button>
               ) : temLogin ? (
                 <button role="menuitem" type="button" className="menu-item" onClick={entrar}>Entrar com Google</button>
               ) : <span className="menu-item" style={{ color: 'var(--muted)', fontWeight: 500, fontSize: 13 }}>Seus sonhos ficam neste aparelho.</span>}
@@ -129,6 +132,12 @@ export default function AppLayout() {
           )}
         </div>
       </header>
+      {demo && (
+        <div className="faixa-demo" role="note">
+          <span>{semViuvas('Demonstração com sonhos inventados. Mexa à vontade: nada é salvo nem enviado.')}</span>
+          <button type="button" onClick={() => sairDaDemo('/')}>Começar o meu</button>
+        </div>
+      )}
       {!naCaptura && pathname !== '/app/pessoas' && compartilhamentos.pedidos.length > 0 && (
         <button type="button" onClick={() => navegar('/app/pessoas')} style={{ border: 0, borderBottom: '1px solid #F3DDB5', background: 'var(--warn-bg)', color: 'var(--warn-ink)', padding: '10px 20px', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Pessoas size={16} /> {compartilhamentos.pedidos.length === 1 ? '1 pessoa abriu seu link e quer ver um sonho' : compartilhamentos.pedidos.length + ' pessoas abriram seu link e querem ver um sonho'} · <span style={{ textDecoration: 'underline' }}>ver pedidos</span>
