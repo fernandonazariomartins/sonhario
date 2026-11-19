@@ -24,9 +24,9 @@ export default async function handler(req) {
     : !terapeuta ? 'Abra o link e entre com a sua conta Google para ver. ' + DESCRICAO_PADRAO
     : convite.tipo === 'paciente' ? 'Entre com a sua conta Google. Você só vê os sonhos que forem escolhidos para você, um por vez.'
     : 'Entre com a sua conta Google. Você escolhe, um por vez, os sonhos que quer mostrar. Dá para ver os recursos antes.';
-  // A imagem grande é a do link de um sonho; o convite de terapeuta usa o ícone.
-  const grande = convite && !terapeuta;
-  const imagem = grande ? `${origem}/api/og?token=${encodeURIComponent(token)}` : `${origem}/icon-512.png`;
+  // Todo convite que existe ganha o card grande, com a foto de quem convidou.
+  const grande = !!convite;
+  const imagem = grande ? `${origem}/api/og?token=${encodeURIComponent(token)}${terapeuta ? '&tipo=terapeuta' : ''}` : `${origem}/icon-512.png`;
   const endereco = `${origem}/${terapeuta ? 'terapeuta' : 'convite'}/${encodeURIComponent(token)}`;
 
   const metas = [
