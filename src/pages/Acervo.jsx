@@ -205,6 +205,11 @@ export default function Acervo() {
   const tirarTema = () => { const novo = new URLSearchParams(params); novo.delete('tema'); novo.delete('ano'); novo.delete('mes'); setParams(novo); };
   const [soSemTitulo, setSoSemTitulo] = useState(false);
   const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
+  // ?st=1: só os sonhos sem nenhum tema (vem do aviso da aba Temas).
+  const [soSemTema, setSoSemTema] = useState(() => params.get('st') === '1');
+  const semTema = useMemo(() => sonhos.filter((s) => !s.temas?.length).length, [sonhos]);
+  const pedeSemTema = params.get('st') === '1';
+  useEffect(() => { if (pedeSemTema) setSoSemTema(true); }, [pedeSemTema]);
   // Até 100 sonhos de uma vez; "Mostrar mais" vai somando.
   const POR_VEZ = 100;
   const [limite, setLimite] = useState(POR_VEZ);
@@ -220,6 +225,7 @@ export default function Acervo() {
       if (vista !== 'temas' && soFavoritos && !s.favorito) return false;
       if (vista !== 'temas' && soAtencao && s.status !== 'dar_atencao') return false;
       if (vista !== 'temas' && soSemTitulo && s.titulo?.trim()) return false;
+      if (vista !== 'temas' && soSemTema && s.temas?.length) return false;
       if (consulta.vazia) return true;
       const r = casar(s, consulta);
       if (!r) return false;
@@ -228,9 +234,9 @@ export default function Acervo() {
       return true;
     });
     return { filtrados, achados, totalOcorrencias };
-  }, [sonhos, consulta, soAtencao, soSemTitulo, soFavoritos, temaFiltro, vista]);
+  }, [sonhos, consulta, soAtencao, soSemTitulo, soSemTema, soFavoritos, temaFiltro, vista]);
 
-  const comFiltro = !!busca.trim() || soAtencao || soSemTitulo || soFavoritos || !!temaFiltro;
+  const comFiltro = !!busca.trim() || soAtencao || soSemTitulo || soSemTema || soFavoritos || !!temaFiltro;
 
   // Linha do tempo: com busca ou filtro, abre em "Todos"; sem, no ano mais recente.
   const contagem = useMemo(() => contarPorAno(filtrados), [filtrados]);
@@ -315,7 +321,7 @@ export default function Acervo() {
           {vista === 'calendario' && filtrados.length > 0 && (
             <LinhaDoTempo contagem={contagem} ano={calAno} mes={calMes} aoEscolher={(a, m) => mudarMes(a, m || ultimoMes(a))} mesObrigatorio semTotal />
           )}
-          {vista !== 'temas' && (semTitulo > 0 || nFavoritos > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
+          {vista !== 'temas' && (semTitulo > 0 || semTema > 0 || nFavoritos > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8, marginLeft: 'auto' }}>
               {nFavoritos > 0 && (
                 <button type="button" className="btn btn-linha" onClick={() => { setSoFavoritos(!soFavoritos); voltarPrimeira(); }} aria-pressed={soFavoritos} style={{ minHeight: 36, background: soFavoritos ? '#FFF4D6' : '#fff' }}>
@@ -325,6 +331,11 @@ export default function Acervo() {
               {semTitulo > 0 && (
                 <button type="button" className="btn btn-linha" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
                   sem título · {semTitulo}
+                </button>
+              )}
+              {semTema > 0 && (
+                <button type="button" className="btn btn-linha" onClick={() => { setSoSemTema(!soSemTema); voltarPrimeira(); }} aria-pressed={soSemTema} style={{ minHeight: 36, background: soSemTema ? 'var(--cinza)' : '#fff' }}>
+                  sem tema · {semTema}
                 </button>
               )}
               {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha" onClick={() => { setSoAtencao(!soAtencao); voltarPrimeira(); }} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
@@ -479,7 +490,7 @@ function PorTema({ sonhos, temas, achados }) {
         <span className="rotulo" style={{ margin: '0 8px 8px' }}>Temas por frequência</span>
         {temas.length > 1 && <button type="button" className="btn btn-tracejado" style={{ margin: '0 8px 10px', minHeight: 36, fontSize: 13 }} onClick={() => setJuntando(true)}>Juntar ou renomear temas</button>}
         {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} onClick={(e) => { e.preventDefault(); document.getElementById('tema-' + encodeURIComponent(t.nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}><span className="chip" style={estiloTema(t.nome)}>{t.nome}</span><span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
-        {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{semTema.length} sem tema.</strong> Abra o sonho para etiquetar.</div>}
+        {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{semTema.length} sem tema.</strong> <Link to="/app/acervo?st=1" style={{ color: 'inherit' }}>Ver só esses</Link> e abrir cada um para etiquetar.</div>}
       </aside>
       {juntando && <JuntarTemas temas={temas} aoFechar={() => setJuntando(false)} />}
       <div style={{ flex: '999 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
