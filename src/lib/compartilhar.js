@@ -113,7 +113,10 @@ export function rotuloAba() {
 const PENDENTE = 'sonhario:convite';
 export const convitePendente = {
   guardar: (t) => { try { localStorage.setItem(PENDENTE, t); } catch { /* sem armazenamento */ } },
-  pegar: () => { try { const t = localStorage.getItem(PENDENTE); localStorage.removeItem(PENDENTE); return t; } catch { return null; } },
+  // Guarda o caminho do convite (ex.: /convite/abc ou /terapeuta/abc); um token solto é de /convite/.
+  pegar: () => {
+    try { const t = localStorage.getItem(PENDENTE); localStorage.removeItem(PENDENTE); return t && (t.startsWith('/') ? t : '/convite/' + t); } catch { return null; }
+  },
 };
 
 function novoToken() {
@@ -201,3 +204,74 @@ export async function marcarTerapeuta(meus, c, ligar) {
   if (antes && antes.id !== c.id) await mudarCompartilhamento(antes.id, { eh_terapeuta: false });
   await mudarCompartilhamento(c.id, { eh_terapeuta: ligar });
 }
+
+/* ---------- convites de terapeuta e de paciente ---------- */
+// Dois links, os dois em /terapeuta/:token, sempre com login e sem mostrar nenhum sonho:
+// - tipo "terapeuta": de quem atende, o mesmo para todos os pacientes. Quem entra vira paciente.
+// - tipo "paciente": de quem registra, para o próprio terapeuta. Quem entra passa a ser o terapeuta.
+//   Vale uma vez só: depois de usado, some.
+
+// atende: null (ainda não respondeu), true (também atende pacientes) ou false.
+// Se o banco ainda não tem a coluna, conta como respondido, para não perguntar à toa.
+export async function meuModo(usuario) {
+  const { data, error } = await supabase.from('perfis').select('atende').eq('id', usuario.id).maybeSingle();
+  if (error) return { atende: false, perguntar: false };
+  return { atende: !!data?.atende, perguntar: data?.atende == null };
+}
+
+export async function definirModo(usuario, atende) {
+  const { error } = await supabase.from('perfis').upsert({
+    id: usuario.id, email: (usuario.email || '').toLowerCase(), nome: nomeDe(usuario), foto: fotoDe(usuario), atende,
+  });
+  if (error) throw error;
+}
+
+const urlConvite = (token) => location.origin + '/terapeuta/' + token;
+
+export async function linkConviteExiste(usuario, tipo) {
+  const { data } = await supabase.from('convites_terapeuta').select('token').eq('dono_id', usuario.id).eq('tipo', tipo).maybeSingle();
+  return data ? urlConvite(data.token) : '';
+}
+
+// Devolve o link que já existe ou cria um. trocar: cria um novo e o antigo para de funcionar.
+export async function meuLinkConvite(usuario, tipo, { trocar = false } = {}) {
+  if (!trocar) {
+    const u = await linkConviteExiste(usuario, tipo);
+    if (u) return u;
+  }
+  const token = novoToken();
+  const { error } = await supabase.from('convites_terapeuta').upsert(
+    { token, tipo, dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: (usuario.email || '').toLowerCase(), criado_em: new Date().toISOString() },
+    { onConflict: 'dono_id,tipo' },
+  );
+  if (error) throw error;
+  return urlConvite(token);
+}
+
+export async function verConviteTerapeuta(token) {
+  const { data, error } = await supabase.rpc('ver_convite_terapeuta', { chave: token });
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+export async function aceitarConviteTerapeuta(token) {
+  const { data, error } = await supabase.rpc('aceitar_convite_terapeuta', { chave: token });
+  if (error) throw new Error(error.message);
+  return data?.[0];
+}
+
+const TEXTO_CONVITE = {
+  terapeuta: 'Te convido para registrar seus sonhos no Sonhário. Entre pelo link com a sua conta Google: eu só vejo os sonhos que você escolher me mostrar.',
+  paciente: 'Estou registrando meus sonhos no Sonhário e queria levar alguns para as nossas sessões. Entre pelo link com a sua conta Google: você só vê os sonhos que eu escolher mostrar.',
+};
+export async function mandarConvite(url, tipo, avisar) {
+  const texto = TEXTO_CONVITE[tipo] + '\n' + url;
+  try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(texto); avisar('Convite copiado. Cole no WhatsApp ou no e-mail.'); }
+  catch { prompt('Copie o link:', url); }
+}
+
+export const erroConvite = (e) => /convites_terapeuta|tipo/.test(e?.message || '')
+  ? 'O convite ainda não está ativo no banco: rode o bloco 16 do supabase/schema.sql.'
+  : 'Não deu para criar o convite: ' + (e?.message || e);
+

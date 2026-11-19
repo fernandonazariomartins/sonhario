@@ -4,7 +4,7 @@ import { supabase, entrarComGoogle, sair } from './supabase.js';
 import { local, remoto, levarParaConta } from './armazem.js';
 import { mapaDeCores, corDoTema } from './coresTema.js';
 import { PRAZO_LIXEIRA as PRAZO } from './sonhos.js';
-import { listarCompartilhamentos, salvarMeuPerfil } from './compartilhar.js';
+import { listarCompartilhamentos, salvarMeuPerfil, meuModo, definirModo } from './compartilhar.js';
 import { resumoComentarios } from './comentarios.js';
 import { sonhosDeExemplo } from './exemplos.js';
 import { usaBotaoGoogle } from './googleLogin.js';
@@ -32,6 +32,8 @@ export function EstadoProvider({ children }) {
   const [janelaLogin, setJanelaLogin] = useState(false);
   const [aviso, setAviso] = useState(null); // { msg, acao?: { rotulo, fn } }
   const [compartilhamentos, setCompartilhamentos] = useState({ meus: [], pedidos: [], comigo: [], aguardando: [], perfis: {} });
+  // Modo terapeuta: atende pacientes? perguntar: ainda não respondeu.
+  const [modo, setModo] = useState({ atende: false, perguntar: false, carregado: false });
   const [comentarios, setComentarios] = useState({}); // { [sonho_id]: { total, novos } } dos meus sonhos
   const sonhosRef = useRef([]);
   useEffect(() => { sonhosRef.current = todos; }, [todos]);
@@ -105,11 +107,27 @@ export function EstadoProvider({ children }) {
     // Alguém novo pode ter ganhado acesso (pedido aprovado, link aberto): entrega a chave dos sonhos.
     cofreLib.entregarChaves().catch(() => {});
   }, [usuario]);
+  const recarregarModo = useCallback(async () => {
+    if (!usuario) { setModo({ atende: false, perguntar: false, carregado: true }); return; }
+    try { setModo({ ...(await meuModo(usuario)), carregado: true }); } catch { setModo({ atende: false, perguntar: false, carregado: true }); }
+  }, [usuario]);
   useEffect(() => {
     if (!pronto) return;
-    if (usuario) salvarMeuPerfil(usuario).catch(() => {});
+    // O perfil precisa existir antes de ler o modo (na primeira entrada ele é criado aqui).
+    if (usuario) salvarMeuPerfil(usuario).catch(() => {}).finally(recarregarModo);
+    else recarregarModo();
     recarregarCompartilhamentos();
-  }, [pronto, usuario, recarregarCompartilhamentos]);
+  }, [pronto, usuario, recarregarCompartilhamentos, recarregarModo]);
+
+  const mudarModo = useCallback(async (atende) => {
+    if (!usuario) return;
+    const antes = modo;
+    setModo({ atende, perguntar: false, carregado: true });
+    try { await definirModo(usuario, atende); } catch (e) {
+      setModo(antes);
+      avisar(/atende/.test(e?.message || '') ? 'O modo terapeuta ainda não está ativo no banco: rode o bloco 16 do supabase/schema.sql.' : 'Não deu para salvar: ' + e.message);
+    }
+  }, [usuario, modo, avisar]);
 
   // Comentários nos meus sonhos, para o mural e a lista mostrarem quem comentou.
   const recarregarComentarios = useCallback(async () => {
@@ -229,7 +247,7 @@ export function EstadoProvider({ children }) {
     cofre, abrirCofre, criarCofre, destrancar, recuperarCofre, recuperarBasico, trocarSenha, nivel, irParaAvancado, irParaBasico, trancarAcervo, abertosNoBanco,
     codigoRecuperacao, esquecerCodigo: () => setCodigoRecuperacao(''),
     pronto, carregado, podeLer, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
-    esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
+    esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, modo, mudarModo, recarregarModo, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),
     salvarImagem: (id, blob) => loja.salvarImagem(id, blob),

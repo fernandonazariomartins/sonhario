@@ -93,7 +93,7 @@ export function Nota({ s, comTemas = true, para, achado, coment }) {
 }
 
 // Sonho de exemplo: tracejado, com selo, e abre só para leitura (não existe no banco).
-function NotaExemplo({ s, aoAbrir }) {
+export function NotaExemplo({ s, aoAbrir }) {
   const estiloTema = useCorTema();
   const c = CORES[s.cor] || CORES.branco;
   return (

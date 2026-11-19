@@ -8,6 +8,7 @@ import { iaLigada } from '../lib/ia.js';
 import { Voltar, Fechar, Mais, Lixo, Ok, Calendario, Faisca, Compartilhar } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { quemVe, pessoa, terapeutaDe } from '../lib/compartilhar.js';
+import { BotaoConvite } from '../components/Convidar.jsx';
 import { CompartilharSonho } from '../components/Compartilhar.jsx';
 import { BotaoFavorito } from './Acervo.jsx';
 import Avatar from '../components/Avatar.jsx';
@@ -313,6 +314,7 @@ export default function Sonho() {
           <input type="checkbox" checked={!!s.levar_sessao} onChange={(e) => levarSessao(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--azul)', flex: 'none' }} />
           <span style={{ fontSize: 14, lineHeight: 1.45 }}><strong>Levar para a próxima sessão</strong><br /><span style={{ color: 'var(--muted)' }}>{semViuvas(dicaSessao)}</span></span>
         </label>
+        {!terapeuta && usuario && <BotaoConvite tipo="paciente" className="btn" style={{ alignSelf: 'flex-start', background: 'transparent', color: 'var(--azul-escuro)', fontSize: 13, padding: '0 4px', minHeight: 32, marginTop: -6 }} />}
         <p style={{ margin: 0, padding: '0 4px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('As amplificações são suas. O Sonhário não interpreta sonhos e não substitui a sua análise.')}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '4px 4px 0' }}>
           {temLogin && <button type="button" className="btn btn-linha" onClick={() => setCompartilhando(true)}>
