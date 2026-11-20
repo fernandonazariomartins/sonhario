@@ -94,7 +94,7 @@ function Fio({ itens, meuId, nomeDe, aoApagar, podeApagar }) {
               {c.privado && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700 }}><Cadeado size={12} /> nota privada, só você vê</span>}
               {!c.privado && c.autor_id !== meuId && !c.visto && <span className="selo-novo">novo</span>}
             </span>
-            <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{semViuvas(c.texto)}</p>
+            <p className="leitura sigilo" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6, whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{semViuvas(c.texto)}</p>
             {podeApagar(c) && <button type="button" onClick={() => aoApagar(c)} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 12, padding: 0, textDecoration: 'underline' }}>apagar</button>}
           </div>
         </li>

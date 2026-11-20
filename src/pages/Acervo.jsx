@@ -120,7 +120,7 @@ function SonhoExemplo({ s, aoFechar }) {
         <span className="rotulo">{dataLonga(s.sonhado_em)}</span>
       </div>
       {s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
-      <p className="leitura" style={{ margin: 0 }}>{semViuvas(s.texto)}</p>
+      <p className="leitura sigilo" style={{ margin: 0 }}>{semViuvas(s.texto)}</p>
       {s.conclusoes?.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span className="rotulo">Amplificações</span>
@@ -438,10 +438,10 @@ function ListaSonhos({ sonhos, achados }) {
                 <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
                 <td style={{ padding: '12px 14px' }}>
                   {s.favorito && <span style={{ color: '#C98A00', marginRight: 6, verticalAlign: '-2px', display: 'inline-flex' }} aria-label="Favorito"><Estrela size={15} cheia /></span>}
-                  <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
+                  <Link to={'/app/sonho/' + s.id} className="sigilo" style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
                   {a?.ocorrencias > 0 && <span className="contagem-achados" style={{ marginLeft: 8 }}>{a.ocorrencias}×</span>}
                   {comentarios?.[s.id] && <span style={{ marginLeft: 8, verticalAlign: '1px' }}><SinalComentarios r={comentarios[s.id]} /></span>}
-                  {(a?.trecho || s.texto) && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, ...(a?.trecho ? { lineHeight: 1.5 } : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }) }}>
+                  {(a?.trecho || s.texto) && <div className="sigilo" style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, ...(a?.trecho ? { lineHeight: 1.5 } : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }) }}>
                     {a?.onde === 'amplificacoes' && <strong style={{ fontFamily: 'inherit' }}>Nas amplificações: </strong>}
                     <Realce texto={a?.trecho || s.texto} termos={termos} viuvas={false} />
                   </div>}
@@ -546,7 +546,7 @@ function PorTema({ sonhos, temas, achados }) {
           return (
             <section key={t.nome} id={'tema-' + encodeURIComponent(t.nome)} className="painel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 84 }}>
               <div>
-                <h2 className="titulo-m" style={{ fontSize: 32 }}><span style={{ ...estiloTema(t.nome), padding: '0 10px', borderRadius: 6 }}>{t.nome}</span></h2>
+                <h2 className="titulo-m" style={{ fontSize: 32 }}><span className="sigilo-tag" style={{ ...estiloTema(t.nome), padding: '0 10px', borderRadius: 6 }}>{t.nome}</span></h2>
                 <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>

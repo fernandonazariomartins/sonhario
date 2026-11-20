@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CORES, tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
+import { useDiscreto } from '../lib/discreto.js';
 import { Voltar, Avancar } from './Icones.jsx';
 
 export const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -99,6 +100,7 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
 // tocar num dia mostra os sonhos dele embaixo.
 export function Calendario({ sonhos, ano, mes, aoMudarMes, renderSonhos }) {
   const [dia, setDia] = useState(null);
+  const discreto = useDiscreto();
   useEffect(() => { setDia(null); }, [ano, mes]);
   const porDia = useMemo(() => {
     const m = new Map();
@@ -152,7 +154,7 @@ export function Calendario({ sonhos, ano, mes, aoMudarMes, renderSonhos }) {
                   {lista.length > 0 && <>
                     <span className="cal-titulos">
                       {lista.slice(0, 3).map((s) => (
-                        <Link key={s.id} to={'/app/sonho/' + s.id} onClick={(e) => e.stopPropagation()} className="cal-sonho" style={{ background: (CORES[s.cor] || CORES.branco).fundo }} title={nomeCurto(s)}>{nomeCurto(s)}</Link>
+                        <Link key={s.id} to={'/app/sonho/' + s.id} onClick={(e) => e.stopPropagation()} className="cal-sonho" style={{ background: (CORES[s.cor] || CORES.branco).fundo }} title={discreto ? undefined : nomeCurto(s)}>{nomeCurto(s)}</Link>
                       ))}
                       {lista.length > 3 && <span className="cal-mais">+{lista.length - 3}</span>}
                     </span>

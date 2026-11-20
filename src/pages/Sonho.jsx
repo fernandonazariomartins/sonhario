@@ -104,7 +104,7 @@ export default function Sonho() {
   const alternarSugestao = (t) => setSugestao((x) => ({ ...x, marcados: x.marcados.includes(t) ? x.marcados.filter((m) => m !== t) : [...x.marcados, t] }));
   const chipSugestao = (t) => { const on = sugestao.marcados.includes(t); return (
     <button key={t} type="button" aria-pressed={on} onClick={() => alternarSugestao(t)}
-      style={{ ...estiloTema(t), height: 34, padding: '0 12px 0 8px', borderRadius: 6, border: 0, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: on ? 1 : 0.55 }}>
+      className="sigilo-tag" style={{ ...estiloTema(t), height: 34, padding: '0 12px 0 8px', borderRadius: 6, border: 0, fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: on ? 1 : 0.55 }}>
       <span style={{ width: 18, height: 18, borderRadius: 4, border: '1.5px solid currentColor', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{on && <Ok size={12} />}</span>
       {t}
     </button>); };
@@ -211,7 +211,7 @@ export default function Sonho() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <label className="sr" htmlFor="titulo">Título</label>
           <input id="titulo" value={s.titulo} onChange={(e) => mudar({ titulo: e.target.value })} placeholder={'Sem título'}
-            className="titulo-m" style={{ border: 0, padding: 0, outline: 'none', flex: 1, minWidth: 0, background: 'transparent', fontFamily: 'var(--sans)' }} />
+            className="titulo-m sigilo" style={{ border: 0, padding: 0, outline: 'none', flex: 1, minWidth: 0, background: 'transparent', fontFamily: 'var(--sans)' }} />
           <BotaoFavorito s={s} size={26} style={{ width: 44, height: 44 }} aoMudar={(v) => mudar({ favorito: v }, true)} />
         </div>
 
@@ -232,7 +232,7 @@ export default function Sonho() {
 
         <label className="sr" htmlFor="relato">Relato do sonho</label>
         <textarea id="relato" ref={relato} value={s.texto} onChange={(e) => mudar({ texto: e.target.value })} placeholder="O que você lembra do sonho…" rows={8}
-          className="leitura" style={{ border: 0, padding: 0, resize: 'none', overflow: 'hidden', outline: 'none', width: '100%', maxWidth: 680, background: 'transparent', fontSize: 19, lineHeight: 1.75 }} />
+          className="leitura sigilo" style={{ border: 0, padding: 0, resize: 'none', overflow: 'hidden', outline: 'none', width: '100%', maxWidth: 680, background: 'transparent', fontSize: 19, lineHeight: 1.75 }} />
 
         <section aria-labelledby="t-temas" style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -241,7 +241,7 @@ export default function Sonho() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             {s.temas.map((t) => (
-              <span key={t} style={{ ...estiloTema(t), height: 30, padding: '0 2px 0 10px', borderRadius: 6, fontSize: 13.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2 }}>{t}
+              <span key={t} className="sigilo-tag" style={{ ...estiloTema(t), height: 30, padding: '0 2px 0 10px', borderRadius: 6, fontSize: 13.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 2 }}>{t}
                 <button type="button" onClick={() => mudar({ temas: s.temas.filter((x) => x !== t) }, true)} aria-label={'Tirar o tema ' + t} style={{ width: 28, height: 28, border: 0, background: 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'inherit', opacity: 0.6 }}><Fechar size={12} /></button>
               </span>
             ))}
@@ -283,7 +283,7 @@ export default function Sonho() {
               {parecidos.map((x) => { const c = CORES[x.cor] || CORES.branco; return (
                 <Link key={x.id} to={'/app/sonho/' + x.id} style={{ background: c.fundo, borderRadius: 12, boxShadow: 'var(--shadow-card)', padding: 12, color: 'var(--ink)', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(x.sonhado_em)}</span>
-                  <span style={{ fontSize: 14, fontWeight: 800 }}>{tituloDe(x)}</span>
+                  <span className="sigilo" style={{ fontSize: 14, fontWeight: 800 }}>{tituloDe(x)}</span>
                 </Link>); })}
             </div>
           </section>
@@ -306,7 +306,7 @@ export default function Sonho() {
             {(s.conclusoes || []).map((c) => (
               <li key={c.id} style={{ paddingLeft: 14, borderLeft: '2px solid var(--node)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(c.em)}</span>
-                <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65 }}>{semViuvas(c.texto)}</p>
+                <p className="leitura sigilo" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65 }}>{semViuvas(c.texto)}</p>
                 <button type="button" onClick={() => mudar({ conclusoes: s.conclusoes.filter((x) => x.id !== c.id) }, true)} style={{ alignSelf: 'flex-start', border: 0, background: 'transparent', color: 'var(--muted)', fontSize: 12, padding: 0, textDecoration: 'underline' }}>apagar</button>
               </li>
             ))}

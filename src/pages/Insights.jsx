@@ -56,8 +56,8 @@ function Cartao({ i, modo = 'real', trava, novidade }) {
                 ? <Link to={'/app/acervo?q=' + encodeURIComponent(x.parPalavra)} className="chip" style={{ ...estiloTema(x.parPalavra), ...chip }}>{x.parPalavra}</Link>
                 : <span className="chip" style={{ ...estiloTema(x.parPalavra), ...chip }}>{x.parPalavra}</span>}</>}
               {x.sonho && (real
-                ? <Link to={'/app/sonho/' + x.sonho.id} style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || 'Sem título'}</Link>
-                : <span style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || 'Sem título'}</span>)}
+                ? <Link to={'/app/sonho/' + x.sonho.id} className="sigilo" style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || 'Sem título'}</Link>
+                : <span className="sigilo" style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || 'Sem título'}</span>)}
               <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{x.texto}</span>
               {x.ligados?.length > 0 && (
                 <span style={{ flexBasis: '100%', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, paddingLeft: 12, borderLeft: '2px solid var(--line)', margin: '2px 0 4px' }}>

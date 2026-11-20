@@ -42,10 +42,10 @@ function SonhosDaPessoa({ c, nome, sonhos }) {
           <li key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px 10px 14px', borderTop: i ? '1px solid var(--line)' : 0 }}>
             <Link to={'/app/sonho/' + s.id} style={{ flex: 1, minWidth: 0, color: 'inherit', textDecoration: 'none' }}>
               <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}>
-                <strong style={{ fontSize: 15, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</strong>
+                <strong className="sigilo" style={{ fontSize: 15, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</strong>
                 {s.levar_sessao && <Etiqueta>Próxima sessão</Etiqueta>}
               </span>
-              {s.texto && <span style={{ display: 'block', fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</span>}
+              {s.texto && <span className="sigilo" style={{ display: 'block', fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</span>}
               <span className="rotulo" style={{ display: 'block', marginTop: 4, fontSize: 11 }}>sonhado {dataCurta(s.sonhado_em)}</span>
             </Link>
             <button type="button" className="btn-icone" style={{ width: 36, height: 36, flex: 'none' }} onClick={() => tirarDeste(s)}

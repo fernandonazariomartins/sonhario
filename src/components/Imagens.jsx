@@ -36,7 +36,7 @@ export default function Imagens({ imagens = [], urlDe, aoAdicionar, aoTirar }) {
               <button type="button" onClick={() => setAberta(im)} aria-label={'Abrir a imagem ' + (k + 1)}
                 style={{ border: 0, padding: 0, width: '100%', height: '100%', background: 'transparent', cursor: 'zoom-in', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {urls[im.ref]
-                  ? <img src={urls[im.ref]} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  ? <img src={urls[im.ref]} alt="" loading="lazy" className="sigilo" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   : <span style={{ color: 'var(--muted)', display: 'inline-flex' }}><Imagem size={22} /></span>}
               </button>
               {aoTirar && (
@@ -58,7 +58,7 @@ export default function Imagens({ imagens = [], urlDe, aoAdicionar, aoTirar }) {
       {aberta && (
         <Janela titulo="Imagem do sonho" aoFechar={() => setAberta(null)}>
           {urls[aberta.ref]
-            ? <img src={urls[aberta.ref]} alt="" style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 8, alignSelf: 'center' }} />
+            ? <img src={urls[aberta.ref]} alt="" className="sigilo" style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 8, alignSelf: 'center' }} />
             : <p style={{ margin: 0, color: 'var(--muted)' }}>Este navegador não abre esse formato de imagem.</p>}
         </Janela>
       )}

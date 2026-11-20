@@ -17,7 +17,8 @@ import { instalado } from '../lib/lembrete.js';
 import { primeiraVezInstalado } from '../lib/instalar.js';
 import { sairDaDemo } from '../lib/demo.js';
 import { semViuvas } from '../lib/tipografia.js';
-import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado, Ok } from '../components/Icones.jsx';
+import { useDiscreto, mudarDiscreto } from '../lib/discreto.js';
+import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado, Ok, Olho, OlhoFechado } from '../components/Icones.jsx';
 
 export default function AppLayout() {
   const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco, demo, modo, mudarModo } = useEstado();
@@ -30,6 +31,13 @@ export default function AppLayout() {
   const [menu, setMenu] = useState(false);
   const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'frase' | 'trancar' | 'ia'
   const caixaMenu = useRef(null);
+  const discreto = useDiscreto();
+
+  // A classe fica no <html> para valer também nas janelas; sai ao deixar o app (home).
+  useEffect(() => {
+    document.documentElement.classList.toggle('discreto', discreto);
+    return () => document.documentElement.classList.remove('discreto');
+  }, [discreto]);
 
   useEffect(() => { setMenu(false); setJanela(''); trocouDeTela(); }, [pathname]);
 
@@ -111,6 +119,11 @@ export default function AppLayout() {
           <NavLink to="/app/observacoes" aria-label="Observações" className={aba}><Faisca size={16} /> <span className="esconde-celular">Observações</span></NavLink>
           {(comigoTodos.length > 0 || modo.atende) && <NavLink to="/app/compartilhados" aria-label={rotulo} className={aba}><Pessoas size={16} /> <span className="esconde-celular">{rotulo}</span></NavLink>}
         </nav>
+        <button type="button" className={'btn-icone btn-discreto' + (discreto ? ' ligado' : '')} aria-pressed={discreto}
+          aria-label={discreto ? 'Modo discreto ligado. Mostrar os sonhos' : 'Modo discreto: embaçar os sonhos'} title={discreto ? 'Mostrar os sonhos' : 'Modo discreto'}
+          onClick={() => { mudarDiscreto(!discreto); avisar(discreto ? 'Modo discreto desligado.' : 'Modo discreto: os sonhos ficam embaçados até você desligar.'); }}>
+          {discreto ? <OlhoFechado /> : <Olho />}
+        </button>
         <div ref={caixaMenu} style={{ position: 'relative' }}>
           <button type="button" className="btn-icone" onClick={() => setMenu(!menu)} aria-expanded={menu} aria-haspopup="menu" aria-label="Mais opções"><Pontos /></button>
           {menu && (

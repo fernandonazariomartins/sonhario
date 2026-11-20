@@ -326,3 +326,13 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 @keyframes pulsar { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .girando, .esqueleto-nota { animation: none; } }
 .filtro-icone { display: inline-flex; color: var(--subtle); }
+
+/* Modo discreto (botão com olho no topo): embaça o conteúdo dos sonhos e mantém a estrutura.
+   Texto e imagens: desfoque. Temas: o texto some num borrão e a etiqueta continua com a cor. */
+.sigilo, .nota h3, .nota p, .cal-sonho, .chip, .sigilo-tag { transition: filter .2s ease, color .2s ease, text-shadow .2s ease; }
+.discreto .sigilo, .discreto .nota h3, .discreto .nota p, .discreto .cal-sonho { filter: blur(.42em); user-select: none; -webkit-user-select: none; }
+.discreto img.sigilo { filter: blur(14px); }
+.discreto .chip, .discreto .chip *, .discreto .sigilo-tag, .discreto .sigilo-tag > :not(button) { color: transparent !important; text-shadow: 0 0 7px rgba(31, 35, 40, .55); user-select: none; -webkit-user-select: none; }
+.discreto .chip mark, .discreto .sigilo-tag mark { background: transparent; }
+.discreto input.sigilo::placeholder, .discreto textarea.sigilo::placeholder { color: transparent; }
+.btn-discreto.ligado { background: var(--ink); border-color: var(--ink); color: #fff; }

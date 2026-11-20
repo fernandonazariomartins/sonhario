@@ -47,8 +47,8 @@ export default function Lixeira() {
             return (
               <div key={s.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '14px 16px', borderTop: i ? '1px solid var(--line)' : 0 }}>
                 <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</div>
-                  {s.texto && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</div>}
+                  <div className="sigilo" style={{ fontWeight: 800, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</div>
+                  {s.texto && <div className="sigilo" style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</div>}
                   <div className="rotulo" style={{ marginTop: 6, fontSize: 11 }}>sonhado {dataCurta(s.sonhado_em)} · {prazo(s)}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>

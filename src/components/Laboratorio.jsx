@@ -58,7 +58,7 @@ function Grafo({ pessoas, sel, setSel }) {
           <g key={p.chave} role="button" tabIndex={0} aria-pressed={ativo} aria-label={p.nome} style={{ cursor: 'pointer' }}
             onClick={() => setSel(i)} onMouseEnter={() => setSel(i)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(i); } }}>
             <rect x={0} y={yP(i) - 16} width={xP + 18} height={32} fill="transparent" />
-            <text x={xP - 8} y={yP(i)} textAnchor="end" dominantBaseline="central" fontSize={14} fontWeight={ativo ? 800 : 500} fill={ativo ? 'var(--azul)' : 'var(--ink)'}>{p.nome}</text>
+            <text className="sigilo" x={xP - 8} y={yP(i)} textAnchor="end" dominantBaseline="central" fontSize={14} fontWeight={ativo ? 800 : 500} fill={ativo ? 'var(--azul)' : 'var(--ink)'}>{p.nome}</text>
             <circle cx={xP + 4} cy={yP(i)} r={4 + (p.n / maxN) * 6} fill={ativo ? 'var(--azul)' : 'var(--azul-cinza)'} />
           </g>
         );
@@ -99,7 +99,7 @@ function Detalhe({ p, periodo, rotulo }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
       <div>
-        <Link to={p.ehTag ? '/app/acervo?tema=' + encodeURIComponent(p.nome) : '/app/acervo?q=' + encodeURIComponent(p.nome)} style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{p.nome}</Link>
+        <Link to={p.ehTag ? '/app/acervo?tema=' + encodeURIComponent(p.nome) : '/app/acervo?q=' + encodeURIComponent(p.nome)} className="sigilo" style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{p.nome}</Link>
         <p style={{ margin: '2px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
           {semViuvas('em ' + plural(p.n, 'sonho', 'sonhos') + (p.peloNome ? ', pelo nome' : '') + ' · primeira vez em ' + data(p.sonhos[0].em) + (p.n > 1 ? ' · a mais recente em ' + data(p.sonhos[p.sonhos.length - 1].em) : ''))}
         </p>
@@ -121,14 +121,14 @@ function Detalhe({ p, periodo, rotulo }) {
       ) : <p style={{ margin: 0, fontSize: 13.5, color: 'var(--muted)' }}>{semViuvas('Ainda nenhuma imagem se repete nos sonhos com essa pessoa.')}</p>}
       {p.junto.length > 0 && (
         <p style={{ margin: 0, fontSize: 13.5, color: 'var(--muted)' }}>
-          Aparece junto com {p.junto.map((o, i) => <span key={o.nome}>{i ? ', ' : ''}<strong style={{ color: 'var(--ink)' }}>{o.nome}</strong> ({o.n})</span>)}
+          Aparece junto com {p.junto.map((o, i) => <span key={o.nome}>{i ? ', ' : ''}<strong className="sigilo" style={{ color: 'var(--ink)' }}>{o.nome}</strong> ({o.n})</span>)}
         </p>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span className="rotulo">Sonhos mais recentes com {p.nome}</span>
+        <span className="rotulo">Sonhos mais recentes com <span className="sigilo">{p.nome}</span></span>
         {ultimos.map((s) => (
           <Link key={s.id} to={'/app/sonho/' + s.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 14, color: 'var(--ink)', textDecoration: 'none', padding: '4px 0', borderBottom: '1px solid var(--line)' }}>
-            <strong style={{ fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: s.titulo ? 'var(--ink)' : 'var(--muted)' }}>{s.titulo || 'Sem título'}</strong>
+            <strong className="sigilo" style={{ fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: s.titulo ? 'var(--ink)' : 'var(--muted)' }}>{s.titulo || 'Sem título'}</strong>
             <span style={{ fontSize: 12.5, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{data(s.em)}</span>
           </Link>
         ))}

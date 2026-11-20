@@ -142,10 +142,10 @@ function CartaoPessoa({ c }) {
                   <Link to={base + '/' + s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px 10px 14px', color: 'inherit', textDecoration: 'none' }}>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}>
-                        <strong style={{ fontSize: 15, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</strong>
+                        <strong className="sigilo" style={{ fontSize: 15, color: s.titulo?.trim() ? 'var(--ink)' : 'var(--muted)' }}>{tituloDe(s)}</strong>
                         {s.levar_sessao && <Etiqueta>Próxima sessão</Etiqueta>}
                       </span>
-                      {s.texto && <span style={{ display: 'block', fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</span>}
+                      {s.texto && <span className="sigilo" style={{ display: 'block', fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.texto}</span>}
                       <span className="rotulo" style={{ display: 'block', marginTop: 4, fontSize: 11 }}>
                         sonhado {dataCurta(s.sonhado_em)}{coment[s.id]?.total ? ' · ' + plural(coment[s.id].total, 'comentário', 'comentários') : ''}
                       </span>
@@ -268,7 +268,7 @@ function SonhoLido({ c, id }) {
 
       <article className="painel" style={{ flex: '999 1 560px', minWidth: 0, padding: 'clamp(20px, 4vw, 36px)', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <span className="rotulo" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Calendario size={14} /> {dataLonga(s.sonhado_em)}</span>
-        <h1 className="titulo-m">{semViuvas(tituloDe(s))}</h1>
+        <h1 className="titulo-m sigilo">{semViuvas(tituloDe(s))}</h1>
         {s.levar_sessao && <span style={{ alignSelf: 'flex-start', height: 28, padding: '0 10px', borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center' }}>Para a próxima sessão</span>}
         {s.audio && (
           <div style={{ background: '#F7F8FA', borderRadius: 12, padding: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -277,7 +277,7 @@ function SonhoLido({ c, id }) {
           </div>
         )}
         <Imagens imagens={s.imagens || []} urlDe={urlImagemCompartilhada} />
-        {s.texto ? s.texto.split(/\n{2,}/).map((p, k) => <p key={k} className="leitura" style={{ margin: 0, maxWidth: 680, fontSize: 19, lineHeight: 1.75, whiteSpace: 'pre-line' }}>{semViuvas(p)}</p>)
+        {s.texto ? s.texto.split(/\n{2,}/).map((p, k) => <p key={k} className="leitura sigilo" style={{ margin: 0, maxWidth: 680, fontSize: 19, lineHeight: 1.75, whiteSpace: 'pre-line' }}>{semViuvas(p)}</p>)
           : <p style={{ margin: 0, color: 'var(--muted)', fontStyle: 'italic' }}>Sem relato escrito.</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 18 }}>
           {(s.temas || []).map((t) => <span key={t} className="chip" style={{ ...estiloTema(t), height: 30, fontSize: 13.5 }}>{t}</span>)}
@@ -299,7 +299,7 @@ function SonhoLido({ c, id }) {
                 {s.conclusoes.map((x) => (
                   <li key={x.id} style={{ paddingLeft: 14, borderLeft: '2px solid var(--node)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(x.em)}</span>
-                    <p className="leitura" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65 }}>{semViuvas(x.texto)}</p>
+                    <p className="leitura sigilo" style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65 }}>{semViuvas(x.texto)}</p>
                   </li>
                 ))}
               </ol>
