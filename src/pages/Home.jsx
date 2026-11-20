@@ -5,22 +5,13 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
-import { Mic, Tema, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar, Cadeado, Estrela, Pessoas, Play, Pausa } from '../components/Icones.jsx';
+import { Mic, Voltar, Avancar, Ok, Mensagem, Compartilhar, Cadeado, Pessoas, Play, Pausa } from '../components/Icones.jsx';
 import { semViuvas as n } from '../lib/tipografia.js';
 import './home.css';
 
 // Troque pelo seu ID do Associados Amazon (termina em -20) quando a conta estiver aprovada.
 const AMAZON_TAG = 'SEU-ID-20';
 const amazon = (asin) => `https://www.amazon.com.br/dp/${asin}/?tag=${AMAZON_TAG}`;
-
-const RECURSOS = [
-  { t: 'Gravar', d: 'O app abre pronto para falar, antes de o sonho escapar.', Ic: Mic, href: '#ao-acordar' },
-  { t: 'Organizar', d: 'Temas, datas e status em cada sonho, sem planilha.', Ic: Tema, href: '#acervo' },
-  { t: 'Amplificar', d: 'Imagens e associações, com data, quando você quiser.', Ic: Caneta, href: '#amplificacoes' },
-  { t: 'Levar à sessão', d: 'Marque o que você quer trabalhar na próxima vez.', Ic: Estrela, href: '#sessao' },
-  { t: 'Compartilhar', d: 'Um sonho por vez, só com quem você escolher.', Ic: Compartilhar, href: '#sessao' },
-  { t: 'Importar', d: 'Traga os sonhos que você já anotou no Notion ou no Keep.', Ic: Importar, href: '#importar' },
-];
 
 const PASSOS = [
   ['Celular ao lado da cama', 'Ao acordar, antes de levantar, abra o Sonhário: ele já abre no gravador.'],
@@ -68,7 +59,7 @@ export default function Home() {
         <div className="h-topo-miolo">
           <Logo />
           <nav aria-label="Seções" className="h-nav esconde-celular">
-            <a href="#recursos">Recursos</a>
+            <a href="#ao-acordar">Como funciona</a>
             <a href="#terapeutas">Para quem atende</a>
             <a href="#pratica">A prática</a>
           </nav>
@@ -96,23 +87,15 @@ export default function Home() {
         <p className="h-porta">{n('Ainda não faz análise? Comece a guardar seus sonhos agora. Se um dia você começar, eles já estarão lá.')}</p>
       </section>
 
-      {/* RECURSOS */}
-      <section id="recursos" className="h-bloco">
-        <div className="h-largo">
-          <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
-            <h2 className="h-titulo" style={{ marginTop: 0 }}>{n('Do sonho anotado à sessão, sem perder nada pelo caminho.')}</h2>
-            <p className="h-texto" style={{ color: 'var(--muted)' }}>{n('Seis passos simples, no celular e no computador. O sentido continua com você.')}</p>
+      {/* DEPOIMENTO */}
+      <section className="h-bloco" style={{ paddingTop: 104 }}>
+        <figure className="depoimento">
+          <Retrato />
+          <div>
+            <blockquote style={{ fontSize: 'clamp(22px, 2.8vw, 30px)', lineHeight: 1.45, color: 'var(--preto)' }}>“{n('Esse é o método que me ajudou a registrar mais de 1.000 sonhos nos últimos 5 anos.')}”</blockquote>
+            <figcaption><strong>Fernando Martins</strong>, criador do&nbsp;Sonhário</figcaption>
           </div>
-          <div className="h-recursos">
-            {RECURSOS.map(({ t, d, Ic, href }) => (
-              <a key={t} href={href} className="h-recurso">
-                <span className="h-recurso-ico"><Ic size={22} /></span>
-                <strong>{t}</strong>
-                <span>{n(d)}</span>
-              </a>
-            ))}
-          </div>
-        </div>
+        </figure>
       </section>
 
       {/* GRAVAR */}
@@ -167,6 +150,21 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FECHAMENTO */}
+      <section id="instalar" className="h-bloco">
+        <div className="h-largo h-fecho">
+          <h2 className="h-titulo" style={{ marginTop: 0, textAlign: 'center', fontSize: 'clamp(32px, 4.4vw, 52px)' }}>{n('Seus sonhos, guardados para a sessão.')}</h2>
+          <p style={{ margin: '16px auto 0', maxWidth: 560, textAlign: 'center', fontSize: 17, lineHeight: 1.55, color: '#C9D0D7' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site. Amanhã, grave antes de levantar.')}</p>
+          <div className="h-fecho-cols">
+            <div className="h-fecho-col"><strong>No celular</strong><span>{n('Abra o site, instale com dois toques e deixe perto da cama.')}</span><BotaoInstalar className="btn btn-azul" /></div>
+            <div className="h-fecho-col"><strong>No computador</strong><span>{n('Organize com calma, no mural, na lista ou por tema.')}</span><Entrar className="btn" style={{ background: '#fff', color: 'var(--preto)' }}>{usuario ? 'Abrir o Sonhário' : 'Usar no navegador'}</Entrar></div>
+            <div className="h-fecho-col"><strong>Antes de criar conta</strong><span>{n('Veja o app por dentro, com sonhos de exemplo.')}</span><a href="/demo" className="btn" style={{ background: 'transparent', color: '#fff', border: '1px solid #5B6570' }}>Ver a demonstração</a></div>
+          </div>
+          <p style={{ margin: '28px 0 0', textAlign: 'center', fontSize: 14, color: '#C9D0D7' }}>{n('Já anota seus sonhos em outro lugar? Traga do Notion, do Google Keep ou de arquivos de texto.')}</p>
+          <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 13.5, color: '#C9D0D7', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Há também um nível avançado de criptografia.')}</p>
+        </div>
+      </section>
+
       {/* PARA QUEM ATENDE */}
       <section id="terapeutas" className="h-faixa-azul">
         <div className="h-largo h-dupla">
@@ -194,46 +192,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ACERVO */}
-      <section id="acervo" className="h-bloco">
-        <div className="h-largo" style={{ textAlign: 'center' }}>
-          <div className="h-rotulo">Organizar</div>
-          <h2 className="h-titulo" style={{ maxWidth: 760, marginLeft: 'auto', marginRight: 'auto' }}>{n('Mural, lista ou por tema. Do jeito que você procura.')}</h2>
-          <p className="h-texto" style={{ maxWidth: 620, marginLeft: 'auto', marginRight: 'auto' }}>{n('Depois de alguns meses, os sonhos começam a conversar entre si. Busque por uma palavra, filtre por tema e veja o que volta.')}</p>
-          <div className="h-mural">
-            {[['mar', 'A baleia ao lado do barco', 'Tão perto que eu via o olho dela.', '#D3E5EF', '#183347'], ['casa · família', 'A biblioteca do avô', 'Todos os livros abertos na mesma página.', '#EEE0DA', '#442A1E'], ['animais', 'Chuva de pássaros', 'Pousavam vivos no chão e saíam andando.', '#DBEDDB', '#1C3829'], ['festa', 'O vestido da avó', 'Dançamos até amanhecer.', '#FDECC8', '#402C1B']].map(([tema, t, d, bg, fg]) => (
-              <div key={t} className="h-nota" style={{ background: bg }}><small style={{ color: fg }}>{tema}</small><strong>{n(t)}</strong><p>{n(d)}</p></div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* IMPORTAR */}
-      <section id="importar" className="h-bloco" style={{ paddingTop: 104 }}>
-        <div className="h-largo h-importar">
-          <div style={{ flex: '1 1 360px', minWidth: 0 }}>
-            <h2 className="h-titulo" style={{ marginTop: 0, fontSize: 'clamp(28px, 3.4vw, 40px)' }}>{n('Traga os sonhos que você já anotou.')}</h2>
-            <p className="h-texto" style={{ marginTop: 12, fontSize: 17, color: 'var(--muted)' }}>{n('Ninguém precisa recomeçar do zero.')}</p>
-          </div>
-          <div className="h-importar-itens">
-            <div><strong>Notion</strong>{n('Exporte a tabela em CSV: datas, temas e status vêm para os campos certos.')}</div>
-            <div><strong>Google Keep</strong>{n('Baixe pelo Google Takeout: marcadores viram temas e as cores ficam.')}</div>
-            <div><strong>Outros arquivos</strong>{n('Texto ou Markdown, um sonho por data.')}</div>
-          </div>
-        </div>
-      </section>
-
-      {/* DEPOIMENTO */}
-      <section className="h-bloco">
-        <figure className="depoimento">
-          <Retrato />
-          <div>
-            <blockquote style={{ fontSize: 'clamp(22px, 2.8vw, 30px)', lineHeight: 1.45, color: 'var(--preto)' }}>“{n('Esse é o método que me ajudou a registrar mais de 1.000 sonhos nos últimos 5 anos.')}”</blockquote>
-            <figcaption><strong>Fernando Martins</strong>, criador do&nbsp;Sonhário</figcaption>
-          </div>
-        </figure>
-      </section>
-
       {/* CIÊNCIA */}
       <section id="ciencia" className="h-ciencia">
         <div className="h-largo">
@@ -258,7 +216,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* A PRÁTICA */}
+      {/* A PRÁTICA (como fazer + leituras) */}
       <section id="pratica" className="h-bloco">
         <div className="h-largo h-dupla" style={{ alignItems: 'stretch' }}>
           <div className="h-col-texto" style={{ flexBasis: 560, display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -283,11 +241,7 @@ export default function Home() {
             <figcaption style={{ fontSize: 12, color: 'var(--muted)' }}>Imagem: <a href="https://unsplash.com/pt-br/fotografias/uma-pessoa-balanca-em-direcao-a-um-castelo-nas-nuvens-h1ItA7ncIjk" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--muted)', fontWeight: 700 }}>The New York Public Library</a>, via&nbsp;Unsplash</figcaption>
           </figure>
         </div>
-      </section>
-
-      {/* LEITURAS */}
-      <section id="leituras" className="h-bloco">
-        <div className="h-largo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div id="leituras" className="h-largo" style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 88 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
             <div style={{ marginRight: 'auto', maxWidth: 680 }}>
               <div className="h-rotulo">Leituras</div>
@@ -318,28 +272,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FECHAMENTO */}
-      <section id="instalar" className="h-bloco">
-        <div className="h-largo h-fecho">
-          <h2 className="h-titulo" style={{ marginTop: 0, textAlign: 'center', fontSize: 'clamp(32px, 4.4vw, 52px)' }}>{n('Seus sonhos, guardados para a sessão.')}</h2>
-          <p style={{ margin: '16px auto 0', maxWidth: 560, textAlign: 'center', fontSize: 17, lineHeight: 1.55, color: '#C9D0D7' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site. Amanhã, grave antes de levantar.')}</p>
-          <div className="h-fecho-cols">
-            <div className="h-fecho-col"><strong>No celular</strong><span>{n('Abra o site, instale com dois toques e deixe perto da cama.')}</span><BotaoInstalar className="btn btn-azul" /></div>
-            <div className="h-fecho-col"><strong>No computador</strong><span>{n('Organize com calma, no mural, na lista ou por tema.')}</span><Entrar className="btn" style={{ background: '#fff', color: 'var(--preto)' }}>{usuario ? 'Abrir o Sonhário' : 'Usar no navegador'}</Entrar></div>
-            <div className="h-fecho-col"><strong>Antes de criar conta</strong><span>{n('Veja o app por dentro, com sonhos de exemplo.')}</span><a href="/demo" className="btn" style={{ background: 'transparent', color: '#fff', border: '1px solid #5B6570' }}>Ver a demonstração</a></div>
-          </div>
-          <p style={{ margin: '28px 0 0', textAlign: 'center', fontSize: 13.5, color: '#C9D0D7', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Há também um nível avançado de criptografia.')}</p>
-        </div>
-      </section>
-
       {/* RODAPÉ */}
       <footer className="h-rodape">
         <div className="h-largo">
           <div className="h-rodape-cols">
             <div><Logo /><span>Diário de sonhos para a análise.</span></div>
-            <div><strong>O app</strong><a href="#recursos">Recursos</a><a href="/demo">Demonstração</a><a href="#importar">Importar</a></div>
+            <div><strong>O app</strong><a href="#ao-acordar">Como funciona</a><a href="/demo">Demonstração</a><a href="#instalar">Instalar</a></div>
             <div><strong>A prática</strong><a href="#pratica">Como fazer um sonhário</a><a href="#ciencia">O que diz a ciência</a><a href="#leituras">Leituras</a></div>
             <div><strong>Projeto colaborativo</strong><span>{n('Sua ideia pode virar a próxima função do app.')}</span><button type="button" className="btn btn-linha" onClick={() => setIdeia(true)}><Mensagem size={16} /> Contribuir com uma ideia</button></div>
+          </div>
+          <div className="h-rodape-cta">
+            <strong>{n('Pronto para guardar o próximo sonho?')}</strong>
+            <BotaoInstalar className="btn btn-azul" />
           </div>
           <div className="h-rodape-fim">
             <Assinatura />

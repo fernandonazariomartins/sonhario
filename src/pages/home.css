@@ -219,3 +219,5 @@
 @keyframes hv-transc{0%,28.5%{opacity:0}29.5%,95%{opacity:1}96%,100%{opacity:0}}
 .hv-transc{animation:hv-transc 20s linear infinite}
 @media (prefers-reduced-motion: reduce) { .h-video .hv-grav { display: none; } }
+.h-rodape-cta { margin-bottom: 56px; padding: 24px 28px; border-radius: 18px; background: #F3F5F7; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.h-rodape-cta strong { font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
