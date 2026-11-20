@@ -88,6 +88,47 @@ const SINONIMOS = [
   'voar voando voo', 'dente dentes', 'bebe nenem', 'igreja templo capela', 'cemiterio tumulo', 'fogo incendio chama',
 ].map((g) => g.split(' '));
 const GRUPO = new Map(SINONIMOS.flatMap((g, i) => g.map((w) => [w, i])));
+
+// Campos: palavras que já moram no mesmo ambiente. Juntar duas delas não é descoberta
+// (escola e colega, caminho e trilha, casa e escada). Uma palavra pode estar em mais de um campo.
+const CAMPOS = [
+  'escola colegio faculdade universidade aula sala professor professora colega turma prova recreio caderno quadro carteira estudar estudo livro aluno aluna diretor diretora uniforme',
+  'trabalho emprego escritorio empresa chefe colega reuniao cliente salario computador mesa patrao funcionario',
+  'casa apartamento quarto sala cozinha banheiro porao sotao escada porta janela telhado parede corredor quintal varanda garagem sofa cama mesa',
+  'caminho trilha estrada rua avenida rota percurso calcada ponte esquina atalho',
+  'mar praia onda areia mare oceano barco navio ilha porto marinheiro peixe tubarao',
+  'agua rio lago lagoa piscina chuva molhado nadar afogar enchente cachoeira',
+  'viagem mala aeroporto aviao hotel passaporte voo turista estrangeiro onibus trem estacao',
+  'carro dirigir volante estrada transito motorista pneu garagem',
+  'cidade rua predio avenida bairro centro praca transito loja shopping',
+  'floresta mata arvore trilha bicho natureza folha galho montanha',
+  'ceu nuvem estrela lua sol voar aviao passaro',
+  'noite escuro lua sono dormir cama pesadelo',
+  'hospital medico medica enfermeira doenca remedio cirurgia doente maca',
+  'igreja padre missa altar reza oracao santo deus capela',
+  'festa musica danca bebida cerveja aniversario bolo convidado casamento noiva noivo',
+  'comida comer cozinha mesa almoco jantar fome prato',
+  'familia mae pai irmao irma avo tio tia primo prima filho filha',
+  'animal cachorro gato bicho cavalo passaro',
+  'morte morrer enterro velorio cemiterio caixao luto',
+  'fogo incendio fumaca queimar bombeiro',
+  'dinheiro banco pagar conta compra loja',
+  'celular telefone mensagem ligacao',
+].map((g) => g.split(' '));
+const CAMPO = new Map();
+CAMPOS.forEach((g, i) => g.forEach((w) => { if (!CAMPO.has(w)) CAMPO.set(w, new Set()); CAMPO.get(w).add(i); }));
+const camposDe = (texto) => {
+  const r = new Set();
+  for (const w of normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean)) for (const f of [w, singular(w)]) for (const c of CAMPO.get(f) || []) r.add(c);
+  return r;
+};
+// Mesma imagem ou mesmo ambiente: a relação é óbvia demais para ser observação.
+export function obvio(a, b) {
+  if (mesmaImagem(a, b)) return true;
+  const ca = camposDe(a);
+  for (const c of camposDe(b)) if (ca.has(c)) return true;
+  return false;
+}
 const raiz = (w) => singular(normalizar(w)).replace(/(inho|inha|zinho|zinha|ao|a|o|e)$/, '');
 // a e b falam da mesma imagem? (mesma raiz, sinônimo, ou uma é parte do nome da outra: "tia" e "Tia Marília")
 export function mesmaImagem(a, b) {
@@ -155,11 +196,11 @@ function pessoasDoAcervo(ordenados, palavras, limite) {
       const vistos = new Set();
       for (const t of new Set(s.temas || [])) {
         const tn = singular(normalizar(t));
-        if (tn === k || presentes[i].has(tn) || mesmaImagem(t, forma.get(k))) continue;
+        if (tn === k || presentes[i].has(tn) || obvio(t, forma.get(k))) continue;
         vistos.add(tn); somar(tn, { tema: t });
       }
       for (const [w, orig] of palavras[i]) {
-        if (w === k || vistos.has(w) || set.has(w) || !(ehSimbolo(w) || lugares.has(w)) || w.length < 3 || mesmaImagem(w, forma.get(k))) continue;
+        if (w === k || vistos.has(w) || set.has(w) || !(ehSimbolo(w) || lugares.has(w)) || w.length < 3 || obvio(w, forma.get(k))) continue;
         somar(w, { palavra: orig });
       }
     });
@@ -169,6 +210,57 @@ function pessoasDoAcervo(ordenados, palavras, limite) {
     return {
       chave: k, nome: forma.get(k), n, peloNome: ehNome.has(k), sonhos, ligados,
       junto: [...outras].filter(([, m]) => m >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([o, m]) => ({ nome: forma.get(o), n: m })),
+    };
+  });
+}
+
+// Tags que são pessoas: têm uma palavra de parentesco ou papel (Tia Marília, mãe, chefe)
+// ou são um nome próprio, ou seja, palavras que nos relatos só aparecem com maiúscula.
+function tagsDePessoa(ordenados) {
+  const minusculas = new Set(), maiusculas = new Set();
+  for (const s of ordenados) for (const p of ((s.titulo || '') + ' ' + (s.texto || '')).match(/[\p{L}]+/gu) || []) {
+    (/^\p{Lu}/u.test(p) ? maiusculas : minusculas).add(normalizar(p));
+  }
+  const figuras = new Set(FIGURAS);
+  const pessoa = (t) => {
+    const ws = normalizar(t).split(/[^a-z]+/).filter((w) => w.length > 1);
+    if (!ws.length) return false;
+    if (ws.some((w) => figuras.has(w) || figuras.has(singular(w)))) return true;
+    // Nome próprio: nenhuma das palavras é imagem do dicionário nem aparece em minúscula nos relatos.
+    return ws.every((w) => !ehSimbolo(w) && !ehSimbolo(singular(w)) && !CAMPO.has(w) && !LUGARES.includes(w) && !minusculas.has(w) && !NAO_NOMES.has(w))
+      && ws.some((w) => maiusculas.has(w));
+  };
+  return pessoa;
+}
+
+function pessoasPorTag(ordenados) {
+  const ehPessoa = tagsDePessoa(ordenados);
+  const N = ordenados.length;
+  const freq = new Map();
+  for (const s of ordenados) for (const t of new Set(s.temas || [])) freq.set(t, (freq.get(t) || 0) + 1);
+  const pessoas = [...freq].filter(([t, n]) => n >= 3 && ehPessoa(t)).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([t]) => t);
+  const ehDePessoa = new Set(pessoas);
+  return pessoas.map((nome) => {
+    const sonhos = [], com = new Map(), outras = new Map();
+    ordenados.forEach((s) => {
+      const ts = new Set(s.temas || []);
+      if (!ts.has(nome)) return;
+      sonhos.push({ id: s.id, titulo: s.titulo?.trim() || '', em: +new Date(s.sonhado_em) });
+      for (const t of ts) {
+        if (t === nome) continue;
+        if (ehDePessoa.has(t) || ehPessoa(t)) outras.set(t, (outras.get(t) || 0) + 1);
+        else if (!obvio(t, nome)) com.set(t, (com.get(t) || 0) + 1);
+      }
+    });
+    const n = sonhos.length;
+    // Ordena pelo que vem junto mais vezes, pesando o quanto aquela tag é rara no resto do acervo.
+    const ligados = [...com].filter(([, m]) => m >= 2).map(([t, m]) => {
+      const fora = (freq.get(t) - m) / Math.max(1, N - n);
+      return { chave: 'tag:' + t, tema: t, n: m, nota: m * Math.min(3, (m / n) / Math.max(0.02, fora)) };
+    }).sort((a, b) => b.nota - a.nota || b.n - a.n).slice(0, 8).map(({ nota, ...x }) => x); // eslint-disable-line no-unused-vars
+    return {
+      chave: 'tag:' + nome, nome, n, peloNome: false, ehTag: true, sonhos, ligados,
+      junto: [...outras].filter(([, m]) => m >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([o, m]) => ({ nome: o, n: m })),
     };
   });
 }
@@ -517,7 +609,7 @@ export function calcularLaboratorio(sonhos) {
       const marcadosJunto = new Set(idx.flatMap((i) => [...temasDe[i]].map((t) => singular(normalizar(t)))));
       const dentro = new Map();
       for (const i of idx) for (const k of palavras[i].keys()) if (imagem(k)) dentro.set(k, (dentro.get(k) || 0) + 1);
-      const fortes = [...dentro].filter(([k, d]) => d >= 3 && k !== tNorm && !marcadosJunto.has(k) && !mesmaImagem(k, tema)
+      const fortes = [...dentro].filter(([k, d]) => d >= 3 && k !== tNorm && !marcadosJunto.has(k) && !obvio(k, tema)
           // Palavra que quase só aparece com o tema é vocabulário do próprio tema (mar e onda):
           // o que interessa é a imagem que também vive em outros sonhos e mesmo assim se junta a ele.
           && total.get(k) - d >= 2 && d / total.get(k) <= 0.75)
@@ -541,7 +633,7 @@ export function calcularLaboratorio(sonhos) {
     add({
       ...META_LAB.encadeamento,
       itens: [...depois].map(([k, n]) => { const [a, b] = k.split('\u0000'); return { a, b, n, j: juntos.get(a < b ? k2(a, b) : k2(b, a)) || 0 }; })
-        .filter((x) => x.n >= 3 && x.n > x.j && !mesmaImagem(x.a, x.b)).sort((p, q) => q.n - p.n).slice(0, 5)
+        .filter((x) => x.n >= 3 && x.n > x.j && !obvio(x.a, x.b)).sort((p, q) => q.n - p.n).slice(0, 5)
         .map((x) => ({ tema: x.a, par: x.b, seta: true, texto: plural(x.n, 'vez', 'vezes') + ' no sonho seguinte' + (x.j ? ' · ' + x.j + ' no mesmo' : ', nunca no mesmo') })),
     });
   }
@@ -558,13 +650,15 @@ export function calcularLaboratorio(sonhos) {
     add({
       ...META_LAB.latente,
       itens: [...pares].map(([k, n]) => { const [a, b] = k.split('\u0000'); return { a, b, n, forca: (n * N) / (total.get(a) * total.get(b)) }; })
-        .filter((x) => x.n >= 3 && x.forca >= 2 && !mesmaImagem(x.a, x.b)).sort((p, q) => q.n - p.n || q.forca - p.forca).slice(0, 5)
+        .filter((x) => x.n >= 3 && x.forca >= 2 && !obvio(x.a, x.b)).sort((p, q) => q.n - p.n || q.forca - p.forca).slice(0, 5)
         .map((x) => ({ palavra: forma.get(x.a), parPalavra: forma.get(x.b), texto: 'juntas em ' + plural(x.n, 'relato', 'relatos') })),
     });
   }
 
   // Mapa das pessoas: quem aparece e o que vem junto com cada uma.
-  const pessoas = pessoasDoAcervo(ordenados, palavras, 10);
+  // Pessoas pelas tags que são nome de alguém; se houver poucas, completa com as pessoas dos relatos.
+  let pessoas = pessoasPorTag(ordenados);
+  if (pessoas.length < 2) pessoas = [...pessoas, ...pessoasDoAcervo(ordenados, palavras, 10).filter((p) => !pessoas.some((q) => mesmaImagem(q.nome, p.nome)))].slice(0, 10);
 
   // Mapa dos temas no tempo: os temas mais frequentes, mês a mês (ou por trimestre em acervos longos).
   let mapaTemas = null;

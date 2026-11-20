@@ -99,7 +99,7 @@ function Detalhe({ p, periodo }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
       <div>
-        <Link to={'/app/acervo?q=' + encodeURIComponent(p.nome)} style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{p.nome}</Link>
+        <Link to={p.ehTag ? '/app/acervo?tema=' + encodeURIComponent(p.nome) : '/app/acervo?q=' + encodeURIComponent(p.nome)} style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{p.nome}</Link>
         <p style={{ margin: '2px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
           {semViuvas('em ' + plural(p.n, 'sonho', 'sonhos') + (p.peloNome ? ', pelo nome' : '') + ' · primeira vez em ' + data(p.sonhos[0].em) + (p.n > 1 ? ' · a mais recente em ' + data(p.sonhos[p.sonhos.length - 1].em) : ''))}
         </p>
@@ -107,7 +107,7 @@ function Detalhe({ p, periodo }) {
       <Faixa sonhos={p.sonhos} periodo={periodo} />
       {p.ligados.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="rotulo">No mesmo sonho</span>
+          <span className="rotulo">Símbolos no mesmo sonho</span>
           {p.ligados.map((l) => (
             <Link key={l.chave} to={linkDe(l)} style={{ display: 'grid', gridTemplateColumns: 'minmax(80px, 34%) 1fr auto', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'var(--ink)' }}>
               <span className="chip" style={{ ...(l.tema ? estiloTema(l.tema) : { background: 'transparent', border: '1px solid var(--line-strong)' }), height: 24, fontSize: 13, justifySelf: 'start', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rotuloDe(l)}</span>
@@ -143,7 +143,7 @@ export function MapaPessoas({ pessoas, periodo }) {
   const p = pessoas[Math.min(sel, pessoas.length - 1)];
   return (
     <Quadro nome="Personificação" titulo="Quem aparece e o que vem junto"
-      termo="Toque numa pessoa para ver os temas e as imagens que mais aparecem nos sonhos em que ela está. É contagem: mostra a companhia de cada figura, não o que ela significa. Pessoas citadas pelo papel (mãe, chefe) ou pelo nome, em pelo menos 3 relatos.">
+      termo="As pessoas são as suas tags com nome de alguém (Natália, Tia Marília, mãe), em pelo menos 3 sonhos. Toque numa delas para ver os símbolos que mais aparecem nos mesmos sonhos; o que já mora no mesmo ambiente (escola e colega) fica de fora. É contagem: mostra a companhia de cada pessoa, não o que ela significa.">
       <div className="lab-duas">
         <div className="lab-grafo" style={{ minWidth: 0 }}><Grafo pessoas={pessoas} sel={Math.min(sel, pessoas.length - 1)} setSel={setSel} /></div>
         {/* No celular, o grafo fica pequeno demais: as pessoas viram botões. */}
