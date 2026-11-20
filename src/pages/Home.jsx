@@ -391,7 +391,7 @@ function VideoTopo() {
 function Retrato() {
   const [erro, setErro] = useState(false);
   if (erro) return <span className="depoimento-foto" aria-hidden="true">FM</span>;
-  return <img className="depoimento-foto" src={import.meta.env.BASE_URL + 'fernando.jpg'} alt="Fernando Martins" loading="lazy" onError={() => setErro(true)} />;
+  return <img className="depoimento-foto" src={import.meta.env.BASE_URL + 'fernando-2026.jpg'} alt="Fernando Martins" loading="lazy" onError={() => setErro(true)} />;
 }
 
 function MiniCelular() {
