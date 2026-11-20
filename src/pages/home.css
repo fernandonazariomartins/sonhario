@@ -100,6 +100,7 @@
 .h-rodape-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 28px; font-size: 14px; }
 .h-rodape-cols > div { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .h-rodape-cols strong { font-weight: 800; }
+.h-rodape-cols .btn { margin-top: 4px; min-height: 40px; padding: 0 14px; font-size: 13.5px; }
 .h-rodape-cols a, .h-rodape-cols span, .h-rodape-cols button.h-link-rodape { color: var(--muted); text-decoration: none; line-height: 1.5; }
 .h-link-rodape { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-align: left; }
 .h-rodape-cols a:hover, .h-link-rodape:hover { color: var(--azul); }
@@ -219,5 +220,5 @@
 @keyframes hv-transc{0%,28.5%{opacity:0}29.5%,95%{opacity:1}96%,100%{opacity:0}}
 .hv-transc{animation:hv-transc 20s linear infinite}
 @media (prefers-reduced-motion: reduce) { .h-video .hv-grav { display: none; } }
-.h-rodape-cta { margin-bottom: 56px; padding: 24px 28px; border-radius: 18px; background: #F3F5F7; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.h-rodape-cta { margin: 56px 0; padding: 24px 28px; border-radius: 18px; background: #F3F5F7; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
 .h-rodape-cta strong { font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
