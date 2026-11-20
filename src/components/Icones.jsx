@@ -15,6 +15,7 @@ export const Pausa = ({ size = 18 }) => <svg width={size} height={size} viewBox=
 export const Mural = (p) => <I {...p}><rect x="3" y="3" width="7" height="9" rx="2" /><rect x="14" y="3" width="7" height="5" rx="2" /><rect x="14" y="12" width="7" height="9" rx="2" /><rect x="3" y="16" width="7" height="5" rx="2" /></I>;
 export const Lista = (p) => <I {...p} d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />;
 export const Tema = (p) => <I {...p}><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" /><circle cx="8" cy="8" r="1.4" /></I>;
+export const Titulo = (p) => <I {...p} d="M5 7V5h14v2M12 5v14M9 19h6" />;
 export const Busca = (p) => <I {...p}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></I>;
 export const Voltar = (p) => <I {...p} d="M15 6l-6 6 6 6" />;
 export const Avancar = (p) => <I {...p} d="M9 6l6 6-6 6" />;

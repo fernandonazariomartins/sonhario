@@ -21,7 +21,7 @@ export default function Sonho() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { sonhos, salvar, apagar, urlAudio, urlImagem, salvarImagem, apagarImagem, usuario, avisar, compartilhamentos, temLogin, recarregarComentarios } = useEstado();
+  const { sonhos, salvar, apagar, urlAudio, urlImagem, salvarImagem, apagarImagem, usuario, avisar, compartilhamentos, temLogin, recarregarComentarios, carregado } = useEstado();
   const [audioFalhou, setAudioFalhou] = useState(false);
   const [compartilhando, setCompartilhando] = useState(false);
   const estiloTema = useCorTema();
@@ -60,6 +60,9 @@ export default function Sonho() {
 
   const parecidos = useMemo(() => !s ? [] : sonhos.filter((x) => x.id !== s.id && x.temas?.some((t) => s.temas?.includes(t))).slice(0, 6), [sonhos, s]);
 
+  if (!s && !carregado) return (
+    <div role="status" className="carregando-resto" style={{ padding: 40, justifyContent: 'center', width: '100%' }}><span className="girando" aria-hidden="true" />Abrindo o sonho…</div>
+  );
   if (!s) return (
     <div style={{ padding: 40, textAlign: 'center' }}>
       <p>Esse sonho não está aqui.</p>

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario } from '../components/Icones.jsx';
 import { LinhaDoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
@@ -159,6 +159,18 @@ function FaixaExemplos({ n, semSonhos, aoEsconder }) {
   );
 }
 
+// Enquanto o acervo chega: cartões cinza no lugar dos sonhos, nunca a tela de acervo vazio.
+function Carregando() {
+  return (
+    <div role="status" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <p className="carregando-resto"><span className="girando" aria-hidden="true" />{semViuvas('Abrindo seus sonhos…')}</p>
+      <div className="esqueleto" aria-hidden="true">
+        {[150, 220, 120, 190, 170, 130, 210, 160].map((h, i) => <div key={i} className="esqueleto-nota" style={{ height: h }} />)}
+      </div>
+    </div>
+  );
+}
+
 function Vazio() {
   return (
     <div className="painel" style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -173,7 +185,7 @@ function Vazio() {
 }
 
 export default function Acervo() {
-  const { sonhos, exemplos, esconderExemplos } = useEstado();
+  const { sonhos, exemplos, esconderExemplos, carregado } = useEstado();
   const estiloTema = useCorTema();
   const [exemploAberto, setExemploAberto] = useState(null);
   const [params, setParams] = useSearchParams();
@@ -279,7 +291,7 @@ export default function Acervo() {
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 0 ? 'Seu acervo' : sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
+        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 0 || !carregado ? 'Seu acervo' : sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
         <label className="busca"><Busca size={18} /><span className="sr">Buscar nos sonhos</span>
           <input ref={campoBusca} type="search" value={busca} onChange={(e) => setBusca(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Escape') { setBusca(''); e.currentTarget.blur(); } }}
@@ -290,7 +302,7 @@ export default function Acervo() {
         <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}</div>
       </div>
 
-      {sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
+      {!carregado && sonhos.length === 0 ? <Carregando /> : sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
         <>
           {!consulta.vazia && (
             <div className="busca-resumo" role="status">
@@ -313,8 +325,9 @@ export default function Acervo() {
             </div>
           )}
 
+          {!carregado && <p className="carregando-resto" role="status"><span className="girando" aria-hidden="true" />{semViuvas('Abrindo o resto do acervo…')}</p>}
           {/* Linha do tempo à esquerda e filtros à direita, numa linha só quando cabe. */}
-          <div className="barra-periodo">
+          {carregado && <div className="barra-periodo">
           {(vista === 'mural' || vista === 'lista') && filtrados.length > 0 && (anos.length > 1 || filtrados.length > POR_VEZ) && (
             <LinhaDoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={escolherPeriodo} comTodos={comFiltro || anos.length > 1} />
           )}
@@ -330,12 +343,12 @@ export default function Acervo() {
               )}
               {semTitulo > 0 && (
                 <button type="button" className="btn btn-linha filtro" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
-                  sem título · {semTitulo}
+                  <span className="filtro-icone"><Titulo size={14} /></span>sem título · {semTitulo}
                 </button>
               )}
               {semTema > 0 && (
                 <button type="button" className="btn btn-linha filtro" onClick={() => { setSoSemTema(!soSemTema); voltarPrimeira(); }} aria-pressed={soSemTema} style={{ minHeight: 36, background: soSemTema ? 'var(--cinza)' : '#fff' }}>
-                  sem tema · {semTema}
+                  <span className="filtro-icone"><Tema size={14} /></span>sem tema · {semTema}
                 </button>
               )}
               {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha filtro" onClick={() => { setSoAtencao(!soAtencao); voltarPrimeira(); }} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
@@ -343,7 +356,7 @@ export default function Acervo() {
               </button>}
             </div>
           )}
-          </div>
+          </div>}
           {vista === 'mural' && <MuralEmLinhas>{visiveis.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>}
           {vista === 'lista' && <ListaSonhos sonhos={visiveis} achados={achados} />}
           {vista === 'calendario' && <Calendario sonhos={filtrados} ano={calAno} mes={calMes} aoMudarMes={mudarMes}

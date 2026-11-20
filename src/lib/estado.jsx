@@ -74,7 +74,9 @@ export function EstadoProvider({ children }) {
   const recarregar = useCallback(async () => {
     if (!podeLer) { setSonhos([]); setCarregado(true); return; }
     try {
-      const lista = await loja.listar();
+      // Na primeira carga, os mais recentes aparecem antes; ao recarregar, a lista atual fica.
+      const primeiraVez = !sonhosRef.current.length;
+      const lista = await loja.listar(primeiraVez ? (parte) => setSonhos(parte) : undefined);
       // Passados os 7 dias na lixeira, apaga de vez (com o áudio).
       const velhos = lista.filter(vencido);
       setSonhos(lista.filter((s) => !vencido(s)));

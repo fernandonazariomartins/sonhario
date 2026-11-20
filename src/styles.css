@@ -311,3 +311,13 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 .faixa-demo { background: var(--preto); color: #fff; padding: 9px 20px; font-size: 13px; font-weight: 600; line-height: 1.4; display: flex; align-items: center; justify-content: center; gap: 8px 16px; flex-wrap: wrap; text-align: center; }
 .faixa-demo button { border: 1.5px solid rgba(255,255,255,0.6); background: transparent; color: #fff; border-radius: 999px; padding: 5px 14px; font: inherit; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .faixa-demo button:hover { background: #fff; color: var(--preto); }
+
+/* acervo carregando */
+.carregando-resto { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.girando { width: 13px; height: 13px; border-radius: 999px; border: 2px solid var(--azul-claro); border-top-color: var(--azul); animation: girar .8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.esqueleto { columns: 4 260px; column-gap: 16px; }
+.esqueleto-nota { break-inside: avoid; margin-bottom: 16px; border-radius: 16px; background: var(--cinza); animation: pulsar 1.4s ease-in-out infinite; }
+@keyframes pulsar { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .girando, .esqueleto-nota { animation: none; } }
+.filtro-icone { display: inline-flex; color: var(--subtle); }

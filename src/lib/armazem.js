@@ -179,22 +179,31 @@ async function trancarArquivo(id, blob) {
 
 export function remoto(userId) {
   return {
-    async listar() {
+    // aoParcial: recebe logo os sonhos mais recentes (já abertos), para a tela não
+    // ficar vazia enquanto o resto do acervo chega e é aberto.
+    async listar(aoParcial) {
+      const pagina = (de, ate) => supabase
+        .from('sonhos')
+        .select('*')
+        .order('sonhado_em', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate);
+      const PRIMEIRO = 60;
+      const { data: primeiros, error } = await pagina(0, PRIMEIRO - 1);
+      if (error) throw error;
+      const abertos = await Promise.all(primeiros.map((row) => abrirSonho(row)));
+      if (primeiros.length < PRIMEIRO) return abertos;
+      aoParcial?.(abertos);
       // O Supabase devolve no máximo 1000 linhas por consulta: busca em páginas até acabar.
       const PAGINA = 1000;
-      const tudo = [];
-      for (let de = 0; ; de += PAGINA) {
-        const { data, error } = await supabase
-          .from('sonhos')
-          .select('*')
-          .order('sonhado_em', { ascending: false })
-          .order('id', { ascending: true })
-          .range(de, de + PAGINA - 1);
-        if (error) throw error;
-        tudo.push(...data);
+      const resto = [];
+      for (let de = PRIMEIRO; ; de += PAGINA) {
+        const { data, error: erro } = await pagina(de, de + PAGINA - 1);
+        if (erro) throw erro;
+        resto.push(...data);
         if (data.length < PAGINA) break;
       }
-      return Promise.all(tudo.map((row) => abrirSonho(row)));
+      return [...abertos, ...(await Promise.all(resto.map((row) => abrirSonho(row))))];
     },
     async salvar(sonho) {
       const { error } = await supabase.from('sonhos').upsert(await fechar(sonho, userId));
