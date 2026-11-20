@@ -33,6 +33,7 @@ function Barras({ barras }) {
 function Cartao({ i, modo = 'real', trava, novidade }) {
   const estiloTema = useCorTema();
   const chip = { height: 26, fontSize: 14 };
+  const mini = { height: 22, fontSize: 12.5 };
   const real = modo === 'real';
   const Chip = ({ t }) => (real
     ? <Link to={linkTema(t)} className="chip" style={{ ...estiloTema(t), ...chip }}>{t}</Link>
@@ -54,6 +55,16 @@ function Cartao({ i, modo = 'real', trava, novidade }) {
                 ? <Link to={'/app/sonho/' + x.sonho.id} style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || 'Sem título'}</Link>
                 : <span style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || 'Sem título'}</span>)}
               <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{x.texto}</span>
+              {x.ligados?.length > 0 && (
+                <span style={{ flexBasis: '100%', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, paddingLeft: 12, borderLeft: '2px solid var(--line)', margin: '2px 0 4px' }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>no mesmo sonho:</span>
+                  {x.ligados.map((l) => (l.tema
+                    ? (real ? <Link key={'t' + l.tema} to={linkTema(l.tema)} className="chip" style={{ ...estiloTema(l.tema), ...mini }}>{l.tema}</Link>
+                      : <span key={'t' + l.tema} className="chip" style={{ ...estiloTema(l.tema), ...mini }}>{l.tema}</span>)
+                    : (real ? <Link key={'p' + l.palavra} to={'/app/acervo?q=' + encodeURIComponent(l.palavra)} className="chip" style={{ ...mini, background: 'transparent', border: '1px solid var(--line-strong)', color: 'var(--ink)' }}>{l.palavra}</Link>
+                      : <span key={'p' + l.palavra} className="chip" style={{ ...mini, background: 'transparent', border: '1px solid var(--line-strong)', color: 'var(--ink)' }}>{l.palavra}</span>)))}
+                </span>
+              )}
             </li>
           ))}
         </ul>

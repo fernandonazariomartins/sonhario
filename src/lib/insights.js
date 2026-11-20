@@ -47,11 +47,13 @@ export const META = {
   enantiodromia: { id: 'enantiodromia', nome: 'Enantiodromia', titulo: 'A virada dos últimos meses',
     termo: 'Termo que Jung tomou de Heráclito: tudo, levado ao extremo, tende a virar no seu contrário. Compara os últimos 3 meses com os 3 anteriores.' },
   figuras: { id: 'figuras', nome: 'Personificação', titulo: 'Quem aparece nos seus sonhos',
-    termo: 'Jung notou que o inconsciente se apresenta em pessoas, conhecidas ou não. Aqui, as figuras mais citadas nos seus relatos, mesmo quando não viraram tema.' },
+    termo: 'Jung notou que o inconsciente se apresenta em pessoas, conhecidas ou não. Aqui, as pessoas mais citadas nos seus relatos, pelo papel ou pelo nome, e as imagens que costumam aparecer no mesmo sonho que elas.' },
   lugares: { id: 'lugares', nome: 'Topografia', titulo: 'Os lugares onde você sonha',
     termo: 'Num sonho famoso, Jung desceu pelos andares de uma casa até o porão e viu ali uma imagem da própria psique. Aqui, os cenários que mais voltam nos relatos.' },
   associacao: { id: 'associacao', nome: 'Associação', titulo: 'Escritos, mas nunca marcados',
     termo: 'No teste de associação de Jung, o que importava era o que passava sem ser notado. Aqui, imagens frequentes nos relatos que ainda não viraram tema.' },
+  grandes: { id: 'grandes', nome: 'Grande sonho', titulo: 'Os sonhos mais complexos',
+    termo: 'Jung separava os sonhos pequenos, do dia a dia, dos grandes sonhos, cheios de imagens e lembrados por anos. Aqui, os relatos com mais temas, pessoas, lugares e imagens. Não diz qual sonho importa mais: mostra onde há mais material para levar à sessão.' },
   inicial: { id: 'inicial', nome: 'Sonho inicial', titulo: 'Onde o seu acervo começou',
     termo: 'Jung dava peso especial ao primeiro sonho de um processo: muitas vezes ele antecipa o caminho inteiro. Este é o primeiro do seu acervo.' },
   ciclo: { id: 'ciclo', nome: 'Ciclo', titulo: 'Nesta época, em outros anos',
@@ -76,6 +78,33 @@ function palavrasDe(s) {
   }
   return mapa;
 }
+
+// Meses, dias e palavras que aparecem com maiúscula sem ser nome de alguém.
+const NAO_NOMES = new Set(('janeiro fevereiro marco abril maio junho julho agosto setembro outubro novembro dezembro '
+  + 'domingo segunda terca quarta quinta sexta sabado natal pascoa deus jesus brasil eu ele ela voce nos eles elas '
+  + 'meu minha seu sua dele dela isso aquilo depois entao quando mas porque ai la sim nao ok tipo').split(' '));
+
+// Nomes próprios: palavras com maiúscula no meio da frase que nunca aparecem em minúscula.
+function nomesPorRelato(sonhos) {
+  const minusculas = new Set();
+  const porRelato = sonhos.map((s) => {
+    const achados = new Map();
+    const frases = ((s.texto || '')).split(/[.!?…:;\n]+|["“”«»—–-]\s*/);
+    for (const f of frases) {
+      const ps = f.match(/[\p{L}]+/gu) || [];
+      ps.forEach((p, k) => {
+        if (/^\p{Ll}/u.test(p)) { minusculas.add(normalizar(p)); return; }
+        if (k === 0 || p.length < 3 || p === p.toUpperCase()) return;
+        const n = normalizar(p);
+        if (!NAO_NOMES.has(n) && !achados.has(n)) achados.set(n, p);
+      });
+    }
+    return achados;
+  });
+  return porRelato.map((m) => new Map([...m].filter(([n]) => !minusculas.has(n))));
+}
+
+const contarPalavrasDoTexto = (s) => (((s.titulo || '') + ' ' + (s.texto || '')).match(/[\p{L}]+/gu) || []).length;
 
 export function calcularInsights(sonhos, agora = Date.now()) {
   const ordenados = [...sonhos].sort((a, b) => +new Date(a.sonhado_em) - +new Date(b.sonhado_em));
@@ -205,13 +234,50 @@ export function calcularInsights(sonhos, agora = Date.now()) {
     });
   }
 
-  // 9. Personificação: quem aparece nos relatos.
+  // 9. Personificação: quem aparece nos relatos, pelo papel ou pelo nome,
+  // e as imagens que mais aparecem nos mesmos sonhos.
   {
     const set = new Set(FIGURAS);
+    const lugares = new Set(LUGARES);
+    const nomes = nomesPorRelato(ordenados);
+    // relato -> pessoas presentes (chave normalizada)
+    const presentes = ordenados.map((s, i) => {
+      const m = new Map();
+      for (const [k, orig] of palavras[i]) if (set.has(k)) m.set(k, orig);
+      for (const [k, orig] of nomes[i]) if (!m.has(k)) m.set(k, orig);
+      return m;
+    });
+    const conta = new Map(), forma = new Map(), ehNome = new Set();
+    presentes.forEach((m, i) => { for (const [k, orig] of m) { conta.set(k, (conta.get(k) || 0) + 1); if (!forma.has(k)) forma.set(k, orig); if (nomes[i].has(k) && !set.has(k)) ehNome.add(k); } });
+    const pessoas = [...conta].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const ligadosDe = (k) => {
+      const c = new Map(); // chave -> { n, tema?, palavra? }
+      // Tema e palavra com a mesma forma contam juntos; se já foi tema, aparece como tema.
+      const somar = (id, x) => { const v = c.get(id) || { n: 0 }; v.n++; if (x.tema) { v.tema = x.tema; delete v.palavra; } else if (!v.tema) v.palavra = x.palavra; c.set(id, v); };
+      ordenados.forEach((s, i) => {
+        if (!presentes[i].has(k)) return;
+        const vistos = new Set();
+        for (const t of new Set(s.temas || [])) {
+          const n = singular(normalizar(t));
+          if (n === k || presentes[i].has(n)) continue;
+          vistos.add(n); somar(n, { tema: t });
+        }
+        for (const [w, orig] of palavras[i]) {
+          if (w === k || vistos.has(w) || set.has(w) || !(ehSimbolo(w) || lugares.has(w)) || w.length < 3) continue;
+          somar(w, { palavra: orig });
+        }
+      });
+      // Temas valem um pouco mais que palavras soltas no desempate.
+      return [...c.values()].filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || (b.tema ? 1 : 0) - (a.tema ? 1 : 0)).slice(0, 5)
+        .map((x) => (x.tema ? { tema: x.tema } : { palavra: x.palavra }));
+    };
     add({
       ...META.figuras,
-      itens: contarPalavras((k) => set.has(k)).filter((x) => x.n >= 3).slice(0, 6)
-        .map((x) => ({ palavra: x.forma, texto: 'em ' + plural(x.n, 'relato', 'relatos') })),
+      itens: pessoas.map(([k, n]) => ({
+        palavra: forma.get(k),
+        texto: 'em ' + plural(n, 'relato', 'relatos') + (ehNome.has(k) ? ' · pelo nome' : ''),
+        ligados: ligadosDe(k),
+      })),
     });
   }
 
@@ -232,6 +298,37 @@ export function calcularInsights(sonhos, agora = Date.now()) {
       ...META.associacao,
       itens: contarPalavras((k) => ehSimbolo(k) && !temasNorm.has(k) && !ja.has(k) && k.length > 2).filter((x) => x.n >= 4).slice(0, 6)
         .map((x) => ({ palavra: x.forma, texto: 'em ' + plural(x.n, 'relato', 'relatos') + ', nunca como tema' })),
+    });
+  }
+
+  // 11b. Grande sonho: os relatos com mais material.
+  if (ordenados.length >= 10) {
+    const set = new Set(FIGURAS), lugares = new Set(LUGARES);
+    const nomes = nomesPorRelato(ordenados);
+    const medidos = ordenados.map((s, i) => {
+      const temas = new Set(s.temas || []).size;
+      let pessoas = nomes[i].size, cenarios = 0, imagens = 0;
+      for (const k of palavras[i].keys()) {
+        if (set.has(k)) pessoas++;
+        else if (lugares.has(k)) cenarios++;
+        else if (ehSimbolo(k)) imagens++;
+      }
+      const total = contarPalavrasDoTexto(s);
+      return { s, temas, pessoas, cenarios, imagens, total, nota: temas * 2 + pessoas * 2 + cenarios * 2 + imagens + total / 80 };
+    }).filter((x) => x.total >= 25);
+    const media = medidos.length ? medidos.reduce((t, x) => t + x.nota, 0) / medidos.length : 0;
+    add({
+      ...META.grandes,
+      itens: medidos.filter((x) => x.nota > media).sort((a, b) => b.nota - a.nota).slice(0, 5).map((x) => ({
+        sonho: refSonho(x.s),
+        texto: [
+          x.temas && plural(x.temas, 'tema', 'temas'),
+          x.pessoas && plural(x.pessoas, 'pessoa', 'pessoas'),
+          x.cenarios && plural(x.cenarios, 'lugar', 'lugares'),
+          x.imagens && plural(x.imagens, 'imagem', 'imagens'),
+          plural(x.total, 'palavra', 'palavras'),
+        ].filter(Boolean).join(' · '),
+      })),
     });
   }
 

@@ -104,9 +104,13 @@ function conteudo(id) {
       { tema: 'trabalho', texto: 'recuou: 7 → 1 sonhos' },
     ] };
     case 'figuras': return { itens: [
-      { palavra: 'mãe', texto: 'em 9 relatos' },
-      { palavra: 'desconhecido', texto: 'em 5 relatos' },
-      { palavra: 'irmão', texto: 'em 4 relatos' },
+      { palavra: 'mãe', texto: 'em 9 relatos', ligados: [{ tema: 'casa' }, { tema: 'chave' }, { palavra: 'cozinha' }] },
+      { palavra: 'Tomás', texto: 'em 5 relatos · pelo nome', ligados: [{ tema: 'viagem' }, { palavra: 'estrada' }] },
+      { palavra: 'desconhecido', texto: 'em 4 relatos', ligados: [{ tema: 'água' }, { palavra: 'porta' }] },
+    ] };
+    case 'grandes': return { itens: [
+      { sonho: sonhoEx('A casa com um andar a mais'), texto: '5 temas · 3 pessoas · 4 lugares · 9 imagens · 640 palavras' },
+      { sonho: sonhoEx('O porão alagado'), texto: '4 temas · 2 pessoas · 3 lugares · 6 imagens · 410 palavras' },
     ] };
     case 'lugares': return { itens: [
       { palavra: 'casa', texto: 'em 14 relatos' },
@@ -165,6 +169,7 @@ export function requisito(id, { total, diasDeAcervo }) {
     case 'figuras': return 'Aparece quando uma pessoa estiver em 3 relatos';
     case 'lugares': return 'Aparece quando um lugar estiver em 3 relatos';
     case 'associacao': return 'Aparece quando uma imagem estiver em 4 relatos sem virar tema';
+    case 'grandes': return total < 10 ? falta(total, 10) : 'Aparece quando houver relatos mais longos que a média';
     case 'inicial': return total < 10 ? falta(total, 10) : 'Aparece com 10 sonhos';
     case 'ciclo': return diasDeAcervo < 365 ? 'Aparece quando o seu acervo fizer um ano' : 'Aparece quando houver sonho nestes dias em outro ano';
     case 'estacoes': return diasDeAcervo < 365 ? 'Aparece quando o seu acervo fizer um ano' : 'Aparece quando um tema se concentrar numa estação';
