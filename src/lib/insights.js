@@ -445,3 +445,88 @@ export function calcularInsights(sonhos, agora = Date.now()) {
 
   return { lista, total: sonhos.length, diasDeAcervo };
 }
+
+// ——— Laboratório onírico ———
+// Observações extras, em teste: só aparecem para quem abriu o laboratório.
+// Continuam sendo contagens: mostram o que anda junto, nunca o que significa.
+export const META_LAB = {
+  contexto: { id: 'contexto', nome: 'Contexto', titulo: 'O que rodeia cada tema',
+    termo: 'Jung pedia para levantar o contexto de cada imagem: tudo o que vem junto com ela. Aqui, palavras que aparecem bem mais nos sonhos com o tema do que nos outros, e que você nunca marcou junto com ele.' },
+  encadeamento: { id: 'encadeamento', nome: 'Encadeamento', titulo: 'Um tema que costuma puxar outro',
+    termo: 'Lidos em série, os sonhos às vezes passam um tema adiante. Aqui, temas que aparecem no sonho seguinte a outro mais vezes do que no mesmo sonho.' },
+  latente: { id: 'latente', nome: 'Complexo latente', titulo: 'Imagens que andam juntas sem virar tema',
+    termo: 'Antes de ganhar nome, um complexo já junta imagens. Aqui, pares de palavras que aparecem nos mesmos relatos bem mais do que o acaso explicaria, sem nenhuma delas ser tema.' },
+};
+
+export function calcularLaboratorio(sonhos) {
+  const ordenados = [...sonhos].sort((a, b) => +new Date(a.sonhado_em) - +new Date(b.sonhado_em));
+  const N = ordenados.length;
+  const lista = [];
+  if (N < 10) return { lista };
+  const palavras = ordenados.map(palavrasDe);
+  const temasDe = ordenados.map((s) => new Set(s.temas || []));
+  const todosTemasNorm = new Set(ordenados.flatMap((s) => (s.temas || []).map((t) => singular(normalizar(t)))));
+  const imagem = (k) => k.length > 2 && (ehSimbolo(k) || FIGURAS.includes(k) || LUGARES.includes(k));
+  const add = (i) => { if (i.itens.length) lista.push(i); };
+
+  // Em quantos relatos aparece cada palavra-imagem.
+  const total = new Map(), forma = new Map();
+  palavras.forEach((m) => { for (const [k, orig] of m) if (imagem(k)) { total.set(k, (total.get(k) || 0) + 1); if (!forma.has(k)) forma.set(k, orig); } });
+
+  // 1. Contexto: palavras muito mais presentes nos sonhos de um tema.
+  {
+    const porTema = new Map();
+    temasDe.forEach((ts, i) => { for (const t of ts) { if (!porTema.has(t)) porTema.set(t, []); porTema.get(t).push(i); } });
+    const itens = [];
+    for (const [tema, idx] of porTema) {
+      const n = idx.length;
+      if (n < 4 || n > N - 4) continue;
+      const tNorm = singular(normalizar(tema));
+      const marcadosJunto = new Set(idx.flatMap((i) => [...temasDe[i]].map((t) => singular(normalizar(t)))));
+      const dentro = new Map();
+      for (const i of idx) for (const k of palavras[i].keys()) if (imagem(k)) dentro.set(k, (dentro.get(k) || 0) + 1);
+      const fortes = [...dentro].filter(([k, d]) => d >= 3 && k !== tNorm && !marcadosJunto.has(k))
+        .map(([k, d]) => ({ k, d, forca: (d / n) / (((total.get(k) - d) + 1) / (N - n + 1)) }))
+        .filter((x) => x.forca >= 2).sort((a, b) => b.forca - a.forca || b.d - a.d).slice(0, 4);
+      if (fortes.length) itens.push({ tema, texto: 'em ' + plural(n, 'sonho', 'sonhos'), ligados: fortes.map((x) => ({ palavra: forma.get(x.k) })), peso: fortes[0].forca });
+    }
+    add({ ...META_LAB.contexto, itens: itens.sort((a, b) => b.peso - a.peso).slice(0, 5).map(({ peso, ...x }) => x) }); // eslint-disable-line no-unused-vars
+  }
+
+  // 2. Encadeamento: o tema de um sonho volta como outro tema no sonho seguinte (até 7 dias depois).
+  {
+    const depois = new Map(), juntos = new Map();
+    const k2 = (a, b) => a + '\u0000' + b;
+    for (let i = 0; i < N; i++) {
+      const a = temasDe[i];
+      for (const x of a) for (const y of a) if (x < y) juntos.set(k2(x, y), (juntos.get(k2(x, y)) || 0) + 1);
+      if (i + 1 >= N || +new Date(ordenados[i + 1].sonhado_em) - +new Date(ordenados[i].sonhado_em) > 7 * 864e5) continue;
+      for (const x of a) for (const y of temasDe[i + 1]) if (x !== y && !a.has(y)) depois.set(k2(x, y), (depois.get(k2(x, y)) || 0) + 1);
+    }
+    add({
+      ...META_LAB.encadeamento,
+      itens: [...depois].map(([k, n]) => { const [a, b] = k.split('\u0000'); return { a, b, n, j: juntos.get(a < b ? k2(a, b) : k2(b, a)) || 0 }; })
+        .filter((x) => x.n >= 3 && x.n > x.j).sort((p, q) => q.n - p.n).slice(0, 5)
+        .map((x) => ({ tema: x.a, par: x.b, seta: true, texto: plural(x.n, 'vez', 'vezes') + ' no sonho seguinte' + (x.j ? ' · ' + x.j + ' no mesmo' : ', nunca no mesmo') })),
+    });
+  }
+
+  // 3. Complexo latente: pares de imagens que se atraem nos relatos, nenhuma marcada como tema.
+  {
+    const cand = [...total].filter(([k, n]) => n >= 3 && n <= N * 0.5 && !todosTemasNorm.has(k)).map(([k]) => k);
+    const set = new Set(cand);
+    const pares = new Map();
+    palavras.forEach((m) => {
+      const ks = [...m.keys()].filter((k) => set.has(k)).sort();
+      for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const k = ks[i] + '\u0000' + ks[j]; pares.set(k, (pares.get(k) || 0) + 1); }
+    });
+    add({
+      ...META_LAB.latente,
+      itens: [...pares].map(([k, n]) => { const [a, b] = k.split('\u0000'); return { a, b, n, forca: (n * N) / (total.get(a) * total.get(b)) }; })
+        .filter((x) => x.n >= 3 && x.forca >= 2).sort((p, q) => q.n - p.n || q.forca - p.forca).slice(0, 5)
+        .map((x) => ({ palavra: forma.get(x.a), parPalavra: forma.get(x.b), texto: 'juntas em ' + plural(x.n, 'relato', 'relatos') })),
+    });
+  }
+
+  return { lista };
+}

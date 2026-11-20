@@ -11,6 +11,7 @@ import { usaBotaoGoogle } from './googleLogin.js';
 import EntrarGoogle from '../components/EntrarGoogle.jsx';
 import * as cofreLib from './cofre.js';
 import { DEMO } from './demo.js';
+import { lerLaboratorio, lerNoAparelho, definirLaboratorio } from './laboratorio.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -35,6 +36,8 @@ export function EstadoProvider({ children }) {
   // Modo terapeuta: atende pacientes? perguntar: ainda não respondeu.
   const [modo, setModo] = useState({ atende: false, perguntar: false, carregado: false });
   const [comentarios, setComentarios] = useState({}); // { [sonho_id]: { total, novos } } dos meus sonhos
+  // Laboratório onírico: observações extras, abertas com a senha na busca.
+  const [laboratorio, setLaboratorio] = useState(() => lerNoAparelho(null));
   const sonhosRef = useRef([]);
   useEffect(() => { sonhosRef.current = todos; }, [todos]);
 
@@ -120,6 +123,17 @@ export function EstadoProvider({ children }) {
     else recarregarModo();
     recarregarCompartilhamentos();
   }, [pronto, usuario, recarregarCompartilhamentos, recarregarModo]);
+
+  useEffect(() => {
+    if (!pronto) return;
+    let vivo = true;
+    lerLaboratorio(usuario).then((v) => vivo && setLaboratorio(v)).catch(() => {});
+    return () => { vivo = false; };
+  }, [pronto, usuario]);
+  const mudarLaboratorio = useCallback(async (aberto) => {
+    setLaboratorio(aberto);
+    try { await definirLaboratorio(usuario, aberto); } catch { /* fica aberto no aparelho */ }
+  }, [usuario]);
 
   const mudarModo = useCallback(async (atende) => {
     if (!usuario) return;
@@ -249,7 +263,7 @@ export function EstadoProvider({ children }) {
     cofre, abrirCofre, criarCofre, destrancar, recuperarCofre, recuperarBasico, trocarSenha, nivel, irParaAvancado, irParaBasico, trancarAcervo, abertosNoBanco,
     codigoRecuperacao, esquecerCodigo: () => setCodigoRecuperacao(''),
     pronto, carregado, podeLer, usuario, sonhos, lixeira, restaurar, apagarDeVez, exemplos, semExemplos,
-    esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, modo, mudarModo, recarregarModo, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
+    esconderExemplos: () => { localStorage.setItem(SEM_EXEMPLOS, '1'); setSemExemplos(true); }, aviso, compartilhamentos, recarregarCompartilhamentos, modo, mudarModo, recarregarModo, laboratorio, mudarLaboratorio, comentarios, recarregarComentarios, avisar, recarregar, salvar, atualizar, apagar, salvarVarios, apagarTodos, apagarVarios,
     salvarAudio: (id, blob) => loja.salvarAudio(id, blob),
     urlAudio: (ref) => loja.urlAudio(ref),
     salvarImagem: (id, blob) => loja.salvarImagem(id, blob),

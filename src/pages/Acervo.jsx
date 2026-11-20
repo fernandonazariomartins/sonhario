@@ -7,6 +7,7 @@ import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensag
 import { LinhaDoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
+import { ehSenha } from '../lib/laboratorio.js';
 import Realce from '../components/Realce.jsx';
 
 export function Status({ s, cor }) {
@@ -185,7 +186,8 @@ function Vazio() {
 }
 
 export default function Acervo() {
-  const { sonhos, exemplos, esconderExemplos, carregado } = useEstado();
+  const { sonhos, exemplos, esconderExemplos, carregado, laboratorio, mudarLaboratorio, avisar } = useEstado();
+  const navigate = useNavigate();
   const estiloTema = useCorTema();
   const [exemploAberto, setExemploAberto] = useState(null);
   const [params, setParams] = useSearchParams();
@@ -193,6 +195,14 @@ export default function Acervo() {
   const [busca, setBuscaLocal] = useState(() => params.get('q') || '');
   const campoBusca = useRef(null);
   const setBusca = (q) => {
+    // A senha do laboratório não vira busca: abre as observações extras.
+    if (ehSenha(q)) {
+      setBuscaLocal('');
+      if (!laboratorio) mudarLaboratorio(true);
+      avisar(laboratorio ? 'O laboratório já está aberto.' : 'Laboratório onírico aberto.');
+      navigate('/app/observacoes#laboratorio');
+      return;
+    }
     setBuscaLocal(q);
     const novo = new URLSearchParams(params);
     if (q) novo.set('q', q); else novo.delete('q');

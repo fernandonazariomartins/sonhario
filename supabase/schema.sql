@@ -892,3 +892,7 @@ end;
 $$;
 revoke all on function public.aceitar_convite_terapeuta(text) from public, anon;
 grant execute on function public.aceitar_convite_terapeuta(text) to authenticated;
+
+-- 17. Laboratório onírico -------------------------------------------------------
+-- Quem digitou a senha na busca vê as observações extras (só as do próprio acervo).
+alter table public.perfis add column if not exists laboratorio boolean;

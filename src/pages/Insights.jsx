@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
-import { calcularInsights, META } from '../lib/insights.js';
+import { calcularInsights, calcularLaboratorio, META } from '../lib/insights.js';
 import { INSIGHTS_EXEMPLO, insightDeExemplo, requisito } from '../lib/exemplos.js';
 import { Cadeado } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
@@ -47,10 +47,13 @@ function Cartao({ i, modo = 'real', trava, novidade }) {
           {i.itens.map((x, k) => (
             <li key={k} className={novidade && !novidade.nova && novidade.linhas.has(chaves[k]) ? 'linha-nova' : undefined} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 8px' }}>
               {x.tema && <Chip t={x.tema} />}
-              {x.par && <><span style={{ color: 'var(--muted)' }}>+</span><Chip t={x.par} /></>}
+              {x.par && <><span style={{ color: 'var(--muted)' }}>{x.seta ? '→' : '+'}</span><Chip t={x.par} /></>}
               {x.palavra && (real
                 ? <Link to={'/app/acervo?q=' + encodeURIComponent(x.palavra)} className="chip" style={{ ...estiloTema(x.palavra), ...chip }}>{x.palavra}</Link>
                 : <span className="chip" style={{ ...estiloTema(x.palavra), ...chip }}>{x.palavra}</span>)}
+              {x.parPalavra && <><span style={{ color: 'var(--muted)' }}>+</span>{real
+                ? <Link to={'/app/acervo?q=' + encodeURIComponent(x.parPalavra)} className="chip" style={{ ...estiloTema(x.parPalavra), ...chip }}>{x.parPalavra}</Link>
+                : <span className="chip" style={{ ...estiloTema(x.parPalavra), ...chip }}>{x.parPalavra}</span>}</>}
               {x.sonho && (real
                 ? <Link to={'/app/sonho/' + x.sonho.id} style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || 'Sem título'}</Link>
                 : <span style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || 'Sem título'}</span>)}
@@ -103,8 +106,13 @@ function Secao({ rotulo, texto, children }) {
 }
 
 export default function Insights() {
-  const { sonhos, exemplos, carregado, podeLer, usuario } = useEstado();
+  const { sonhos, exemplos, carregado, podeLer, usuario, laboratorio, mudarLaboratorio, avisar } = useEstado();
   const r = useMemo(() => calcularInsights(sonhos), [sonhos]);
+  const lab = useMemo(() => (laboratorio ? calcularLaboratorio(sonhos) : null), [laboratorio, sonhos]);
+  // Vindo da busca (#laboratorio), desce até a seção.
+  useEffect(() => {
+    if (lab && location.hash === '#laboratorio') document.getElementById('laboratorio')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [lab]);
   // Só compara com a última visita quando o acervo já está todo carregado e legível.
   const estavel = carregado && podeLer && sonhos.length > 0;
   const uid = usuario?.id;
@@ -128,6 +136,22 @@ export default function Insights() {
       {r.lista.length > 0
         ? <div className="insights">{ordem.map((i) => <Cartao key={i.id} i={i} novidade={novidades[i.id]} />)}</div>
         : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas('Ainda não há padrões no seu acervo. Continue registrando seus sonhos e marcando temas: as observações aparecem aqui sozinhas.')}</p>}
+
+      {lab && (
+        <section id="laboratorio" aria-label="Laboratório onírico" className="laboratorio">
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 680 }}>
+              <span className="rotulo-forte" style={{ color: 'var(--azul)' }}>Laboratório onírico</span>
+              <h2 className="titulo-m" style={{ fontSize: 26 }}>Observações extras</h2>
+              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas('Em teste. Mostram o que anda junto no seu acervo e talvez tenha passado sem você notar. Continuam sendo contagens: o sentido é seu. Só aparecem para quem abriu o laboratório.')}</p>
+            </div>
+            <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { mudarLaboratorio(false); avisar('Laboratório fechado. Para abrir de novo, use a senha na busca.'); }}>Fechar o laboratório</button>
+          </div>
+          {lab.lista.length > 0
+            ? <div className="insights">{lab.lista.map((i) => <Cartao key={i.id} i={i} />)}</div>
+            : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas(sonhos.length < 10 ? 'As observações extras aparecem a partir de 10 sonhos registrados.' : 'Ainda não há nada para mostrar aqui. Com mais sonhos e temas, as observações extras aparecem sozinhas.')}</p>}
+        </section>
+      )}
 
       {deExemplo.length > 0 && (
         <Secao rotulo={deExemplo.length === 1 ? '1 exemplo' : deExemplo.length + ' exemplos'}
