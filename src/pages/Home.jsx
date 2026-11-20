@@ -5,7 +5,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
-import { Mic, Tema, Mural, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar, Cadeado } from '../components/Icones.jsx';
+import { Mic, Tema, Caneta, Voltar, Avancar, Ok, Mensagem, Compartilhar, Importar, Cadeado, Estrela, Pessoas } from '../components/Icones.jsx';
 import { semViuvas as n } from '../lib/tipografia.js';
 
 // Troque pelo seu ID do Associados Amazon (termina em -20) quando a conta estiver aprovada.
@@ -14,10 +14,10 @@ const amazon = (asin) => `https://www.amazon.com.br/dp/${asin}/?tag=${AMAZON_TAG
 
 const CARTOES = [
   { n: '01', t: 'Gravar', d: 'o app abre pronto para falar', Ic: Mic, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '02', t: 'Compartilhar', d: 'um sonho por vez, com quem você escolher', Ic: Compartilhar, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '03', t: 'Organizar', d: 'temas e status em cada sonho', Ic: Tema, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '04', t: 'Ver', d: 'mural, lista ou por tema', Ic: Mural, bg: '#0257AA', fg: '#FFFFFF' },
-  { n: '05', t: 'Amplificar', d: 'imagens e associações, com data', Ic: Caneta, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '02', t: 'Organizar', d: 'temas, datas e status em cada sonho', Ic: Tema, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '03', t: 'Amplificar', d: 'imagens e associações, com data', Ic: Caneta, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '04', t: 'Levar à sessão', d: 'marque o que você quer trabalhar', Ic: Estrela, bg: '#0257AA', fg: '#FFFFFF' },
+  { n: '05', t: 'Compartilhar', d: 'um sonho por vez, com quem você escolher', Ic: Compartilhar, bg: '#0257AA', fg: '#FFFFFF' },
   { n: '06', t: 'Importar', d: 'traga os sonhos que você já anotou', Ic: Importar, bg: '#0257AA', fg: '#FFFFFF' },
 ];
 
@@ -80,14 +80,17 @@ export default function Home() {
 
       <section className="secao" style={{ backgroundColor: '#fff', backgroundImage: 'linear-gradient(#EEEEEE 1px, transparent 1px), linear-gradient(90deg, #EEEEEE 1px, transparent 1px)', backgroundSize: '40px 40px', paddingBottom: 72 }}>
         <div className="miolo" style={{ paddingTop: 24 }}>
-          <h1 className="titulo-xl">Um lugar para<br />os seus sonhos.</h1>
-          <div className="rotulo" style={{ color: 'var(--preto)', marginTop: 22 }}>Caderno de sonhos</div>
-          <p style={{ margin: '28px 0 0', maxWidth: 560, fontSize: 18, lineHeight: 1.6, color: '#3A3F45' }}>{n('Um caderno para lembrar o que você sonhou, organizar com calma e voltar aos sonhos quando quiser entendê-los. Um apoio ao seu processo de individuação, no seu tempo.')}</p>
+          <div className="rotulo" style={{ color: 'var(--preto)', marginBottom: 22 }}>Diário de sonhos para a análise</div>
+          <h1 className="titulo-xl">Do travesseiro<br />ao consultório.</h1>
+          <p style={{ margin: '24px 0 0', maxWidth: 620, fontSize: 22, lineHeight: 1.4, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--preto)' }}>{n('O app não interpreta seus sonhos. Ele os leva até quem interpreta.')}</p>
+          <p style={{ margin: '16px 0 0', maxWidth: 560, fontSize: 18, lineHeight: 1.6, color: '#3A3F45' }}>{n('Grave o sonho antes de levantar, guarde com calma e leve à sessão o que você quiser trabalhar. O sentido fica com você e com quem acompanha você.')}</p>
+          <p style={{ margin: '12px 0 0', maxWidth: 560, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{n('Ainda não faz análise? Comece a guardar seus sonhos agora. Se um dia você começar, eles já estarão lá.')}</p>
           <div style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             <BotaoInstalar className="btn btn-azul btn-grande" size={18} />
             <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
-          <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Registre seus sonhos em qualquer dispositivo. Sem loja de aplicativos: o Sonhário se instala direto pelo site.')}</p>
+          <Link to="/demo" style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: 'var(--azul)' }}>{n('Ver o app por dentro, sem cadastro')} <Avancar size={16} /></Link>
+          <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site, no celular e no computador.')}</p>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Há também um nível avançado de criptografia.')}</p>
 
           <div id="recursos" className="cartoes-3" style={{ marginTop: 64 }}>
@@ -117,22 +120,54 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="secao" style={{ backgroundColor: 'var(--preto)', backgroundImage: 'linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '40px 40px', color: '#fff' }}>
+        <div className="miolo grade" style={{ alignItems: 'end' }}>
+          <div className="c-8 cabeca">
+          <Rotulo cor="var(--azul-cinza)">02 — Amplificações</Rotulo>
+          <h2 className="titulo-l">{n('Um caderno, não um intérprete.')}</h2>
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--areia)' }}>{n('Outros apps entregam um significado pronto, gerado por inteligência artificial. O Sonhário não diz o que o seu sonho significa. Ele guarda o que você sonhou e as imagens e associações que você foi juntando, para levar à sessão e acompanhar o seu processo ao longo do tempo.')}</p>
+          </div>
+          <div className="c-4 cabeca">
+          <Checks itens={['Amplificações com data, feitas quando você quiser', 'Marque o que levar para a próxima sessão', 'Nenhuma interpretação automática']} bg="rgba(255,255,255,0.16)" fg="#fff" cor="#fff" />
+          <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.6, border: '1px solid rgba(255,255,255,0.3)', borderRadius: 12, padding: '14px 16px' }}>{n('As amplificações são repertório, não resposta. O Sonhário apoia o seu trabalho com os sonhos e nunca substitui a sua análise ou o seu terapeuta.')}</p>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: 'var(--areia)' }}>{n('A inteligência artificial vem desligada. Se você ligar, ela só transcreve o áudio e sugere temas. Ela nunca interpreta.')}</p>
+          </div>
+        </div>
+      </section>
+
       <section id="compartilhar" className="secao">
         <div className="miolo grade">
           <div className="c-8 cabeca">
-            <Rotulo>02 — Compartilhar</Rotulo>
+            <Rotulo>03 — Levar à sessão</Rotulo>
             <h2 className="titulo-l">{n('Leve um sonho para a sessão. Só aquele.')}</h2>
-            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Escolha um sonho e mande para o seu analista ou para alguém de confiança. A pessoa entra com a própria conta e encontra o sonho numa aba separada, com o seu nome e a sua foto. O resto do caderno continua só seu.')}</p>
-            <Checks itens={['Sempre um sonho por vez, nunca o caderno inteiro', 'Você decide se as amplificações vão junto', 'Convite por link, e você aprova cada pessoa', 'Pare de compartilhar quando quiser', 'O sonho vai trancado: só abre para quem você escolheu']} bg="var(--azul)" fg="#fff" />
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Escolha um sonho e mande para quem acompanha você, ou para alguém de confiança. A pessoa entra com a própria conta e encontra o sonho com o seu nome e a sua foto. O resto do caderno continua só seu.')}</p>
+            <Checks itens={['Sempre um sonho por vez, nunca o caderno inteiro', 'Você decide se as amplificações vão junto', 'Comentários privados: uma conversa com cada pessoa', 'Pare de compartilhar quando quiser', 'O sonho vai trancado: só abre para quem você escolheu']} bg="var(--azul)" fg="#fff" />
           </div>
           <div className="c-4"><MiniCompartilhar /></div>
+        </div>
+      </section>
+
+      <section id="terapeutas" className="secao" style={{ background: 'var(--azul-claro)' }}>
+        <div className="miolo grade" style={{ alignItems: 'end' }}>
+          <div className="c-8 cabeca">
+            <Rotulo cor="var(--azul-escuro)">04 — Para terapeutas e analistas</Rotulo>
+            <h2 className="titulo-l">{n('Seus pacientes chegam à sessão com os sonhos em mãos.')}</h2>
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7 }}>{n('Convide seus pacientes por um link. Eles registram os sonhos durante a semana e escolhem o que levar. Você recebe um resumo antes da sessão, e o sentido continua sendo construído no consultório, entre vocês.')}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              <Entrar className="btn btn-azul btn-grande" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Pessoas size={18} /> Convidar meus pacientes</Entrar>
+              <span style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)', maxWidth: 300 }}>{n('Ao entrar, escolha “Registrar os meus sonhos e atender pacientes”.')}</span>
+            </div>
+          </div>
+          <div className="c-4">
+            <Checks itens={['Um link de convite para todos os seus pacientes', 'Resumo de cada paciente antes da sessão', 'Você só vê o que o paciente escolhe mostrar', 'O app não interpreta, então não compete com o seu trabalho']} bg="var(--azul)" fg="#fff" />
+          </div>
         </div>
       </section>
 
       <section className="secao" style={{ background: 'var(--cinza)' }}>
         <div className="miolo grade" style={{ alignItems: 'end' }}>
           <div className="c-8 cabeca">
-          <Rotulo cor="var(--ink)">03 — Acervo</Rotulo>
+          <Rotulo cor="var(--ink)">05 — Acervo</Rotulo>
           <h2 className="titulo-l">{n('Mural, lista ou por tema. Do jeito que você procura.')}</h2>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7 }}>{n('No computador, seus sonhos aparecem como um mural de notas. Quer algo mais de tabela? Troque para a lista. Quer ver o que se repete? Agrupe por tema.')}</p>
           </div>
@@ -142,25 +177,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="secao" style={{ backgroundColor: 'var(--preto)', backgroundImage: 'linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '40px 40px', color: '#fff' }}>
-        <div className="miolo grade" style={{ alignItems: 'end' }}>
-          <div className="c-8 cabeca">
-          <Rotulo cor="var(--azul-cinza)">04 — Amplificações</Rotulo>
-          <h2 className="titulo-l">{n('Um caderno, não um intérprete. Quem amplia o sonho é você.')}</h2>
-          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--areia)' }}>{n('O Sonhário não diz o que o seu sonho significa. Ele guarda o que você sonhou e o que você foi ampliando, para acompanhar seu processo de individuação ao longo do tempo.')}</p>
-          </div>
-          <div className="c-4 cabeca">
-          <Checks itens={['Amplificações com data, feitas quando você quiser', 'Marque o que levar para a próxima sessão', 'Nenhuma interpretação automática']} bg="rgba(255,255,255,0.16)" fg="#fff" cor="#fff" />
-          <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.6, border: '1px solid rgba(255,255,255,0.3)', borderRadius: 12, padding: '14px 16px' }}>{n('É um apoio para o seu trabalho com os sonhos, nunca um substituto da sua análise ou do seu terapeuta.')}</p>
-          </div>
-        </div>
-      </section>
-
       <section id="pratica" className="secao">
         <div className="miolo grade" style={{ alignItems: 'stretch' }}>
           <div className="c-8" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div className="cabeca">
-            <Rotulo>05 — A prática</Rotulo>
+            <Rotulo>06 — A prática</Rotulo>
             <h2 className="titulo-l">Como fazer um sonhário</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Anotar sonhos é um hábito antigo: na Antiguidade, Macróbio já defendia registrá-los com fidelidade. O neurocientista Sidarta Ribeiro retoma a ideia e descreve um caminho simples, que trouxemos para o Sonhário.')}</p>
           </div>
@@ -197,7 +218,7 @@ export default function Home() {
       <section className="secao" style={{ background: 'var(--azul)', color: '#fff' }}>
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div className="cabeca cabeca-larga">
-            <Rotulo cor="var(--azul-cinza)">06 — Pesquisas</Rotulo>
+            <Rotulo cor="var(--azul-cinza)">07 — Pesquisas</Rotulo>
             <h2 className="titulo-l">O que diz a ciência</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: '#E6EDF5' }}>{n('Alguns estudos sobre lembrar, registrar e conversar sobre os sonhos. Sem exagero: cada um mostra uma parte, e a ciência dos sonhos ainda está em construção.')}</p>
           </div>
@@ -221,7 +242,7 @@ export default function Home() {
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
             <div className="cabeca cabeca-larga" style={{ marginRight: 'auto' }}>
-              <Rotulo>07 — Leituras</Rotulo>
+              <Rotulo>08 — Leituras</Rotulo>
               <h2 className="titulo-l">Para ir mais fundo</h2>
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Quatro livros para quem quer entender melhor os próprios sonhos, da neurociência à psicologia analítica.')}</p>
             </div>
@@ -252,8 +273,9 @@ export default function Home() {
       <section className="secao" style={{ borderTop: '1px solid var(--line)' }}>
         <div className="miolo" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div className="cabeca cabeca-larga">
-            <Rotulo>08 — Seu acervo vem junto</Rotulo>
+            <Rotulo>09 — Seu acervo vem junto</Rotulo>
             <h2 className="titulo-l">{n('Traga os sonhos que você já anotou.')}</h2>
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: 'var(--muted)' }}>{n('Ninguém precisa recomeçar do zero.')}</p>
           </div>
           <div className="cartoes-3">
             {[['Notion', 'Exporte a tabela de sonhos em CSV e envie. Data, temas, status e observações vêm para os campos certos.'], ['Google Keep', 'Baixe suas notas pelo Google Takeout e envie. Os marcadores viram temas e as cores são mantidas.'], ['Outros arquivos', 'Texto ou Markdown. Se cada sonho começa com uma data, o Sonhário separa um por um.']].map(([t, d]) => (
@@ -268,8 +290,8 @@ export default function Home() {
 
       <section style={{ padding: '0 20px' }}>
         <div id="instalar" className="miolo" style={{ background: 'var(--azul)', color: '#fff', borderRadius: 16, padding: '72px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
-          <h2 className="titulo-l">{n('Acesse seu caderno digital de sonhos.')}</h2>
-          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: '#E6EDF5' }}>{n('Abra o site no celular, instale com dois toques e deixe perto da cama. Amanhã, abra antes de levantar.')}</p>
+          <h2 className="titulo-l">{n('Seus sonhos, guardados para a sessão.')}</h2>
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: '#E6EDF5' }}>{n('Abra o site no celular, instale com dois toques e deixe perto da cama. Amanhã, grave antes de levantar.')}</p>
           <div style={{ marginTop: 10, width: '100%', maxWidth: 560, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 12, padding: '18px 20px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span className="rotulo" style={{ color: 'var(--azul-cinza)' }}>Sem loja de aplicativos</span>
             <span style={{ fontSize: 15, lineHeight: 1.5 }}>Abra o Sonhário no navegador do celular e toque em <strong>Instalar no&nbsp;celular</strong>. Ele passa a funcionar como um aplicativo, sem precisar registrar nenhum sonho&nbsp;antes.</span>
