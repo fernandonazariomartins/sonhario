@@ -324,21 +324,21 @@ export default function Acervo() {
           {vista !== 'temas' && (semTitulo > 0 || semTema > 0 || nFavoritos > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8, marginLeft: 'auto' }}>
               {nFavoritos > 0 && (
-                <button type="button" className="btn btn-linha" onClick={() => { setSoFavoritos(!soFavoritos); voltarPrimeira(); }} aria-pressed={soFavoritos} style={{ minHeight: 36, background: soFavoritos ? '#FFF4D6' : '#fff' }}>
+                <button type="button" className="btn btn-linha filtro" onClick={() => { setSoFavoritos(!soFavoritos); voltarPrimeira(); }} aria-pressed={soFavoritos} style={{ minHeight: 36, background: soFavoritos ? '#FFF4D6' : '#fff' }}>
                   <span style={{ color: '#C98A00', display: 'inline-flex' }}><Estrela size={15} cheia /></span>favoritos · {nFavoritos}
                 </button>
               )}
               {semTitulo > 0 && (
-                <button type="button" className="btn btn-linha" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
+                <button type="button" className="btn btn-linha filtro" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
                   sem título · {semTitulo}
                 </button>
               )}
               {semTema > 0 && (
-                <button type="button" className="btn btn-linha" onClick={() => { setSoSemTema(!soSemTema); voltarPrimeira(); }} aria-pressed={soSemTema} style={{ minHeight: 36, background: soSemTema ? 'var(--cinza)' : '#fff' }}>
+                <button type="button" className="btn btn-linha filtro" onClick={() => { setSoSemTema(!soSemTema); voltarPrimeira(); }} aria-pressed={soSemTema} style={{ minHeight: 36, background: soSemTema ? 'var(--cinza)' : '#fff' }}>
                   sem tema · {semTema}
                 </button>
               )}
-              {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha" onClick={() => { setSoAtencao(!soAtencao); voltarPrimeira(); }} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
+              {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha filtro" onClick={() => { setSoAtencao(!soAtencao); voltarPrimeira(); }} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
                 <span className="ponto" style={{ background: STATUS.dar_atencao.cor }} />só “dar atenção”
               </button>}
             </div>
