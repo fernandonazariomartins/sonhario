@@ -1,3 +1,4 @@
+import { vigiarVersao } from './lib/versao.js';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -54,4 +55,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 if ('serviceWorker' in navigator && import.meta.env.PROD && !import.meta.env.VITE_DEMO) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  vigiarVersao();
 }

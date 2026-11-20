@@ -23,6 +23,8 @@ export async function lerLaboratorio(usuario) {
   const { data, error } = await supabase.from('perfis').select('laboratorio').eq('id', usuario.id).maybeSingle();
   if (error) return aqui;
   const naConta = !!data?.laboratorio;
+  // Aberto neste aparelho, mas a gravação na conta não chegou: grava de novo.
+  if (aqui && !naConta) { await supabase.from('perfis').update({ laboratorio: true }).eq('id', usuario.id); return true; }
   guardarNoAparelho(usuario.id, naConta);
   return naConta;
 }
@@ -30,5 +32,6 @@ export async function lerLaboratorio(usuario) {
 export async function definirLaboratorio(usuario, aberto) {
   guardarNoAparelho(usuario?.id, aberto);
   if (!usuario || !supabase) return;
-  await supabase.from('perfis').update({ laboratorio: aberto }).eq('id', usuario.id);
+  const { error } = await supabase.from('perfis').update({ laboratorio: aberto }).eq('id', usuario.id);
+  if (error) throw error;
 }

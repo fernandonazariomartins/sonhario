@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ehVazio, arrumarDoNotion } from '../lib/importar.js';
+import { trocouDeTela } from '../lib/versao.js';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
@@ -29,7 +30,7 @@ export default function AppLayout() {
   const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'frase' | 'trancar' | 'ia'
   const caixaMenu = useRef(null);
 
-  useEffect(() => { setMenu(false); setJanela(''); }, [pathname]);
+  useEffect(() => { setMenu(false); setJanela(''); trocouDeTela(); }, [pathname]);
 
   // Primeira vez abrindo o app instalado: confirma que a instalação deu certo.
   useEffect(() => {
