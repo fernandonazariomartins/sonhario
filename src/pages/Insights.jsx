@@ -7,8 +7,9 @@ import { Cadeado } from '../components/Icones.jsx';
 import { MapaPessoas, MapaTemas } from '../components/Laboratorio.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { compararNovidades, guardar, linhas, quandoFoi } from '../lib/novidades.js';
+import { tr } from '../lib/i18n.js';
 
-const plural = (n) => n + (n === 1 ? ' observação' : ' observações');
+const plural = (n) => n + (n === 1 ? tr(" observação") : tr(" observações"));
 const linkTema = (t) => '/app/acervo?tema=' + encodeURIComponent(t);
 
 function Barras({ barras }) {
@@ -56,12 +57,12 @@ function Cartao({ i, modo = 'real', trava, novidade }) {
                 ? <Link to={'/app/acervo?q=' + encodeURIComponent(x.parPalavra)} className="chip" style={{ ...estiloTema(x.parPalavra), ...chip }}>{x.parPalavra}</Link>
                 : <span className="chip" style={{ ...estiloTema(x.parPalavra), ...chip }}>{x.parPalavra}</span>}</>}
               {x.sonho && (real
-                ? <Link to={'/app/sonho/' + x.sonho.id} style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || 'Sem título'}</Link>
-                : <span style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || 'Sem título'}</span>)}
+                ? <Link to={'/app/sonho/' + x.sonho.id} style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{x.sonho.titulo || tr("Sem título")}</Link>
+                : <span style={{ fontSize: 14.5, fontWeight: 800 }}>{x.sonho.titulo || tr("Sem título")}</span>)}
               <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{x.texto}</span>
               {x.ligados?.length > 0 && (
                 <span style={{ flexBasis: '100%', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, paddingLeft: 12, borderLeft: '2px solid var(--line)', margin: '2px 0 4px' }}>
-                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>no mesmo sonho:</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{tr("no mesmo sonho:")}</span>
                   {x.ligados.map((l) => (l.tema
                     ? (real ? <Link key={'t' + l.tema} to={linkTema(l.tema)} className="chip" style={{ ...estiloTema(l.tema), ...mini }}>{l.tema}</Link>
                       : <span key={'t' + l.tema} className="chip" style={{ ...estiloTema(l.tema), ...mini }}>{l.tema}</span>)
@@ -79,7 +80,7 @@ function Cartao({ i, modo = 'real', trava, novidade }) {
     <article className={'insight' + (real ? '' : ' ' + modo) + (novidade ? ' com-novidade' : '')}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span className="rotulo-forte" style={{ color: modo === 'bloqueado' ? 'var(--muted)' : 'var(--azul)' }}>{i.nome}</span>
-        {modo === 'exemplo' && <span className="selo-exemplo">exemplo</span>}
+        {modo === 'exemplo' && <span className="selo-exemplo">{tr("exemplo")}</span>}
         {novidade && <span className="selo-novidade">{novidade.nova ? 'nova' : 'atualizada'} {quandoFoi(novidade.quando)}</span>}
       </div>
       <h2 style={{ fontSize: 22, fontWeight: 400, letterSpacing: '-0.03em' }}>{semViuvas(i.titulo)}</h2>
@@ -130,23 +131,23 @@ export default function Insights() {
   return (
     <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 680 }}>
-        {r.lista.length > 0 && <span className="rotulo">{plural(r.lista.length)} no seu acervo{comNovidade > 0 && <span style={{ color: 'var(--azul)' }}>{' · ' + comNovidade + (comNovidade === 1 ? ' com novidade' : ' com novidades')}</span>}</span>}
-        <h1 className="titulo-m">Observações</h1>
-        <p style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('O que se repete, o que some e o que volta no seu acervo. O Sonhário não interpreta: ele mostra os padrões, e o sentido é seu. Quanto mais sonhos com tema, mais observações aparecem.')}</p>
+        {r.lista.length > 0 && <span className="rotulo">{plural(r.lista.length)}{tr(" no seu acervo")}{comNovidade > 0 && <span style={{ color: 'var(--azul)' }}>{' · ' + comNovidade + (comNovidade === 1 ? tr(" com novidade") : tr(" com novidades"))}</span>}</span>}
+        <h1 className="titulo-m">{tr("Observações")}</h1>
+        <p style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas(tr("O que se repete, o que some e o que volta no seu acervo. O Sonhário não interpreta: ele mostra os padrões, e o sentido é seu. Quanto mais sonhos com tema, mais observações aparecem."))}</p>
       </div>
       {r.lista.length > 0
         ? <div className="insights">{ordem.map((i) => <Cartao key={i.id} i={i} novidade={novidades[i.id]} />)}</div>
-        : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas('Ainda não há padrões no seu acervo. Continue registrando seus sonhos e marcando temas: as observações aparecem aqui sozinhas.')}</p>}
+        : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas(tr("Ainda não há padrões no seu acervo. Continue registrando seus sonhos e marcando temas: as observações aparecem aqui sozinhas."))}</p>}
 
       {lab && (
-        <section id="laboratorio" aria-label="Laboratório onírico" className="laboratorio">
+        <section id="laboratorio" aria-label={tr("Laboratório onírico")} className="laboratorio">
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 680 }}>
-              <span className="rotulo-forte" style={{ color: 'var(--azul)' }}>Laboratório onírico</span>
-              <h2 className="titulo-m" style={{ fontSize: 26 }}>Observações extras</h2>
-              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas('Em teste. Mostram o que anda junto no seu acervo e talvez tenha passado sem você notar. Continuam sendo contagens: o sentido é seu. Só aparecem para quem abriu o laboratório.')}</p>
+              <span className="rotulo-forte" style={{ color: 'var(--azul)' }}>{tr("Laboratório onírico")}</span>
+              <h2 className="titulo-m" style={{ fontSize: 26 }}>{tr("Observações extras")}</h2>
+              <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas(tr("Em teste. Mostram o que anda junto no seu acervo e talvez tenha passado sem você notar. Continuam sendo contagens: o sentido é seu. Só aparecem para quem abriu o laboratório."))}</p>
             </div>
-            <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { mudarLaboratorio(false); avisar('Laboratório fechado. Para abrir de novo, use a senha na busca.'); }}>Fechar o laboratório</button>
+            <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { mudarLaboratorio(false); avisar(tr("Laboratório fechado. Para abrir de novo, use a senha na busca.")); }}>{tr("Fechar o laboratório")}</button>
           </div>
           {(lab.lista.length > 0 || lab.pessoas.length > 0 || lab.nomes.length > 0 || lab.mapaTemas)
             ? (
@@ -157,20 +158,20 @@ export default function Insights() {
                 {lab.lista.map((i) => <Cartao key={i.id} i={i} />)}
               </div>
             )
-            : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas(sonhos.length < 10 ? 'As observações extras aparecem a partir de 10 sonhos registrados.' : 'Ainda não há nada para mostrar aqui. Com mais sonhos e temas, as observações extras aparecem sozinhas.')}</p>}
+            : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas(sonhos.length < 10 ? tr("As observações extras aparecem a partir de 10 sonhos registrados.") : tr("Ainda não há nada para mostrar aqui. Com mais sonhos e temas, as observações extras aparecem sozinhas."))}</p>}
         </section>
       )}
 
       {deExemplo.length > 0 && (
-        <Secao rotulo={deExemplo.length === 1 ? '1 exemplo' : deExemplo.length + ' exemplos'}
-          texto="Para você ver como uma observação fica. Os números são inventados, não vêm do seu acervo, e os exemplos saem conforme você registra os seus sonhos.">
+        <Secao rotulo={deExemplo.length === 1 ? tr("1 exemplo") : deExemplo.length + tr(' exemplos')}
+          texto={tr("Para você ver como uma observação fica. Os números são inventados, não vêm do seu acervo, e os exemplos saem conforme você registra os seus sonhos.")}>
           {deExemplo.map((id) => <Cartao key={id} i={insightDeExemplo(id)} modo="exemplo" />)}
         </Secao>
       )}
 
       {bloqueados.length > 0 && (
-        <Secao rotulo={'Ainda bloqueadas · ' + bloqueados.length}
-          texto="Cada uma se abre sozinha quando o seu acervo tiver algo a mostrar.">
+        <Secao rotulo={tr("Ainda bloqueadas · ") + bloqueados.length}
+          texto={tr("Cada uma se abre sozinha quando o seu acervo tiver algo a mostrar.")}>
           {bloqueados.map((id) => <Cartao key={id} i={insightDeExemplo(id)} modo="bloqueado" trava={requisito(id, r)} />)}
         </Secao>
       )}

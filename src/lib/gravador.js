@@ -1,3 +1,4 @@
+import { locale } from './i18n.js';
 // Gravador de voz + transcrição ao vivo (Web Speech API, quando o navegador oferece)
 // + detecção de silêncio, para guardar sozinho quando a pessoa para de falar.
 export function suportaGravacao() {
@@ -61,7 +62,7 @@ export async function iniciarGravacao({ aoTranscrever, aoNivel, aoSilencio, sile
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SR && aoTranscrever) {
     reconhecedor = new SR();
-    reconhecedor.lang = 'pt-BR';
+    reconhecedor.lang = locale;
     reconhecedor.continuous = true;
     reconhecedor.interimResults = true;
     let finais = '';

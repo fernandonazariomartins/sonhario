@@ -8,6 +8,7 @@ import Logo from '../components/Logo.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Assinatura from '../components/Assinatura.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { tr } from '../lib/i18n.js';
 
 export default function Convite() {
   const { token } = useParams();
@@ -50,52 +51,52 @@ export default function Convite() {
     return () => { vivo = false; };
   }, [pronto, usuario, convite, token, navegar, recarregarCompartilhamentos, chaveLink]);
 
-  const nome = convite?.dono_nome || 'Alguém';
+  const nome = convite?.dono_nome || tr("Alguém");
   let corpo;
   if (esperando) {
     corpo = (
       <>
         <Avatar nome={nome} foto={convite.dono_foto} size={72} />
-        <h1 className="titulo-m">{semViuvas('Pedido enviado')}</h1>
-        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(`Assim que ${nome.split(' ')[0]} aprovar, o sonho aparece no seu Sonhário, em Compartilhados.`)}</p>
-        <Link className="btn btn-preto btn-grande" to="/app">Abrir o meu Sonhário</Link>
+        <h1 className="titulo-m">{semViuvas(tr("Pedido enviado"))}</h1>
+        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(tr("Assim que {0} aprovar, o sonho aparece no seu Sonhário, em Compartilhados.", [nome.split(' ')[0]]))}</p>
+        <Link className="btn btn-preto btn-grande" to="/app">{tr("Abrir o meu Sonhário")}</Link>
       </>
     );
   } else if (convite === undefined || (usuario && convite && !erro)) {
-    corpo = <p style={{ color: 'var(--muted)' }}>Abrindo o convite…</p>;
+    corpo = <p style={{ color: 'var(--muted)' }}>{tr("Abrindo o convite…")}</p>;
   } else if (!convite) {
     corpo = (
       <>
-        <h1 className="titulo-m">{semViuvas('Esse link não existe mais')}</h1>
-        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Peça para a pessoa gerar um novo link no Sonhário.')}</p>
-        <Link className="btn btn-linha btn-grande" to="/">Conhecer o Sonhário</Link>
+        <h1 className="titulo-m">{semViuvas(tr("Esse link não existe mais"))}</h1>
+        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(tr("Peça para a pessoa gerar um novo link no Sonhário."))}</p>
+        <Link className="btn btn-linha btn-grande" to="/">{tr("Conhecer o Sonhário")}</Link>
       </>
     );
   } else if (erro) {
     corpo = (
       <>
-        <h1 className="titulo-m">{semViuvas('Não deu para abrir')}</h1>
+        <h1 className="titulo-m">{semViuvas(tr("Não deu para abrir"))}</h1>
         <div className="aviso">{semViuvas(erro)}</div>
-        <Link className="btn btn-linha btn-grande" to="/app">Ir para o meu Sonhário</Link>
+        <Link className="btn btn-linha btn-grande" to="/app">{tr("Ir para o meu Sonhário")}</Link>
       </>
     );
   } else {
     corpo = (
       <>
         <Avatar nome={nome} foto={convite.dono_foto} size={72} />
-        <h1 className="titulo-m">{semViuvas(`${nome} quer te mostrar um sonho`)}</h1>
+        <h1 className="titulo-m">{semViuvas(tr("{0} quer te mostrar um sonho", [nome]))}</h1>
         {convite.sonho_trecho?.trim() && (
-          <figure className="trecho-convite" aria-label="Começo do sonho">
+          <figure className="trecho-convite" aria-label={tr("Começo do sonho")}>
             {convite.sonho_titulo?.trim() && <strong>{semViuvas(convite.sonho_titulo)}</strong>}
             <p>{semViuvas(convite.sonho_trecho)}</p>
             <span className="trecho-veu" aria-hidden="true" />
           </figure>
         )}
         <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(convite.aprovar === false
-          ? 'Entre com a sua conta Google para ver este sonho, e só ele. É de graça. Na primeira vez, você cria uma frase-senha: o sonho vem trancado e só abre com ela.'
-          : `Entre com a sua conta Google para pedir acesso. Quando ${nome.split(' ')[0]} aprovar, você vê este sonho, e só ele. É de graça. Na primeira vez, você cria uma frase-senha: o sonho vem trancado e só abre com ela.`)}</p>
-        <button type="button" className="btn btn-preto btn-grande" onClick={() => { convitePendente.guardar(token); entrar(); }}>Entrar com Google</button>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Você só lê: o sonho continua sendo de quem compartilhou.')}</p>
+          ? tr("Entre com a sua conta Google para ver este sonho, e só ele. É de graça. Na primeira vez, você cria uma frase-senha: o sonho vem trancado e só abre com ela.")
+          : tr("Entre com a sua conta Google para pedir acesso. Quando {0} aprovar, você vê este sonho, e só ele. É de graça. Na primeira vez, você cria uma frase-senha: o sonho vem trancado e só abre com ela.", [nome.split(' ')[0]]))}</p>
+        <button type="button" className="btn btn-preto btn-grande" onClick={() => { convitePendente.guardar(token); entrar(); }}>{tr("Entrar com Google")}</button>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(tr("Você só lê: o sonho continua sendo de quem compartilhou."))}</p>
       </>
     );
   }

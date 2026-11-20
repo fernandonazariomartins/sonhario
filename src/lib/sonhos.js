@@ -1,9 +1,10 @@
+import { tr, ingles, MESES_CURTOS, MESES_LONGOS, DIAS_SEMANA } from './i18n.js';
 // Modelo do sonho e utilidades compartilhadas.
 
 export const STATUS = {
-  nao_aberto: { rotulo: 'não aberto', cor: '#B8C0C8' },
-  aberto: { rotulo: 'aberto', cor: '#16A34A' },
-  dar_atencao: { rotulo: 'dar atenção', cor: '#E8A100' },
+  nao_aberto: { rotulo: tr("não aberto"), cor: '#B8C0C8' },
+  aberto: { rotulo: tr('aberto'), cor: '#16A34A' },
+  dar_atencao: { rotulo: tr("dar atenção"), cor: '#E8A100' },
 };
 
 // Paleta de notas (cores do Keep, herdadas do Torvilo).
@@ -41,21 +42,23 @@ export function novoSonho(parcial = {}) {
   };
 }
 
-const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const MESES = MESES_CURTOS;
+const DIAS = DIAS_SEMANA;
 
 export function dataCurta(iso) {
   const d = new Date(iso);
   const hoje = new Date();
-  if (d.toDateString() === hoje.toDateString()) return 'hoje · ' + hora(iso);
+  if (d.toDateString() === hoje.toDateString()) return tr("hoje · ") + hora(iso);
   const ontem = new Date(hoje); ontem.setDate(hoje.getDate() - 1);
-  if (d.toDateString() === ontem.toDateString()) return 'ontem';
-  return d.getDate() + ' ' + MESES[d.getMonth()] + (d.getFullYear() !== hoje.getFullYear() ? ' ' + d.getFullYear() : '');
+  if (d.toDateString() === ontem.toDateString()) return tr('ontem');
+  const ano = d.getFullYear() !== hoje.getFullYear() ? d.getFullYear() : '';
+  if (ingles) return MESES[d.getMonth()] + ' ' + d.getDate() + (ano ? ', ' + ano : '');
+  return d.getDate() + ' ' + MESES[d.getMonth()] + (ano ? ' ' + ano : '');
 }
 
 export function dataLonga(iso) {
   const d = new Date(iso);
+  if (ingles) return DIAS[d.getDay()] + ', ' + MESES_LONGOS[d.getMonth()] + ' ' + d.getDate() + ' · ' + hora(iso);
   return DIAS[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES_LONGOS[d.getMonth()] + ' · ' + hora(iso);
 }
 
@@ -67,6 +70,7 @@ export function mesAno(iso) {
 
 export function hora(iso) {
   const d = new Date(iso);
+  if (ingles) return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
@@ -87,7 +91,7 @@ export function tituloSugerido(texto) {
 
 // O título nunca é preenchido sozinho: fica em branco até a pessoa dar um.
 export function tituloDe(s) {
-  return (s.titulo || '').trim() || 'Sem título';
+  return (s.titulo || '').trim() || tr("Sem título");
 }
 
 // Para o campo <input type="datetime-local"> (hora local do aparelho).

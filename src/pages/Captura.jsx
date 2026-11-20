@@ -8,14 +8,15 @@ import { iaLigada } from '../lib/ia.js';
 import { transcricaoNoServidor, transcreverAudio } from '../lib/transcrever.js';
 import { Mic, Parar, Ok, Calendario, Mural, Mais, Caneta, Cadeado } from '../components/Icones.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { tr } from '../lib/i18n.js';
 
 const RASCUNHO = 'sonhario:rascunho';
 const SILENCIO_MS = 10000;
 
 const MOTIVOS = {
-  manual: 'Ficou no seu acervo como não aberto.',
-  silencio: 'Guardado sozinho depois de 10 segundos de silêncio.',
-  tela: 'Guardado sozinho quando a tela bloqueou.',
+  manual: tr("Ficou no seu acervo como não aberto."),
+  silencio: tr("Guardado sozinho depois de 10 segundos de silêncio."),
+  tela: tr("Guardado sozinho quando a tela bloqueou."),
 };
 
 export default function Captura() {
@@ -60,7 +61,7 @@ export default function Captura() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function gravar() {
-    if (!suportaGravacao()) { avisar('Este navegador não grava áudio. Dá para escrever o sonho.'); return; }
+    if (!suportaGravacao()) { avisar(tr("Este navegador não grava áudio. Dá para escrever o sonho.")); return; }
     try {
       base.current = r.current.texto ? r.current.texto.trim() + ' ' : '';
       sessao.current = await iniciarGravacao({
@@ -72,7 +73,7 @@ export default function Captura() {
       setSegundos(0);
       setGravando(true);
     } catch {
-      avisar('Não deu para usar o microfone. Confira a permissão do navegador.');
+      avisar(tr("Não deu para usar o microfone. Confira a permissão do navegador."));
     }
   }
 
@@ -92,15 +93,15 @@ export default function Captura() {
       setParcial('');
 
       // Gravou 10 segundos sem ninguém falar e sem texto: não guarda um áudio vazio.
-      if (motivo === 'vazio' && !relato) { avisar('Não ouvi nada. Toque de novo quando quiser falar.'); return; }
+      if (motivo === 'vazio' && !relato) { avisar(tr("Não ouvi nada. Toque de novo quando quiser falar.")); return; }
       if (motivo === 'vazio') motivo = 'silencio';
-      if (!relato && !audio) { avisar('Escreva ou grave alguma coisa antes de guardar.'); return; }
+      if (!relato && !audio) { avisar(tr("Escreva ou grave alguma coisa antes de guardar.")); return; }
 
       setSalvando(true);
       const sonho = novoSonho({ texto: relato, titulo: tit.trim(), sonhado_em: mexida ? q : new Date().toISOString() });
       if (audio) {
         try { sonho.audio = { ref: await salvarAudio(sonho.id, audio.blob), duracao: audio.duracao }; }
-        catch (e) { avisar('O áudio não foi salvo: ' + e.message); }
+        catch (e) { avisar(tr("O áudio não foi salvo: ") + e.message); }
       }
       const salvo = await salvar(sonho);
       localStorage.removeItem(RASCUNHO);
@@ -112,7 +113,7 @@ export default function Captura() {
       if (transcrever) {
         transcreverAudio(audio.blob)
           .then((txt) => txt && atualizar(salvo.id, { texto: [relato, txt].filter(Boolean).join('\n\n') }))
-          .catch(() => avisar('Não deu para transcrever agora. O áudio está guardado.'))
+          .catch(() => avisar(tr("Não deu para transcrever agora. O áudio está guardado.")))
           .finally(() => setGuardado((g) => g && { ...g, transcrevendo: false }));
       }
     } finally {
@@ -129,54 +130,54 @@ export default function Captura() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {editandoData ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <label htmlFor="quando" className="rotulo">Quando sonhou</label>
+            <label htmlFor="quando" className="rotulo">{tr("Quando sonhou")}</label>
             <input id="quando" type="datetime-local" value={paraCampoData(quando)} max={paraCampoData(new Date().toISOString())}
               onChange={(e) => { const iso = deCampoData(e.target.value); if (iso) { setQuando(iso); setDataMexida(true); } }}
               style={{ height: 40, padding: '0 10px', border: '1px solid var(--line-strong)', borderRadius: 10, fontSize: 15 }} />
-            <button type="button" className="btn btn-linha" style={{ minHeight: 40 }} onClick={() => setEditandoData(false)}><Ok size={16} /> ok</button>
+            <button type="button" className="btn btn-linha" style={{ minHeight: 40 }} onClick={() => setEditandoData(false)}><Ok size={16} />{tr(" ok")}</button>
           </div>
         ) : (
-          <button type="button" className="data-editavel" onClick={() => setEditandoData(true)} aria-label={'Data do sonho: ' + dataLonga(quando) + '. Mudar a data'}>
-            <Calendario size={14} /> {dataLonga(quando)} <span className="data-mudar">mudar</span>
+          <button type="button" className="data-editavel" onClick={() => setEditandoData(true)} aria-label={tr("Data do sonho: ") + dataLonga(quando) + tr('. Mudar a data')}>
+            <Calendario size={14} /> {dataLonga(quando)} <span className="data-mudar">{tr("mudar")}</span>
           </button>
         )}
-        <h1 className="titulo-m">O que você sonhou?</h1>
+        <h1 className="titulo-m">{tr("O que você sonhou?")}</h1>
       </div>
 
-      <label htmlFor="titulo-novo" className="sr">Título (opcional)</label>
-      <input id="titulo-novo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título (opcional, dá para pôr depois)" className="campo-titulo" />
+      <label htmlFor="titulo-novo" className="sr">{tr("Título (opcional)")}</label>
+      <input id="titulo-novo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder={tr("Título (opcional, dá para pôr depois)")} className="campo-titulo" />
 
-      <label htmlFor="sonho" className="sr">Texto do sonho</label>
+      <label htmlFor="sonho" className="sr">{tr("Texto do sonho")}</label>
       <textarea id="sonho" value={texto + (parcial ? (texto ? ' ' : '') + parcial : '')} onChange={(e) => { setTexto(e.target.value); setParcial(''); }}
-        placeholder={'Escreva do jeito que vier. Frase solta também vale.'} readOnly={gravando} className="campo-sonho" />
+        placeholder={tr("Escreva do jeito que vier. Frase solta também vale.")} readOnly={gravando} className="campo-sonho" />
 
       <button type="button" className={'gravador' + (gravando ? ' ativo' : '')} onClick={() => (gravando ? finalizar('manual') : gravar())} disabled={salvando}
-        aria-label={gravando ? 'Parar e guardar o sonho' : 'Gravar o sonho'}>
+        aria-label={gravando ? tr("Parar e guardar o sonho") : tr("Gravar o sonho")}>
         <span className="gravador-bola" aria-hidden="true">{gravando ? <Parar size={40} /> : <Mic size={46} w={2.1} />}</span>
         {gravando ? (
           <span className="gravador-texto">
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="ponto" style={{ background: '#FF6B5E' }} />
-              <span style={{ fontSize: 15, fontWeight: 800 }}>gravando</span>
+              <span style={{ fontSize: 15, fontWeight: 800 }}>{tr("gravando")}</span>
               <span style={{ marginLeft: 'auto', fontSize: 20, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{duracao(segundos)}</span>
             </span>
             <span className="onda">{niveis.map((n, i) => <span key={i} style={{ height: 4 + n * 26 }} />)}</span>
-            <span className="gravador-dica">{semViuvas('Toque para parar e guardar. Se ficar em silêncio, guarda sozinho.')}</span>
+            <span className="gravador-dica">{semViuvas(tr("Toque para parar e guardar. Se ficar em silêncio, guarda sozinho."))}</span>
           </span>
         ) : (
           <span className="gravador-texto">
-            <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>{salvando ? 'Guardando…' : 'Toque e fale'}</span>
-            <span className="gravador-dica">{semViuvas(suportaTranscricao() ? 'Um toque já começa a gravar. Vira texto enquanto você fala.' : 'Um toque já começa a gravar. O áudio fica guardado no sonho.')}</span>
+            <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>{salvando ? tr("Guardando…") : tr("Toque e fale")}</span>
+            <span className="gravador-dica">{semViuvas(suportaTranscricao() ? tr("Um toque já começa a gravar. Vira texto enquanto você fala.") : tr("Um toque já começa a gravar. O áudio fica guardado no sonho."))}</span>
           </span>
         )}
       </button>
 
       {temTexto && !gravando && (
         <button className="btn btn-preto btn-grande" onClick={() => finalizar('manual')} disabled={salvando}>
-          <Ok size={18} /> {salvando ? 'Guardando…' : 'Guardar o texto'}
+          <Ok size={18} /> {salvando ? tr("Guardando…") : tr("Guardar o texto")}
         </button>
       )}
-      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas(usuario ? 'Seus sonhos ficam trancados com a sua frase-senha. Só vê quem você escolher, um sonho por vez.' : 'Sem conta, seus sonhos ficam só neste aparelho.')}</p>
+      <p className="aviso-privado"><Cadeado size={14} /> {semViuvas(usuario ? tr("Seus sonhos ficam trancados com a sua frase-senha. Só vê quem você escolher, um sonho por vez.") : tr("Sem conta, seus sonhos ficam só neste aparelho."))}</p>
     </div>
   );
 }
@@ -187,17 +188,17 @@ function Guardado({ sonho, motivo, transcrevendo, outro }) {
     <div className="captura" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center', gap: 18 }} role="status">
       <span className="selo-ok" aria-hidden="true"><Ok size={44} /></span>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-        <h1 className="titulo-m">Sonho guardado</h1>
+        <h1 className="titulo-m">{tr("Sonho guardado")}</h1>
         <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: 'var(--muted)', maxWidth: 360 }}>{semViuvas(MOTIVOS[motivo] || MOTIVOS.manual)}</p>
         <span className="rotulo">{dataLonga(sonho.sonhado_em)}</span>
-        {transcrevendo && <p style={{ margin: 0, fontSize: 14, color: 'var(--azul)', fontWeight: 700 }}>Transformando o áudio em texto…</p>}
+        {transcrevendo && <p style={{ margin: 0, fontSize: 14, color: 'var(--azul)', fontWeight: 700 }}>{tr("Transformando o áudio em texto…")}</p>}
       </div>
       <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
-        <Link className="btn btn-azul btn-grande" to="/app/acervo"><Mural size={18} /> Ir para o acervo</Link>
-        <button type="button" className="btn btn-linha btn-grande" onClick={outro}><Mais size={18} /> Registrar outro sonho</button>
-        <Link className="btn btn-grande" style={{ color: 'var(--muted)' }} to={'/app/sonho/' + sonho.id}><Caneta size={16} /> Dar título e temas</Link>
+        <Link className="btn btn-azul btn-grande" to="/app/acervo"><Mural size={18} />{tr(" Ir para o acervo")}</Link>
+        <button type="button" className="btn btn-linha btn-grande" onClick={outro}><Mais size={18} />{tr(" Registrar outro sonho")}</button>
+        <Link className="btn btn-grande" style={{ color: 'var(--muted)' }} to={'/app/sonho/' + sonho.id}><Caneta size={16} />{tr(" Dar título e temas")}</Link>
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{semViuvas(usuario ? 'Pode fechar o app e voltar a dormir. O sonho ficou trancado, só seu.' : 'Pode fechar o app e voltar a dormir. O sonho fica neste aparelho, só seu.')}</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{semViuvas(usuario ? tr("Pode fechar o app e voltar a dormir. O sonho ficou trancado, só seu.") : tr("Pode fechar o app e voltar a dormir. O sonho fica neste aparelho, só seu."))}</p>
     </div>
   );
 }

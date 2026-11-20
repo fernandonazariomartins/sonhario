@@ -7,6 +7,7 @@ import {
   criarPar, exportarPublica, importarPublica, trancarPrivada, abrirPrivada, normalizarSenha,
   novoCodigoRecuperacao, normalizarCodigo, novaChaveSonho, embrulhar, desembrulhar, chaveParaLink, chaveDoLink,
 } from './cripto.js';
+import { tr } from './i18n.js';
 
 let dono = null; // user id
 let modo = 'basico'; // 'basico': o servidor guarda o código de recuperação; 'avancado': só a pessoa guarda
@@ -117,7 +118,7 @@ export async function criarCofre(usuario, senha, nivel = 'basico') {
     privada_recuperacao: await trancarPrivada(par.privada, normalizarCodigo(codigo)),
   };
   const { error } = await supabase.from('chaves').insert(linha);
-  if (error) throw new Error(error.code === '23505' ? 'Esta conta já tem uma frase-senha. Recarregue a página.' : error.message);
+  if (error) throw new Error(error.code === '23505' ? tr("Esta conta já tem uma frase-senha. Recarregue a página.") : error.message);
   // A que fica no aparelho não pode ser exportada: nem um script na página consegue copiá-la.
   const fixa = await abrirPrivada(linha.privada_senha, s, false);
   dono = usuario.id; meuEmail = linha.email;
@@ -136,7 +137,7 @@ async function pacote(campo) {
 export async function destrancar(senha) {
   let k;
   try { k = await abrirPrivada(await pacote('privada_senha'), normalizarSenha(senha), false); }
-  catch (e) { throw new Error(e.message === 'senha' ? 'Frase-senha errada.' : e.message); }
+  catch (e) { throw new Error(e.message === 'senha' ? tr("Frase-senha errada.") : e.message); }
   privada = k;
   estadoAtual = 'aberto';
   await guardarNoAparelho(dono, k);
@@ -146,7 +147,7 @@ export async function destrancar(senha) {
 export async function recuperar(codigo, novaSenha) {
   let k;
   try { k = await abrirPrivada(await pacote('privada_recuperacao'), normalizarCodigo(codigo), true); }
-  catch (e) { throw new Error(e.message === 'senha' ? 'Esse código de recuperação não confere.' : e.message); }
+  catch (e) { throw new Error(e.message === 'senha' ? tr("Esse código de recuperação não confere.") : e.message); }
   await gravarNovaSenha(k, normalizarSenha(novaSenha));
 }
 
@@ -170,7 +171,7 @@ export async function irParaAvancado() {
 export async function irParaBasico(senha) {
   let k;
   try { k = await abrirPrivada(await pacote('privada_senha'), normalizarSenha(senha), true); }
-  catch (e) { throw new Error(e.message === 'senha' ? 'Frase-senha errada.' : e.message); }
+  catch (e) { throw new Error(e.message === 'senha' ? tr("Frase-senha errada.") : e.message); }
   const codigo = novoCodigoRecuperacao();
   await servidorRecuperacao('guardar', codigo);
   const { error } = await supabase.from('chaves').update({
@@ -183,7 +184,7 @@ export async function irParaBasico(senha) {
 export async function trocarSenha(atual, nova) {
   let k;
   try { k = await abrirPrivada(await pacote('privada_senha'), normalizarSenha(atual), true); }
-  catch (e) { throw new Error(e.message === 'senha' ? 'A frase-senha atual está errada.' : e.message); }
+  catch (e) { throw new Error(e.message === 'senha' ? tr("A frase-senha atual está errada.") : e.message); }
   await gravarNovaSenha(k, normalizarSenha(nova));
 }
 

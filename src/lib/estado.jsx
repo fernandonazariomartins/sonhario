@@ -12,6 +12,7 @@ import EntrarGoogle from '../components/EntrarGoogle.jsx';
 import * as cofreLib from './cofre.js';
 import { DEMO } from './demo.js';
 import { lerLaboratorio, lerNoAparelho, definirLaboratorio } from './laboratorio.js';
+import { tr } from './i18n.js';
 
 const Ctx = createContext(null);
 const PULOU = 'sonhario:sem-conta';
@@ -84,7 +85,7 @@ export function EstadoProvider({ children }) {
       const velhos = lista.filter(vencido);
       setSonhos(lista.filter((s) => !vencido(s)));
       if (velhos.length) loja.apagarVarios(velhos).catch(() => {});
-    } catch (e) { avisar('Não deu para carregar os sonhos: ' + e.message); }
+    } catch (e) { avisar(tr("Não deu para carregar os sonhos: ") + e.message); }
     setCarregado(true);
     if (cofre === 'aberto') cofreLib.entregarChaves().catch(() => {});
   }, [loja, avisar, podeLer, cofre]);
@@ -98,8 +99,8 @@ export function EstadoProvider({ children }) {
       if (usuario && local.listar().length) {
         try {
           const n = await levarParaConta(usuario.id);
-          avisar(n === 1 ? '1 sonho levado para a sua conta' : `${n} sonhos levados para a sua conta`);
-        } catch (e) { avisar('Não deu para levar os sonhos para a conta: ' + e.message); }
+          avisar(n === 1 ? tr("1 sonho levado para a sua conta") : tr("{0} sonhos levados para a sua conta", [n]));
+        } catch (e) { avisar(tr("Não deu para levar os sonhos para a conta: ") + e.message); }
       }
       recarregar();
     })();
@@ -141,7 +142,7 @@ export function EstadoProvider({ children }) {
     setModo({ atende, perguntar: false, carregado: true });
     try { await definirModo(usuario, atende); } catch (e) {
       setModo(antes);
-      avisar(/atende/.test(e?.message || '') ? 'O modo terapeuta ainda não está ativo no banco: rode o bloco 16 do supabase/schema.sql.' : 'Não deu para salvar: ' + e.message);
+      avisar(/atende/.test(e?.message || '') ? tr("O modo terapeuta ainda não está ativo no banco: rode o bloco 16 do supabase/schema.sql.") : tr("Não deu para salvar: ") + e.message);
     }
   }, [usuario, modo, avisar]);
 
@@ -168,7 +169,7 @@ export function EstadoProvider({ children }) {
     try {
       await loja.salvar(s);
       if (s._cifrado && s.compartilhado_com?.length) cofreLib.entregarChaves().catch(() => {});
-    } catch (e) { avisar('Não deu para salvar: ' + e.message); }
+    } catch (e) { avisar(tr("Não deu para salvar: ") + e.message); }
     return s;
   }, [loja, avisar, usuario]);
 
@@ -188,7 +189,7 @@ export function EstadoProvider({ children }) {
     setSonhos((l) => l.map((x) => porId.get(x.id) || x));
     try { await loja.salvarVarios(depois); return true; } catch (e) {
       setSonhos((l) => l.map((x) => (alvo.has(x.id) ? antes.find((a) => a.id === x.id) : x)));
-      avisar(semColuna(e) ? 'A lixeira ainda não está ativa no banco: rode o bloco 8 do supabase/schema.sql.' : 'Não deu para apagar: ' + e.message);
+      avisar(semColuna(e) ? tr("A lixeira ainda não está ativa no banco: rode o bloco 8 do supabase/schema.sql.") : tr("Não deu para apagar: ") + e.message);
       return false;
     }
   }, [loja, avisar]);
@@ -197,14 +198,14 @@ export function EstadoProvider({ children }) {
   const apagarVarios = useCallback(async (ids, msg) => {
     if (!ids.length) return;
     const ok = await marcar(ids, new Date().toISOString());
-    if (ok) avisar(msg || (ids.length === 1 ? 'Sonho movido para a lixeira' : ids.length + ' sonhos movidos para a lixeira'), { rotulo: 'Desfazer', fn: () => marcar(ids, null) });
+    if (ok) avisar(msg || (ids.length === 1 ? tr("Sonho movido para a lixeira") : ids.length + tr(" sonhos movidos para a lixeira")), { rotulo: tr("Desfazer"), fn: () => marcar(ids, null) });
   }, [marcar, avisar]);
   const apagar = useCallback((id) => apagarVarios([id]), [apagarVarios]);
   const apagarTodos = useCallback(() => apagarVarios(sonhosRef.current.filter((s) => !s.apagado_em).map((s) => s.id)), [apagarVarios]);
 
   const restaurar = useCallback(async (ids) => {
     const ok = await marcar(ids, null);
-    if (ok) avisar(ids.length === 1 ? 'Sonho de volta ao acervo' : ids.length + ' sonhos de volta ao acervo');
+    if (ok) avisar(ids.length === 1 ? tr("Sonho de volta ao acervo") : ids.length + tr(" sonhos de volta ao acervo"));
   }, [marcar, avisar]);
 
   // Apagar de vez: só de dentro da lixeira.
@@ -212,13 +213,13 @@ export function EstadoProvider({ children }) {
     const alvo = new Set(ids);
     const lista = sonhosRef.current.filter((x) => alvo.has(x.id));
     setSonhos((l) => l.filter((x) => !alvo.has(x.id)));
-    try { await loja.apagarVarios(lista); } catch (e) { avisar('Não deu para apagar: ' + e.message); await recarregar(); }
+    try { await loja.apagarVarios(lista); } catch (e) { avisar(tr("Não deu para apagar: ") + e.message); await recarregar(); }
   }, [loja, avisar, recarregar]);
 
   const salvarVarios = useCallback(async (lista) => {
     const agora = new Date().toISOString();
     const novos = lista.map((s) => ({ ...s, atualizado_em: agora }));
-    try { await loja.salvarVarios(novos); } catch (e) { avisar('Não deu para salvar: ' + e.message); }
+    try { await loja.salvarVarios(novos); } catch (e) { avisar(tr("Não deu para salvar: ") + e.message); }
     await recarregar();
   }, [loja, avisar, recarregar]);
 

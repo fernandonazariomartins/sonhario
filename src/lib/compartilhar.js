@@ -4,11 +4,12 @@ import { supabase, AUDIO_BUCKET, IMAGEM_BUCKET } from './supabase.js';
 import { abrirSonho, abrirArquivo } from './armazem.js';
 import { cifrar, decifrar } from './cripto.js';
 import * as cofre from './cofre.js';
+import { tr } from './i18n.js';
 
 export const PAPEIS = {
   // Terapeuta e amigo funcionam igual: o papel fica guardado só por compatibilidade.
-  terapeuta: { rotulo: 'terapeuta ou amigo', grupo: 'Compartilhados' },
-  amigo: { rotulo: 'terapeuta ou amigo', grupo: 'Compartilhados' },
+  terapeuta: { rotulo: tr("terapeuta ou amigo"), grupo: tr("Compartilhados") },
+  amigo: { rotulo: tr("terapeuta ou amigo"), grupo: tr("Compartilhados") },
 };
 
 export const nomeDe = (u) => u?.user_metadata?.full_name || u?.user_metadata?.name || (u?.email || '').split('@')[0];
@@ -56,13 +57,13 @@ export function pessoa(perfis, email, apelido = '') {
 
 export async function convidar(usuario, { email, nome = '', papel, ver_amplificacoes }) {
   const e = email.trim().toLowerCase();
-  if (!emailValido(e)) throw new Error('Confira o e-mail.');
-  if (e === (usuario.email || '').toLowerCase()) throw new Error('Esse é o seu próprio e-mail.');
+  if (!emailValido(e)) throw new Error(tr("Confira o e-mail."));
+  if (e === (usuario.email || '').toLowerCase()) throw new Error(tr("Esse é o seu próprio e-mail."));
   const { data, error } = await supabase.from('compartilhamentos').insert({
     dono_id: usuario.id, dono_nome: nomeDe(usuario), dono_email: usuario.email || '',
     convidado_email: e, convidado_nome: nome.trim(), papel, escopo: 'escolhidos', ver_amplificacoes,
   }).select().single();
-  if (error) throw new Error(error.code === '23505' ? 'Esse e-mail já tem acesso.' : error.message);
+  if (error) throw new Error(error.code === '23505' ? tr("Esse e-mail já tem acesso.") : error.message);
   return data;
 }
 
@@ -96,7 +97,7 @@ export async function urlAudioCompartilhado(ref) {
 // Texto do convite pelo e-mail, para mandar por WhatsApp ou e-mail.
 export function textoConvite(c, sonho) {
   const app = location.origin + '/app/compartilhados';
-  return `Compartilhei com você um sonho que anotei no Sonhário${sonho?.titulo?.trim() ? ': “' + sonho.titulo.trim() + '”' : ''}.\n\nPara ver, entre com a sua conta Google (${c.convidado_email}) em:\n${app}\n\nO sonho vai trancado: na primeira vez, o Sonhário pede para você criar uma frase-senha, e só com ela ele abre.`;
+  return tr("Compartilhei com você um sonho que anotei no Sonhário{0}.\n\nPara ver, entre com a sua conta Google ({1}) em:\n{2}\n\nO sonho vai trancado: na primeira vez, o Sonhário pede para você criar uma frase-senha, e só com ela ele abre.", [sonho?.titulo?.trim() ? ': “' + sonho.titulo.trim() + '”' : '', c.convidado_email, app]);
 }
 
 // Quem pode ver um sonho meu.
@@ -106,7 +107,7 @@ export function quemVe(meus, sonho) {
 
 // Rótulo da aba: sempre "Compartilhados" (terapeuta e amigo não se diferenciam).
 export function rotuloAba() {
-  return 'Compartilhados';
+  return tr("Compartilhados");
 }
 
 /* ---------- link de convite ---------- */
@@ -175,10 +176,10 @@ export async function aceitarConvite(token) {
 }
 
 export async function mandarLink(url, avisar) {
-  const texto = 'Quero te mostrar um sonho que anotei no Sonhário. Abra o link e entre com a sua conta Google. O sonho vai trancado e só abre para você:\n' + url;
+  const texto = tr("Quero te mostrar um sonho que anotei no Sonhário. Abra o link e entre com a sua conta Google. O sonho vai trancado e só abre para você:\n") + url;
   try { if (navigator.share) { await navigator.share({ text: texto }); return true; } } catch (e) { if (e.name === 'AbortError') return false; }
-  try { await navigator.clipboard.writeText(texto); avisar('Link copiado. Cole no WhatsApp ou no e-mail.'); return true; }
-  catch { prompt('Copie o link:', url); return false; }
+  try { await navigator.clipboard.writeText(texto); avisar(tr("Link copiado. Cole no WhatsApp ou no e-mail.")); return true; }
+  catch { prompt(tr("Copie o link:"), url); return false; }
 }
 
 // Recusar: quem não foi aprovada sai; quem já via outros sonhos só perde os pedidos.
@@ -261,17 +262,17 @@ export async function aceitarConviteTerapeuta(token) {
 }
 
 const TEXTO_CONVITE = {
-  terapeuta: 'Te convido para registrar seus sonhos no Sonhário. Entre pelo link com a sua conta Google: eu só vejo os sonhos que você escolher me mostrar.',
-  paciente: 'Estou registrando meus sonhos no Sonhário e queria levar alguns para as nossas sessões. Entre pelo link com a sua conta Google: você só vê os sonhos que eu escolher mostrar.',
+  terapeuta: tr("Te convido para registrar seus sonhos no Sonhário. Entre pelo link com a sua conta Google: eu só vejo os sonhos que você escolher me mostrar."),
+  paciente: tr("Estou registrando meus sonhos no Sonhário e queria levar alguns para as nossas sessões. Entre pelo link com a sua conta Google: você só vê os sonhos que eu escolher mostrar."),
 };
 export async function mandarConvite(url, tipo, avisar) {
   const texto = TEXTO_CONVITE[tipo] + '\n' + url;
   try { if (navigator.share) { await navigator.share({ text: texto }); return; } } catch (e) { if (e.name === 'AbortError') return; }
-  try { await navigator.clipboard.writeText(texto); avisar('Convite copiado. Cole no WhatsApp ou no e-mail.'); }
-  catch { prompt('Copie o link:', url); }
+  try { await navigator.clipboard.writeText(texto); avisar(tr("Convite copiado. Cole no WhatsApp ou no e-mail.")); }
+  catch { prompt(tr("Copie o link:"), url); }
 }
 
 export const erroConvite = (e) => /convites_terapeuta|tipo/.test(e?.message || '')
-  ? 'O convite ainda não está ativo no banco: rode o bloco 16 do supabase/schema.sql.'
-  : 'Não deu para criar o convite: ' + (e?.message || e);
+  ? tr("O convite ainda não está ativo no banco: rode o bloco 16 do supabase/schema.sql.")
+  : tr("Não deu para criar o convite: ") + (e?.message || e);
 

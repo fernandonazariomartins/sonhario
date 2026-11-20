@@ -8,14 +8,15 @@ import { tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Copiar, Mais, Ok, Link as IconeLink } from './Icones.jsx';
 
+import { tr } from '../lib/i18n.js';
 
 async function enviarConvite(c, sonho, avisar) {
   const texto = textoConvite(c, sonho);
   try {
     if (navigator.share) { await navigator.share({ text: texto }); return; }
   } catch (e) { if (e.name === 'AbortError') return; }
-  try { await navigator.clipboard.writeText(texto); avisar('Convite copiado. Cole no WhatsApp ou no e-mail.'); }
-  catch { prompt('Copie o convite:', texto); }
+  try { await navigator.clipboard.writeText(texto); avisar(tr("Convite copiado. Cole no WhatsApp ou no e-mail.")); }
+  catch { prompt(tr("Copie o convite:"), texto); }
 }
 
 // Linha de uma pessoa: foto, nome e o papel (ou o e-mail).
@@ -38,8 +39,8 @@ function SoEsteSonho({ s }) {
     <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
       <span style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><Ok size={14} /></span>
       <span style={{ fontSize: 14, lineHeight: 1.5 }}>
-        <strong>{semViuvas('Só este sonho será compartilhado:')}</strong> {semViuvas('“' + tituloDe(s) + '”.')}<br />
-        <span style={{ color: 'var(--muted)' }}>{semViuvas('Seus outros sonhos continuam só seus.')}</span>
+        <strong>{semViuvas(tr("Só este sonho será compartilhado:"))}</strong> {semViuvas('“' + tituloDe(s) + '”.')}<br />
+        <span style={{ color: 'var(--muted)' }}>{semViuvas(tr("Seus outros sonhos continuam só seus."))}</span>
       </span>
     </div>
   );
@@ -51,21 +52,21 @@ export function Pedidos({ pedidos, perfis, sonhoId }) {
   const lista = sonhoId ? pedidos.filter((c) => c.sonhos_pedidos?.includes(sonhoId)) : pedidos;
   if (!lista.length) return null;
   async function aprovar(c, nome) {
-    try { await aprovarPedido(c.id); await recarregarCompartilhamentos(); avisar(nome + ' agora vê ' + (sonhoId ? 'este sonho' : 'o sonho')); } catch (e) { avisar('Não deu para aprovar: ' + e.message); }
+    try { await aprovarPedido(c.id); await recarregarCompartilhamentos(); avisar(nome + tr(" agora vê ") + (sonhoId ? tr("este sonho") : tr("o sonho"))); } catch (e) { avisar(tr("Não deu para aprovar: ") + e.message); }
   }
   async function recusar(c) {
-    try { await recusarPedido(c); await recarregarCompartilhamentos(); avisar('Pedido recusado'); } catch (e) { avisar('Não deu: ' + e.message); }
+    try { await recusarPedido(c); await recarregarCompartilhamentos(); avisar(tr("Pedido recusado")); } catch (e) { avisar(tr("Não deu: ") + e.message); }
   }
   return (
-    <section aria-label="Pedidos para ver" style={{ background: 'var(--warn-bg)', borderRadius: 14, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <strong style={{ fontSize: 14, color: 'var(--warn-ink)' }}>{lista.length === 1 ? '1 pessoa abriu o link e quer ver' : lista.length + ' pessoas abriram o link e querem ver'}</strong>
+    <section aria-label={tr("Pedidos para ver")} style={{ background: 'var(--warn-bg)', borderRadius: 14, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <strong style={{ fontSize: 14, color: 'var(--warn-ink)' }}>{lista.length === 1 ? tr("1 pessoa abriu o link e quer ver") : lista.length + tr(" pessoas abriram o link e querem ver")}</strong>
       {lista.map((c) => {
         const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
         const n = c.sonhos_pedidos?.length || 0;
         return (
-          <LinhaPessoa key={c.id} p={p} sub={p.nome !== c.convidado_email ? c.convidado_email : (sonhoId ? 'quer ver este sonho' : n === 1 ? '1 sonho' : n + ' sonhos')}>
-            <button type="button" className="btn btn-linha" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => recusar(c)}>Recusar</button>
-            <button type="button" className="btn btn-azul" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => aprovar(c, p.nome)}>Aprovar</button>
+          <LinhaPessoa key={c.id} p={p} sub={p.nome !== c.convidado_email ? c.convidado_email : (sonhoId ? tr("quer ver este sonho") : n === 1 ? tr("1 sonho") : n + tr(' sonhos'))}>
+            <button type="button" className="btn btn-linha" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => recusar(c)}>{tr("Recusar")}</button>
+            <button type="button" className="btn btn-azul" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => aprovar(c, p.nome)}>{tr("Aprovar")}</button>
           </LinhaPessoa>
         );
       })}
@@ -114,11 +115,11 @@ function LinkConvite({ s }) {
       // Com o cofre aberto, o sonho é trancado antes, para o link levar a chave dele.
       const sonho = cofre === 'aberto' && !s._cifrado ? await salvar(s) : s;
       const u = await criarLink(usuario, { sonho, papel, ver_amplificacoes: amp, aprovar }); setUrl(u); setComAprovacao(aprovar); setComAmp(amp); setFeito('criado'); }
-    catch (e) { avisar('Não deu para criar o link: ' + e.message); }
+    catch (e) { avisar(tr("Não deu para criar o link: ") + e.message); }
     setOcupado(false);
   }
   async function copiar() {
-    try { await navigator.clipboard.writeText(url); setFeito('copiar'); avisar('Link copiado'); } catch { prompt('Copie o link:', url); }
+    try { await navigator.clipboard.writeText(url); setFeito('copiar'); avisar(tr("Link copiado")); } catch { prompt(tr("Copie o link:"), url); }
   }
   async function mandar() {
     if (await mandarLink(url, avisar)) setFeito('mandar');
@@ -141,7 +142,7 @@ function LinkConvite({ s }) {
   async function mandarStory() {
     if (!story) return;
     navigator.clipboard?.writeText(url).catch(() => {});
-    const dica = 'Link copiado. No story, use a figurinha de link e cole.';
+    const dica = tr("Link copiado. No story, use a figurinha de link e cole.");
     if (navigator.canShare?.({ files: [story] })) {
       try { await navigator.share({ files: [story] }); setFeito('story'); avisar(dica); return; }
       catch (e) { if (e.name === 'AbortError') return; }
@@ -152,54 +153,54 @@ function LinkConvite({ s }) {
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
     setFeito('story');
-    avisar('Imagem baixada. ' + dica);
+    avisar(tr("Imagem baixada. ") + dica);
   }
 
   return (
-    <section aria-label="Mandar por link" style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <section aria-label={tr("Mandar por link")} style={{ background: 'var(--cinza)', borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} /> Mandar por link</strong>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google.')}</p>
+        <strong style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconeLink size={16} />{tr(" Mandar por link")}</strong>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(tr("Quem abrir o link vê o começo do sonho, desfocado. Para ler tudo, entra com a conta Google."))}</p>
       </div>
       {url ? (
         <div style={{ background: '#fff', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Bloco titulo="Seu link" primeiro>
-            {feito === 'criado' && <span role="status" style={{ fontSize: 13, color: 'var(--azul-escuro)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} /> Link criado</span>}
+          <Bloco titulo={tr("Seu link")} primeiro>
+            {feito === 'criado' && <span role="status" style={{ fontSize: 13, color: 'var(--azul-escuro)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} />{tr(" Link criado")}</span>}
             <div style={{ display: 'flex', gap: 8 }}>
-              <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label="Link deste sonho" style={{ fontSize: 13 }} />
+              <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} aria-label={tr("Link deste sonho")} style={{ fontSize: 13 }} />
               <button type="button" className={'btn ' + (feito === 'copiar' ? 'btn-azul' : 'btn-linha')} onClick={copiar} style={{ minWidth: 118, flex: 'none' }} aria-live="polite">
-                {feito === 'copiar' ? <Feito txt="Copiado" /> : <><Copiar size={16} /> Copiar</>}
+                {feito === 'copiar' ? <Feito txt={tr("Copiado")} /> : <><Copiar size={16} />{tr(" Copiar")}</>}
               </button>
             </div>
-            <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas((comAprovacao ? 'Você aprova cada pessoa antes de ela ler.' : 'Quem entrar com Google já lê, sem esperar você.') + (comAmp ? ' As amplificações aparecem junto.' : ''))}</span>
+            <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas((comAprovacao ? tr("Você aprova cada pessoa antes de ela ler.") : tr("Quem entrar com Google já lê, sem esperar você.")) + (comAmp ? tr(" As amplificações aparecem junto.") : ''))}</span>
           </Bloco>
-          <Bloco titulo="Mandar">
+          <Bloco titulo={tr("Mandar")}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <button type="button" className="btn btn-azul" onClick={mandar} aria-live="polite">{feito === 'mandar' ? <Feito txt="Pronto" /> : 'Mandar'}</button>
+              <button type="button" className="btn btn-azul" onClick={mandar} aria-live="polite">{feito === 'mandar' ? <Feito txt={tr("Pronto")} /> : tr("Mandar")}</button>
               {story !== false && (
-                <button type="button" className="btn btn-linha" onClick={mandarStory} disabled={!story} aria-live="polite">{feito === 'story' ? <Feito txt="Card pronto" /> : story ? 'Card para o story' : 'Preparando o card…'}</button>
+                <button type="button" className="btn btn-linha" onClick={mandarStory} disabled={!story} aria-live="polite">{feito === 'story' ? <Feito txt={tr("Card pronto")} /> : story ? tr("Card para o story") : tr("Preparando o card…")}</button>
               )}
             </div>
-            {story && <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('No Instagram, ponha a figurinha de link embaixo da seta e cole o link: ele já fica copiado.')}</span>}
+            {story && <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(tr("No Instagram, ponha a figurinha de link embaixo da seta e cole o link: ele já fica copiado."))}</span>}
           </Bloco>
         </div>
       ) : (
         <div style={{ background: '#fff', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Bloco titulo="Quem abre o link" primeiro>
-            <div role="radiogroup" aria-label="Quem abre o link" className="abas" style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
-              {[[true, 'Eu aprovo cada pessoa'], [false, 'Entra direto']].map(([v, r]) => (
+          <Bloco titulo={tr("Quem abre o link")} primeiro>
+            <div role="radiogroup" aria-label={tr("Quem abre o link")} className="abas" style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
+              {[[true, tr("Eu aprovo cada pessoa")], [false, tr("Entra direto")]].map(([v, r]) => (
                 <button key={r} type="button" role="radio" aria-checked={aprovar === v} className={'aba' + (aprovar === v ? ' ativa' : '')} onClick={() => setAprovar(v)}>{r}</button>
               ))}
             </div>
-            <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(aprovar ? 'Cada pessoa pede para ver e você aprova.' : 'Quem entrar com Google já lê, sem esperar a sua aprovação.')}</span>
+            <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(aprovar ? tr("Cada pessoa pede para ver e você aprova.") : tr("Quem entrar com Google já lê, sem esperar a sua aprovação."))}</span>
           </Bloco>
-          <Bloco titulo="O que aparece">
+          <Bloco titulo={tr("O que aparece")}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
               <input type="checkbox" checked={amp} onChange={(e) => setAmp(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
-              Mostrar também as amplificações
+              {tr("Mostrar também as amplificações")}
             </label>
           </Bloco>
-          <button type="button" className="btn btn-azul" style={{ alignSelf: 'flex-start' }} onClick={gerar} disabled={ocupado}><IconeLink size={16} /> {ocupado ? 'Criando…' : 'Criar link deste sonho'}</button>
+          <button type="button" className="btn btn-azul" style={{ alignSelf: 'flex-start' }} onClick={gerar} disabled={ocupado}><IconeLink size={16} /> {ocupado ? tr("Criando…") : tr("Criar link deste sonho")}</button>
         </div>
       )}
     </section>
@@ -230,7 +231,7 @@ function FormConvite({ s, aoConvidar }) {
       const c = await convidar(usuario, { ...form, nome: achado?.nome ? '' : form.nome });
       await recarregarCompartilhamentos();
       await aoConvidar(c);
-      avisar('Este sonho foi compartilhado com ' + (achado?.nome || c.convidado_nome || c.convidado_email));
+      avisar(tr("Este sonho foi compartilhado com ") + (achado?.nome || c.convidado_nome || c.convidado_email));
       if (!achado) enviarConvite(c, s, avisar);
     } catch (e2) { setErro(e2.message); }
     setOcupado(false);
@@ -239,29 +240,29 @@ function FormConvite({ s, aoConvidar }) {
   return (
     <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 700 }}>
-        E-mail da conta Google
-        <input className="campo" type="email" required value={form.email} onChange={(e) => campo('email')(e.target.value)} placeholder="nome@gmail.com" autoComplete="off" autoFocus style={{ fontWeight: 400, fontSize: 16 }} />
+        {tr("E-mail da conta Google")}
+        <input className="campo" type="email" required value={form.email} onChange={(e) => campo('email')(e.target.value)} placeholder={'nome@gmail.com'} autoComplete="off" autoFocus style={{ fontWeight: 400, fontSize: 16 }} />
       </label>
       {achado && (
         <div style={{ background: 'var(--cinza)', borderRadius: 12, padding: '6px 12px' }}>
-          <LinhaPessoa p={{ nome: achado.nome || achado.email, foto: achado.foto }} sub="já usa o Sonhário" />
+          <LinhaPessoa p={{ nome: achado.nome || achado.email, foto: achado.foto }} sub={tr("já usa o Sonhário")} />
         </div>
       )}
       {achado === null && (
         <>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Essa pessoa ainda não usa o Sonhário. Ela recebe um convite e, ao entrar com esse e-mail, já encontra este sonho.')}</p>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(tr("Essa pessoa ainda não usa o Sonhário. Ela recebe um convite e, ao entrar com esse e-mail, já encontra este sonho."))}</p>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 700 }}>
-            Nome (opcional)
-            <input className="campo" value={form.nome} onChange={(e) => campo('nome')(e.target.value)} placeholder="Ex.: Ana" style={{ fontWeight: 400, fontSize: 16 }} />
+            {tr("Nome (opcional)")}
+            <input className="campo" value={form.nome} onChange={(e) => campo('nome')(e.target.value)} placeholder={tr("Ex.: Ana")} style={{ fontWeight: 400, fontSize: 16 }} />
           </label>
         </>
       )}
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
         <input type="checkbox" checked={form.ver_amplificacoes} onChange={(e) => campo('ver_amplificacoes')(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--azul)' }} />
-        Mostrar também as amplificações
+        {tr("Mostrar também as amplificações")}
       </label>
       {erro && <div className="aviso">{erro}</div>}
-      <button type="submit" className="btn btn-azul btn-grande" disabled={ocupado}>{ocupado ? 'Compartilhando…' : 'Compartilhar este sonho'}</button>
+      <button type="submit" className="btn btn-azul btn-grande" disabled={ocupado}>{ocupado ? tr("Compartilhando…") : tr("Compartilhar este sonho")}</button>
     </form>
   );
 }
@@ -270,8 +271,8 @@ function PedirLogin({ aoFechar, titulo }) {
   const { entrar } = useEstado();
   return (
     <Janela titulo={titulo} aoFechar={aoFechar}>
-      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Para mostrar um sonho ao seu terapeuta ou a um amigo, entre com a sua conta Google. Sem conta, os sonhos ficam só neste aparelho.')}</p>
-      <button type="button" className="btn btn-azul btn-grande" onClick={entrar}>Entrar com Google</button>
+      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas(tr("Para mostrar um sonho ao seu terapeuta ou a um amigo, entre com a sua conta Google. Sem conta, os sonhos ficam só neste aparelho."))}</p>
+      <button type="button" className="btn btn-azul btn-grande" onClick={entrar}>{tr("Entrar com Google")}</button>
     </Janela>
   );
 }
@@ -281,27 +282,27 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
   const { usuario, compartilhamentos } = useEstado();
   const { meus, pedidos, perfis } = compartilhamentos;
   const [convidando, setConvidando] = useState(false);
-  if (!usuario) return <PedirLogin aoFechar={aoFechar} titulo="Compartilhar este sonho" />;
+  if (!usuario) return <PedirLogin aoFechar={aoFechar} titulo={tr("Compartilhar este sonho")} />;
 
   const com = s.compartilhado_com || [];
   const alternar = (email, ligar) => mudar({ compartilhado_com: ligar ? [...new Set([...com, email])] : com.filter((x) => x !== email) }, true);
 
   return (
-    <Janela titulo="Compartilhar este sonho" aoFechar={aoFechar}>
+    <Janela titulo={tr("Compartilhar este sonho")} aoFechar={aoFechar}>
       <SoEsteSonho s={s} />
-      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('Pode ser o seu terapeuta, um amigo ou os dois. Cada pessoa entra com a própria conta Google e só lê.')}</p>
+      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(tr("Pode ser o seu terapeuta, um amigo ou os dois. Cada pessoa entra com a própria conta Google e só lê."))}</p>
       <Pedidos pedidos={pedidos} perfis={perfis} sonhoId={s.id} />
       {meus.length > 0 && (
-        <div role="group" aria-label="Com quem" style={{ display: 'flex', flexDirection: 'column' }}>
-          <span className="rotulo" style={{ marginBottom: 2 }}>Com quem</span>
+        <div role="group" aria-label={tr("Com quem")} style={{ display: 'flex', flexDirection: 'column' }}>
+          <span className="rotulo" style={{ marginBottom: 2 }}>{tr("Com quem")}</span>
           {meus.map((c) => {
             const p = pessoa(perfis, c.convidado_email, c.convidado_nome);
             const marcado = com.includes(c.convidado_email);
             return (
               <label key={c.id} style={{ cursor: 'pointer', borderBottom: '1px solid var(--line)', padding: '4px 0' }}>
-                <LinhaPessoa p={p} sub={(c.eh_terapeuta ? 'terapeuta · ' : '') + (marcado ? 'vê este sonho' : c.convidado_email)}>
+                <LinhaPessoa p={p} sub={(c.eh_terapeuta ? tr("terapeuta · ") : '') + (marcado ? tr("vê este sonho") : c.convidado_email)}>
                   <input type="checkbox" checked={marcado} onChange={(e) => alternar(c.convidado_email, e.target.checked)}
-                    aria-label={(marcado ? 'Deixar de mostrar este sonho para ' : 'Mostrar este sonho para ') + p.nome} style={{ width: 22, height: 22, accentColor: 'var(--azul)' }} />
+                    aria-label={(marcado ? tr("Deixar de mostrar este sonho para ") : tr("Mostrar este sonho para ")) + p.nome} style={{ width: 22, height: 22, accentColor: 'var(--azul)' }} />
                 </LinhaPessoa>
               </label>
             );
@@ -310,9 +311,9 @@ export function CompartilharSonho({ s, mudar, aoFechar }) {
       )}
       {convidando
         ? <FormConvite s={s} aoConvidar={(c) => { alternar(c.convidado_email, true); setConvidando(false); }} />
-        : <button type="button" className="btn btn-tracejado" onClick={() => setConvidando(true)}><Mais size={16} /> {meus.length ? 'Outra pessoa, pelo e-mail' : 'Convidar pelo e-mail'}</button>}
+        : <button type="button" className="btn btn-tracejado" onClick={() => setConvidando(true)}><Mais size={16} /> {meus.length ? tr("Outra pessoa, pelo e-mail") : tr("Convidar pelo e-mail")}</button>}
       {!convidando && <LinkConvite s={s} />}
-      {meus.length > 0 && !convidando && <button type="button" className="btn btn-azul btn-grande" onClick={aoFechar}>Pronto</button>}
+      {meus.length > 0 && !convidando && <button type="button" className="btn btn-azul btn-grande" onClick={aoFechar}>{tr("Pronto")}</button>}
     </Janela>
   );
 }

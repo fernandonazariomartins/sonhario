@@ -12,6 +12,7 @@ import Avatar from '../components/Avatar.jsx';
 import Assinatura from '../components/Assinatura.jsx';
 import Tour from '../components/Tour.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { tr } from '../lib/i18n.js';
 
 const texto = { margin: 0, color: 'var(--muted)', lineHeight: 1.6 };
 
@@ -19,34 +20,34 @@ const texto = { margin: 0, color: 'var(--muted)', lineHeight: 1.6 };
 const TEXTOS = {
   terapeuta: {
     quem: 'paciente',
-    rotulo: 'Convite de terapeuta',
-    titulo: (n) => `${n} convidou você para registrar seus sonhos no Sonhário`,
-    corpo: (p) => `Entre com a sua conta Google. ${p} passa a aparecer como terapeuta no seu Sonhário, mas não vê nenhum sonho: você escolhe, um por vez, o que mostrar. É de graça.`,
-    pronto: (p, ja) => ja ? `${p} já está no seu Sonhário` : `Pronto: ${p} está no seu Sonhário como terapeuta`,
-    depois: (p) => `Nenhum sonho foi compartilhado. ${p} só vê o que você escolher mostrar, um sonho por vez: pelo botão Compartilhar dentro do sonho, ou marcando “Levar para a próxima sessão”.`,
-    desfazer: 'Para desfazer a ligação, é só ir em ⋯ › Pessoas com acesso.',
-    abrir: 'Abrir o meu Sonhário',
+    rotulo: tr("Convite de terapeuta"),
+    titulo: (n) => tr("{0} convidou você para registrar seus sonhos no Sonhário", [n]),
+    corpo: (p) => tr("Entre com a sua conta Google. {0} passa a aparecer como terapeuta no seu Sonhário, mas não vê nenhum sonho: você escolhe, um por vez, o que mostrar. É de graça.", [p]),
+    pronto: (p, ja) => ja ? tr("{0} já está no seu Sonhário", [p]) : tr("Pronto: {0} está no seu Sonhário como terapeuta", [p]),
+    depois: (p) => tr("Nenhum sonho foi compartilhado. {0} só vê o que você escolher mostrar, um sonho por vez: pelo botão Compartilhar dentro do sonho, ou marcando “Levar para a próxima sessão”.", [p]),
+    desfazer: tr("Para desfazer a ligação, é só ir em ⋯ › Pessoas com acesso."),
+    abrir: tr("Abrir o meu Sonhário"),
   },
   paciente: {
     quem: 'terapeuta',
-    rotulo: 'Convite de paciente',
-    titulo: (n) => `${n} convidou você para acompanhar os sonhos no Sonhário`,
-    corpo: (p) => `Entre com a sua conta Google. Você passa a aparecer como terapeuta de ${p}, e os sonhos que ${p} escolher mostrar aparecem na sua aba Pacientes. Você também pode registrar os seus. É de graça.`,
-    pronto: (p, ja) => ja ? `Você já é terapeuta de ${p} no Sonhário` : `Pronto: você é terapeuta de ${p} no Sonhário`,
-    depois: (p) => `${p} ainda escolhe, um por vez, os sonhos que quer mostrar. Quando marcar um para a próxima sessão, ele aparece na aba Pacientes.`,
-    desfazer: 'Para convidar outros pacientes, use o link da aba Pacientes.',
-    abrir: 'Abrir a aba Pacientes',
+    rotulo: tr("Convite de paciente"),
+    titulo: (n) => tr("{0} convidou você para acompanhar os sonhos no Sonhário", [n]),
+    corpo: (p) => tr("Entre com a sua conta Google. Você passa a aparecer como terapeuta de {0}, e os sonhos que {1} escolher mostrar aparecem na sua aba Pacientes. Você também pode registrar os seus. É de graça.", [p, p]),
+    pronto: (p, ja) => ja ? tr("Você já é terapeuta de {0} no Sonhário", [p]) : tr("Pronto: você é terapeuta de {0} no Sonhário", [p]),
+    depois: (p) => tr("{0} ainda escolhe, um por vez, os sonhos que quer mostrar. Quando marcar um para a próxima sessão, ele aparece na aba Pacientes.", [p]),
+    desfazer: tr("Para convidar outros pacientes, use o link da aba Pacientes."),
+    abrir: tr("Abrir a aba Pacientes"),
     destino: '/app/compartilhados',
   },
   amigo: {
     quem: 'amigo',
-    rotulo: 'Convite',
-    titulo: (n) => `${n} convidou você para registrar seus sonhos no Sonhário`,
-    corpo: (p) => `Entre com a sua conta Google. Você e ${p} passam a aparecer um para o outro na hora de compartilhar, mas ninguém vê nenhum sonho: cada um escolhe, um por vez, o que mostrar. É de graça.`,
-    pronto: (p, ja) => ja ? `Você e ${p} já estão ligados no Sonhário` : `Pronto: você e ${p} estão ligados no Sonhário`,
-    depois: () => 'Nenhum sonho foi compartilhado. Para mostrar um, use o botão Compartilhar dentro do sonho.',
-    desfazer: 'Para desfazer a ligação, é só ir em ⋯ › Pessoas com acesso.',
-    abrir: 'Abrir o meu Sonhário',
+    rotulo: tr("Convite"),
+    titulo: (n) => tr("{0} convidou você para registrar seus sonhos no Sonhário", [n]),
+    corpo: (p) => tr("Entre com a sua conta Google. Você e {0} passam a aparecer um para o outro na hora de compartilhar, mas ninguém vê nenhum sonho: cada um escolhe, um por vez, o que mostrar. É de graça.", [p]),
+    pronto: (p, ja) => ja ? tr("Você e {0} já estão ligados no Sonhário", [p]) : tr("Pronto: você e {0} estão ligados no Sonhário", [p]),
+    depois: () => tr("Nenhum sonho foi compartilhado. Para mostrar um, use o botão Compartilhar dentro do sonho."),
+    desfazer: tr("Para desfazer a ligação, é só ir em ⋯ › Pessoas com acesso."),
+    abrir: tr("Abrir o meu Sonhário"),
   },
 };
 
@@ -78,7 +79,7 @@ export default function ConviteTerapeuta() {
   }, [pronto, usuario, convite, token, recarregarCompartilhamentos, recarregarModo]);
 
   const t = TEXTOS[convite?.tipo] || TEXTOS.terapeuta;
-  const nome = convite?.dono_nome || 'Alguém';
+  const nome = convite?.dono_nome || tr("Alguém");
   const primeiro = nome.split(' ')[0];
   const entrarAgora = () => { convitePendente.guardar('/terapeuta/' + token); entrar(); };
 
@@ -94,21 +95,21 @@ export default function ConviteTerapeuta() {
       </>
     );
   } else if (convite === undefined || (usuario && convite && !erro)) {
-    corpo = <p style={{ color: 'var(--muted)' }}>Abrindo o convite…</p>;
+    corpo = <p style={{ color: 'var(--muted)' }}>{tr("Abrindo o convite…")}</p>;
   } else if (!convite) {
     corpo = (
       <>
-        <h1 className="titulo-m">{semViuvas('Esse link não existe mais')}</h1>
-        <p style={texto}>{semViuvas('Peça um link novo para quem te convidou.')}</p>
-        <Link className="btn btn-linha btn-grande" to="/">Conhecer o Sonhário</Link>
+        <h1 className="titulo-m">{semViuvas(tr("Esse link não existe mais"))}</h1>
+        <p style={texto}>{semViuvas(tr("Peça um link novo para quem te convidou."))}</p>
+        <Link className="btn btn-linha btn-grande" to="/">{tr("Conhecer o Sonhário")}</Link>
       </>
     );
   } else if (erro) {
     corpo = (
       <>
-        <h1 className="titulo-m">{semViuvas('Não deu para aceitar o convite')}</h1>
+        <h1 className="titulo-m">{semViuvas(tr("Não deu para aceitar o convite"))}</h1>
         <div className="aviso">{semViuvas(erro)}</div>
-        <Link className="btn btn-linha btn-grande" to="/app">Ir para o meu Sonhário</Link>
+        <Link className="btn btn-linha btn-grande" to="/app">{tr("Ir para o meu Sonhário")}</Link>
       </>
     );
   } else {
@@ -119,10 +120,10 @@ export default function ConviteTerapeuta() {
         <h1 className="titulo-m">{semViuvas(t.titulo(nome))}</h1>
         <p style={texto}>{semViuvas(t.corpo(primeiro))}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          <button type="button" className="btn btn-preto btn-grande" onClick={entrarAgora}>Entrar com Google</button>
-          <button type="button" className="btn btn-linha btn-grande" onClick={() => setTour(true)}>Ver os recursos</button>
+          <button type="button" className="btn btn-preto btn-grande" onClick={entrarAgora}>{tr("Entrar com Google")}</button>
+          <button type="button" className="btn btn-linha btn-grande" onClick={() => setTour(true)}>{tr("Ver os recursos")}</button>
         </div>
-        <p style={{ ...texto, fontSize: 13 }}>{semViuvas('Seus sonhos são seus. Dá para desfazer a ligação quando quiser.')}</p>
+        <p style={{ ...texto, fontSize: 13 }}>{semViuvas(tr("Seus sonhos são seus. Dá para desfazer a ligação quando quiser."))}</p>
       </>
     );
   }

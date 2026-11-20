@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Novidades nas Observações: o que mudou desde a última vez que a pessoa abriu a tela.
 // Guarda no aparelho um retrato de cada observação (só chaves e números, nada do relato
 // sai daqui) e marca como "com novidade" a que mudou, por alguns dias.
@@ -8,7 +9,7 @@ const chave = (uid) => 'sonhario-observacoes-vistas:' + (uid || 'aparelho');
 
 // Uma linha da observação vira uma chave estável (quem é) e um valor (o que diz).
 // Tira o "há N dias/meses", que muda só com o passar do tempo.
-const limpar = (t = '') => t.replace(/\s*·?\s*o último há .*$/, '').replace(/\bhá \d+ (dias?|m[eê]s(es)?|anos?)\b/g, '').trim();
+const limpar = (t = '') => t.replace(/\s*·?\s*(o último há|last one) .*$/, '').replace(/\bhá \d+ (dias?|m[eê]s(es)?|anos?)\b/g, '').replace(/\b\d+ (days?|months?|years?) ago\b/g, '').trim();
 export function linhas(i) {
   return (i.itens || []).map((x, k) => {
     const quem = [x.tema, x.par, x.palavra, x.sonho?.id].filter(Boolean).join('+');
@@ -52,8 +53,8 @@ export function compararNovidades(lista, uid, agora = Date.now()) {
 
 export function quandoFoi(ms, agora = Date.now()) {
   const hoje = new Date(agora); hoje.setHours(0, 0, 0, 0);
-  if (ms >= +hoje) return 'hoje';
+  if (ms >= +hoje) return tr('hoje');
   const d = Math.ceil((+hoje - ms) / DIA);
-  if (d <= 1) return 'ontem';
-  return 'há ' + d + ' dias';
+  if (d <= 1) return tr('ontem');
+  return tr('há {0} dias', [d]);
 }

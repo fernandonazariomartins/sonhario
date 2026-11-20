@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Janela from './Janela.jsx';
 import { Fechar, Imagem } from './Icones.jsx';
+import { tr } from '../lib/i18n.js';
 
 export default function Imagens({ imagens = [], urlDe, aoAdicionar, aoTirar }) {
   const [urls, setUrls] = useState({});
@@ -33,14 +34,14 @@ export default function Imagens({ imagens = [], urlDe, aoAdicionar, aoTirar }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, maxWidth: 680 }}>
           {imagens.map((im, k) => (
             <div key={im.ref} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: '#F2F4F7' }}>
-              <button type="button" onClick={() => setAberta(im)} aria-label={'Abrir a imagem ' + (k + 1)}
+              <button type="button" onClick={() => setAberta(im)} aria-label={tr("Abrir a imagem ") + (k + 1)}
                 style={{ border: 0, padding: 0, width: '100%', height: '100%', background: 'transparent', cursor: 'zoom-in', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {urls[im.ref]
                   ? <img src={urls[im.ref]} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   : <span style={{ color: 'var(--muted)', display: 'inline-flex' }}><Imagem size={22} /></span>}
               </button>
               {aoTirar && (
-                <button type="button" onClick={() => aoTirar(im)} aria-label={'Tirar a imagem ' + (k + 1)}
+                <button type="button" onClick={() => aoTirar(im)} aria-label={tr("Tirar a imagem ") + (k + 1)}
                   style={{ position: 'absolute', top: 6, right: 6, width: 30, height: 30, borderRadius: 999, border: 0, background: 'rgba(17,24,39,.65)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Fechar size={12} />
                 </button>
@@ -51,15 +52,15 @@ export default function Imagens({ imagens = [], urlDe, aoAdicionar, aoTirar }) {
       )}
       {aoAdicionar && (
         <label className="btn btn-tracejado" style={{ alignSelf: 'flex-start' }}>
-          <Imagem size={16} /> {enviando ? 'Guardando a imagem…' : imagens.length ? 'Adicionar outra imagem' : 'Adicionar imagem'}
+          <Imagem size={16} /> {enviando ? tr("Guardando a imagem…") : imagens.length ? tr("Adicionar outra imagem") : tr("Adicionar imagem")}
           <input type="file" accept="image/*" multiple onChange={escolher} className="sr" disabled={enviando} />
         </label>
       )}
       {aberta && (
-        <Janela titulo="Imagem do sonho" aoFechar={() => setAberta(null)}>
+        <Janela titulo={tr("Imagem do sonho")} aoFechar={() => setAberta(null)}>
           {urls[aberta.ref]
             ? <img src={urls[aberta.ref]} alt="" style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 8, alignSelf: 'center' }} />
-            : <p style={{ margin: 0, color: 'var(--muted)' }}>Este navegador não abre esse formato de imagem.</p>}
+            : <p style={{ margin: 0, color: 'var(--muted)' }}>{tr("Este navegador não abre esse formato de imagem.")}</p>}
         </Janela>
       )}
     </div>

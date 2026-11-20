@@ -6,7 +6,8 @@ import { normalizar, singular, ehSimbolo } from './coresTema.js';
 import { supabase } from './supabase.js';
 
 // Palavras que aparecem demais nos relatos para virar tema sozinhas.
-const COMUNS = new Set(['sonho', 'visao', 'medo', 'cair', 'velho', 'presente', 'caminho', 'luz', 'energia', 'alma', 'calma', 'brilho', 'frio']);
+const COMUNS = new Set(['sonho', 'visao', 'medo', 'cair', 'velho', 'presente', 'caminho', 'luz', 'energia', 'alma', 'calma', 'brilho', 'frio',
+  'dream', 'vision', 'fear', 'fall', 'old', 'present', 'path', 'light', 'energy', 'soul', 'calm', 'shine', 'cold']);
 const MAX = 6;
 
 export function sugerirTemas(texto, jaTem = [], temasDoAcervo = []) {

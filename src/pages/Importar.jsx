@@ -6,6 +6,7 @@ import { tituloDe, dataCurta } from '../lib/sonhos.js';
 import { guardarMidia } from '../lib/midia.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Mic, Imagem } from '../components/Icones.jsx';
+import { tr } from '../lib/i18n.js';
 
 const anexosDe = (s) => s._midia ? { audios: s.audio ? 0 : Math.min(1, s._midia.audios.length), imagens: s._midia.imagens.length, faltando: s._midia.faltando } : { audios: 0, imagens: 0, faltando: 0 };
 
@@ -47,9 +48,9 @@ export default function Importar() {
     await salvarVarios(prontos);
     setImportando(null);
     const partes = [];
-    if (novos.length) partes.push(novos.length === 1 ? '1 sonho importado' : novos.length + ' sonhos importados');
-    if (comRelato) partes.push(comRelato === 1 ? '1 completado com o relato' : comRelato + ' completados com o relato');
-    if (comAnexos) partes.push(comAnexos === 1 ? '1 completado com os anexos' : comAnexos + ' completados com os anexos');
+    if (novos.length) partes.push(novos.length === 1 ? tr("1 sonho importado") : novos.length + tr(" sonhos importados"));
+    if (comRelato) partes.push(comRelato === 1 ? tr("1 completado com o relato") : comRelato + tr(" completados com o relato"));
+    if (comAnexos) partes.push(comAnexos === 1 ? tr("1 completado com os anexos") : comAnexos + tr(" completados com os anexos"));
     avisar(partes.join(' · '));
     navegar('/app/acervo');
   }
@@ -57,38 +58,38 @@ export default function Importar() {
   return (
     <div style={{ width: '100%', maxWidth: 1000, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 22 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <h1 className="titulo-m">Traga os sonhos que você já anotou</h1>
-        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Nada entra no seu acervo sem você conferir antes.')}</p>
+        <h1 className="titulo-m">{tr("Traga os sonhos que você já anotou")}</h1>
+        <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(tr("Nada entra no seu acervo sem você conferir antes."))}</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
         <div className="painel" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800 }}>Notion</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800 }}>{'Notion'}</h2>
           <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>
-            <li>Abra a tabela de sonhos no Notion.</li>
-            <li>No menu ••• escolha <strong>Exportar</strong> › <strong>Markdown e CSV</strong>, com <strong>Incluir subpáginas</strong> ligado.</li>
-            <li>Envie o arquivo <strong>.zip</strong> inteiro aqui, sem descompactar. É nele que estão os relatos.</li>
+            <li>{tr("Abra a tabela de sonhos no Notion.")}</li>
+            <li>{tr("No menu ••• escolha ")}<strong>{tr("Exportar")}</strong> › <strong>{tr("Markdown e CSV")}</strong>{tr(", com ")}<strong>{tr("Incluir subpáginas")}</strong>{tr(" ligado.")}</li>
+            <li>{tr("Envie o arquivo ")}<strong>{'.zip'}</strong>{tr(" inteiro aqui, sem descompactar. É nele que estão os relatos.")}</li>
           </ol>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--azul)' }}>Reconhece o template Meu Sonhário</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--azul)' }}>{tr("Reconhece o template Meu Sonhário")}</span>
         </div>
         <div className="painel" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800 }}>Google Keep</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800 }}>{tr("Google Keep")}</h2>
           <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>
-            <li>Em <a href="https://takeout.google.com" target="_blank" rel="noopener noreferrer">takeout.google.com</a>, marque só o Keep.</li>
-            <li>Envie o <strong>.zip</strong> do Takeout inteiro, ou as notas <strong>.json</strong> junto com as imagens e os áudios delas.</li>
-            <li>Escolha os marcadores que são de sonho.</li>
+            <li>{tr("Em ")}<a href="https://takeout.google.com" target="_blank" rel="noopener noreferrer">{'takeout.google.com'}</a>{tr(", marque só o Keep.")}</li>
+            <li>{tr("Envie o ")}<strong>{'.zip'}</strong>{tr(" do Takeout inteiro, ou as notas ")}<strong>{'.json'}</strong>{tr(" junto com as imagens e os áudios delas.")}</li>
+            <li>{tr("Escolha os marcadores que são de sonho.")}</li>
           </ol>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--azul)' }}>Traz as imagens e os áudios das notas</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--azul)' }}>{tr("Traz as imagens e os áudios das notas")}</span>
         </div>
         <div className="painel" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800 }}>Texto ou Markdown</h2>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas('Um arquivo .txt ou .md. Cada título (## Sonho) ou cada parágrafo que começa com uma data (16/11/2026) vira um sonho.')}</p>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas('Tem imagens e áudios? Envie um .zip com o .md e a pasta dos anexos: os links do .md levam cada arquivo para o seu sonho.')}</p>
+          <h2 style={{ fontSize: 18, fontWeight: 800 }}>{tr("Texto ou Markdown")}</h2>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas(tr("Um arquivo .txt ou .md. Cada título (## Sonho) ou cada parágrafo que começa com uma data (16/11/2026) vira um sonho."))}</p>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas(tr("Tem imagens e áudios? Envie um .zip com o .md e a pasta dos anexos: os links do .md levam cada arquivo para o seu sonho."))}</p>
         </div>
       </div>
 
       <label className="btn btn-preto btn-grande" style={{ alignSelf: 'flex-start' }}>
-        Escolher arquivos
+        {tr("Escolher arquivos")}
         <input type="file" multiple accept=".zip,.csv,.json,.txt,.md,image/*,audio/*,.3gp,.amr,.m4a" onChange={escolher} className="sr" />
       </label>
 
@@ -96,7 +97,7 @@ export default function Importar() {
         <div className="painel" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {lido.marcadores.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span className="rotulo">Marcadores do Keep que são de sonho</span>
+              <span className="rotulo">{tr("Marcadores do Keep que são de sonho")}</span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {lido.marcadores.map((m) => (
                   <label key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 999, border: '1px solid var(--line-strong)', fontSize: 14 }}>
@@ -107,23 +108,23 @@ export default function Importar() {
             </div>
           )}
           {lido.soCSV && (
-            <div className="aviso">{semViuvas('Este arquivo .csv traz só o título, a data e os temas. O texto de cada sonho fica nas páginas do Notion: envie o .zip do export para trazer os relatos também.')}</div>
+            <div className="aviso">{semViuvas(tr("Este arquivo .csv traz só o título, a data e os temas. O texto de cada sonho fica nas páginas do Notion: envie o .zip do export para trazer os relatos também."))}</div>
           )}
           {total.faltando > 0 && (
-            <div className="aviso">{semViuvas((total.faltando === 1 ? '1 anexo citado nas notas não veio' : total.faltando + ' anexos citados nas notas não vieram') + ' nos arquivos enviados. Para trazer, envie o .zip inteiro, com as imagens e os áudios.')}</div>
+            <div className="aviso">{semViuvas((total.faltando === 1 ? tr("1 anexo citado nas notas não veio") : total.faltando + tr(" anexos citados nas notas não vieram")) + tr(" nos arquivos enviados. Para trazer, envie o .zip inteiro, com as imagens e os áudios."))}</div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-            <strong style={{ fontSize: 16 }}>{novos.length === 1 ? '1 sonho novo' : novos.length + ' sonhos novos'}{comRelato > 0 && ' · ' + comRelato + ' para completar com o relato'}{comAnexos > 0 && ' · ' + comAnexos + ' para completar com os anexos'}{(total.audios + total.imagens) > 0 && <span style={{ fontWeight: 500, color: 'var(--muted)' }}>{' · ' + [total.audios && (total.audios === 1 ? '1 áudio' : total.audios + ' áudios'), total.imagens && (total.imagens === 1 ? '1 imagem' : total.imagens + ' imagens')].filter(Boolean).join(' e ')}</span>}{pulados > 0 && <span style={{ fontWeight: 500, color: 'var(--muted)' }}>{' · ' + (pulados === 1 ? '1 já está' : pulados + ' já estão') + ' no Sonhário'}</span>}</strong>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}><input type="checkbox" checked={pularRepetidos} onChange={(e) => setPularRepetidos(e.target.checked)} /> Pular sonhos que já estão no Sonhário</label>
-            <button className="btn btn-azul" style={{ marginLeft: 'auto' }} disabled={!finais.length || !!importando} onClick={importar}>{importando ? (importando.total ? `Guardando anexos… ${importando.feitos}/${importando.total}` : 'Importando…') : 'Importar ' + finais.length}</button>
+            <strong style={{ fontSize: 16 }}>{novos.length === 1 ? tr("1 sonho novo") : novos.length + tr(" sonhos novos")}{comRelato > 0 && ' · ' + comRelato + tr(" para completar com o relato")}{comAnexos > 0 && ' · ' + comAnexos + tr(" para completar com os anexos")}{(total.audios + total.imagens) > 0 && <span style={{ fontWeight: 500, color: 'var(--muted)' }}>{' · ' + [total.audios && (total.audios === 1 ? tr("1 áudio") : total.audios + tr(" áudios")), total.imagens && (total.imagens === 1 ? tr("1 imagem") : total.imagens + tr(' imagens'))].filter(Boolean).join(' e ')}</span>}{pulados > 0 && <span style={{ fontWeight: 500, color: 'var(--muted)' }}>{' · ' + (pulados === 1 ? tr("1 já está") : pulados + tr(" já estão")) + tr(" no Sonhário")}</span>}</strong>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}><input type="checkbox" checked={pularRepetidos} onChange={(e) => setPularRepetidos(e.target.checked)} />{tr(" Pular sonhos que já estão no Sonhário")}</label>
+            <button className="btn btn-azul" style={{ marginLeft: 'auto' }} disabled={!finais.length || !!importando} onClick={importar}>{importando ? (importando.total ? tr("Guardando anexos… {0}/{1}", [importando.feitos, importando.total]) : tr("Importando…")) : tr("Importar ") + finais.length}</button>
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', maxHeight: 320, overflow: 'auto', borderTop: '1px solid var(--line)' }}>
             {finais.slice(0, 200).map((s) => (
               <li key={s.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--line)', display: 'flex', gap: 12, fontSize: 14 }}>
                 <span style={{ color: 'var(--muted)', width: 90, flex: 'none' }}>{dataCurta(s.sonhado_em)}</span>
                 <span style={{ fontWeight: 700 }}>{tituloDe(s)}</span>
-                {anexosDe(s).audios > 0 && <span title="Com áudio" style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center' }}><Mic size={14} /></span>}
-                {anexosDe(s).imagens > 0 && <span title={anexosDe(s).imagens === 1 ? 'Com 1 imagem' : 'Com ' + anexosDe(s).imagens + ' imagens'} style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12 }}><Imagem size={14} />{anexosDe(s).imagens > 1 && anexosDe(s).imagens}</span>}
+                {anexosDe(s).audios > 0 && <span title={tr("Com áudio")} style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center' }}><Mic size={14} /></span>}
+                {anexosDe(s).imagens > 0 && <span title={anexosDe(s).imagens === 1 ? tr("Com 1 imagem") : tr("Com ") + anexosDe(s).imagens + tr(' imagens')} style={{ color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12 }}><Imagem size={14} />{anexosDe(s).imagens > 1 && anexosDe(s).imagens}</span>}
                 <span style={{ color: 'var(--muted)', marginLeft: 'auto' }}>{s.temas.join(', ')}</span>
               </li>
             ))}

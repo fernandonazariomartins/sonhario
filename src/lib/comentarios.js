@@ -5,12 +5,13 @@
 import { supabase } from './supabase.js';
 import { cifrar, decifrar, ehCifrado } from './cripto.js';
 import { chaveEmCache } from './cofre.js';
+import { tr, locale } from './i18n.js';
 
 async function abrirTexto(c) {
   if (!ehCifrado(c.texto)) return c;
   const k = chaveEmCache(c.sonho_id);
-  if (!k) return { ...c, texto: '(comentário trancado)', _trancado: true };
-  try { return { ...c, texto: await decifrar(c.texto, k) }; } catch { return { ...c, texto: '(comentário trancado)', _trancado: true }; }
+  if (!k) return { ...c, texto: tr("(comentário trancado)"), _trancado: true };
+  try { return { ...c, texto: await decifrar(c.texto, k) }; } catch { return { ...c, texto: tr("(comentário trancado)"), _trancado: true }; }
 }
 async function fecharTexto(sonhoId, texto) {
   const k = chaveEmCache(sonhoId);
@@ -47,7 +48,7 @@ export async function comentar({ sonhoId, texto, privado = false, leitorEmail = 
   const { data, error } = await supabase.from('comentarios')
     .insert({ sonho_id: sonhoId, texto: await fecharTexto(sonhoId, texto.trim()), privado, leitor_email: leitorEmail || '' })
     .select().single();
-  if (error) throw new Error(semTabela(error) ? 'Os comentários ainda não estão ativos no banco (bloco 13 do schema.sql).' : error.message);
+  if (error) throw new Error(semTabela(error) ? tr("Os comentários ainda não estão ativos no banco (bloco 13 do schema.sql).") : error.message);
   return abrirTexto(data);
 }
 
@@ -83,9 +84,9 @@ export function quando(iso) {
   const d = new Date(iso);
   const hoje = new Date();
   const mesmoDia = d.toDateString() === hoje.toDateString();
-  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  if (mesmoDia) return 'hoje, ' + hora;
+  const hora = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  if (mesmoDia) return tr("hoje, ") + hora;
   const ontem = new Date(hoje); ontem.setDate(hoje.getDate() - 1);
-  if (d.toDateString() === ontem.toDateString()) return 'ontem, ' + hora;
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', ...(d.getFullYear() !== hoje.getFullYear() ? { year: 'numeric' } : {}) });
+  if (d.toDateString() === ontem.toDateString()) return tr("ontem, ") + hora;
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short', ...(d.getFullYear() !== hoje.getFullYear() ? { year: 'numeric' } : {}) });
 }

@@ -2,6 +2,7 @@ import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { tr } from '../lib/i18n.js';
 
 const G = () => (
   <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -19,12 +20,12 @@ export default function Entrar() {
       <div><Logo /></div>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <span className="rotulo">Caderno de sonhos</span>
-          <h1 className="titulo-m">{semViuvas('Entre para guardar seus sonhos em qualquer aparelho.')}</h1>
-          <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas('Com a conta, os sonhos e os áudios ficam salvos e aparecem no celular e no computador. Tudo vai trancado com uma frase-senha que só você sabe.')}</p>
-          <button className="btn btn-preto btn-grande" onClick={entrar} style={{ marginTop: 8 }}><span style={{ background: '#fff', borderRadius: 6, width: 26, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><G /></span> Entrar com Google</button>
-          <button className="btn btn-linha btn-grande" onClick={pularLogin}>Continuar sem conta</button>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas('Sem conta, tudo fica só neste aparelho. Quando você entrar depois, os sonhos vão junto para a conta.')}</p>
+          <span className="rotulo">{tr("Caderno de sonhos")}</span>
+          <h1 className="titulo-m">{semViuvas(tr("Entre para guardar seus sonhos em qualquer aparelho."))}</h1>
+          <p style={{ margin: 0, color: 'var(--muted)', lineHeight: 1.6 }}>{semViuvas(tr("Com a conta, os sonhos e os áudios ficam salvos e aparecem no celular e no computador. Tudo vai trancado com uma frase-senha que só você sabe."))}</p>
+          <button className="btn btn-preto btn-grande" onClick={entrar} style={{ marginTop: 8 }}><span style={{ background: '#fff', borderRadius: 6, width: 26, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><G /></span>{tr(" Entrar com Google")}</button>
+          <button className="btn btn-linha btn-grande" onClick={pularLogin}>{tr("Continuar sem conta")}</button>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{semViuvas(tr("Sem conta, tudo fica só neste aparelho. Quando você entrar depois, os sonhos vão junto para a conta."))}</p>
         </div>
       </div>
       <Assinatura />

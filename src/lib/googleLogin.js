@@ -2,6 +2,7 @@
 // O fluxo acontece aqui no site: a tela do Google mostra o nome do app/o nosso domínio,
 // e não o endereço do Supabase. O token volta para cá e é entregue ao Supabase.
 import { supabase } from './supabase.js';
+import { tr, locale } from './i18n.js';
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -22,7 +23,7 @@ export function carregarGoogle() {
     s.src = 'https://accounts.google.com/gsi/client';
     s.async = true;
     s.onload = () => ok(window.google);
-    s.onerror = () => { carregando = null; falha(new Error('Não deu para carregar o login do Google.')); };
+    s.onerror = () => { carregando = null; falha(new Error(tr("Não deu para carregar o login do Google."))); };
     document.head.appendChild(s);
   });
   return carregando;
@@ -54,7 +55,7 @@ export async function desenharBotaoGoogle(el, { aoEntrar, aoErro }) {
     shape: 'pill',
     text: 'continue_with',
     logo_alignment: 'left',
-    locale: 'pt-BR',
+    locale: locale,
     width: Math.min(el.clientWidth || 320, 400),
   });
 }

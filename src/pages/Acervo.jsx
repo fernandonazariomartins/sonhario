@@ -9,6 +9,7 @@ import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import { ehSenha } from '../lib/laboratorio.js';
 import Realce from '../components/Realce.jsx';
+import { tr, locale, ingles } from '../lib/i18n.js';
 
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
@@ -45,7 +46,7 @@ export function BotaoFavorito({ s, size = 18, style, aoMudar }) {
   const fav = !!s.favorito;
   return (
     <button type="button" className={'btn-favorito' + (fav ? ' ligado' : '')} aria-pressed={fav}
-      aria-label={fav ? 'Tirar dos favoritos' : 'Favoritar este sonho'} title={fav ? 'Tirar dos favoritos' : 'Favoritar'}
+      aria-label={fav ? tr("Tirar dos favoritos") : tr("Favoritar este sonho")} title={fav ? tr("Tirar dos favoritos") : tr("Favoritar")}
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (aoMudar) aoMudar(!fav); else salvar({ ...s, favorito: !fav }); }} style={style}>
       <Estrela size={size} cheia={fav} />
     </button>
@@ -56,7 +57,7 @@ export function BotaoFavorito({ s, size = 18, style, aoMudar }) {
 export function SinalComentarios({ r, cor = 'var(--muted)' }) {
   if (!r?.total) return null;
   const novo = r.novos > 0;
-  const titulo = novo ? (r.novos === 1 ? '1 comentário novo' : r.novos + ' comentários novos') : (r.total === 1 ? '1 comentário' : r.total + ' comentários');
+  const titulo = novo ? (r.novos === 1 ? tr("1 comentário novo") : r.novos + tr(" comentários novos")) : (r.total === 1 ? tr("1 comentário") : r.total + tr(" comentários"));
   return (
     <span title={titulo} aria-label={titulo} className={'sinal-coment' + (novo ? ' novo' : '')} style={novo ? undefined : { color: cor }}>
       <Mensagem size={12} w={2.4} />{novo ? r.novos : r.total}
@@ -76,17 +77,17 @@ export function Nota({ s, comTemas = true, para, achado, coment }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          {achado?.ocorrencias > 0 && <span className="contagem-achados" title="Vezes que a busca aparece neste sonho">{achado.ocorrencias}×</span>}
+          {achado?.ocorrencias > 0 && <span className="contagem-achados" title={tr("Vezes que a busca aparece neste sonho")}>{achado.ocorrencias}×</span>}
           <SinalComentarios r={rc} cor={c.rotulo} />
           {s.audio && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Mic size={12} w={2.4} />{duracao(s.audio.duracao)}</span>}
-          {(s.imagens || []).length > 0 && <span title={s.imagens.length === 1 ? '1 imagem' : s.imagens.length + ' imagens'} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Imagem size={12} w={2.4} />{s.imagens.length > 1 && s.imagens.length}</span>}
-          {!para ? <BotaoFavorito s={s} size={16} style={{ margin: '-6px -6px -6px 0' }} /> : s.favorito && <span className="btn-favorito ligado" aria-label="Favorito"><Estrela size={16} cheia /></span>}
+          {(s.imagens || []).length > 0 && <span title={s.imagens.length === 1 ? tr("1 imagem") : s.imagens.length + tr(' imagens')} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: c.rotulo }}><Imagem size={12} w={2.4} />{s.imagens.length > 1 && s.imagens.length}</span>}
+          {!para ? <BotaoFavorito s={s} size={16} style={{ margin: '-6px -6px -6px 0' }} /> : s.favorito && <span className="btn-favorito ligado" aria-label={tr("Favorito")}><Estrela size={16} cheia /></span>}
         </span>
       </div>
       {s.titulo?.trim() && <h3><Realce texto={s.titulo} termos={termos} /></h3>}
       {achado?.trecho
-        ? <p>{achado.onde === 'amplificacoes' && <span className="rotulo-forte" style={{ display: 'block', color: c.rotulo, fontFamily: 'var(--sans, inherit)', fontStyle: 'normal' }}>Nas amplificações</span>}<Realce texto={achado.trecho} termos={termos} /></p>
-        : s.texto ? <p><Realce texto={s.texto} termos={termos} /></p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? 'Só o áudio' : (s.imagens || []).length ? 'Só a imagem' : 'Sem título'}</p>}
+        ? <p>{achado.onde === 'amplificacoes' && <span className="rotulo-forte" style={{ display: 'block', color: c.rotulo, fontFamily: 'var(--sans, inherit)', fontStyle: 'normal' }}>{tr("Nas amplificações")}</span>}<Realce texto={achado.trecho} termos={termos} /></p>
+        : s.texto ? <p><Realce texto={s.texto} termos={termos} /></p> : !s.titulo?.trim() && <p style={{ color: c.rotulo, fontStyle: 'italic' }}>{s.audio ? tr("Só o áudio") : (s.imagens || []).length ? tr("Só a imagem") : tr("Sem título")}</p>}
       {comTemas && s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}><Realce texto={t} termos={termos} viuvas={false} /></span>)}</div>}
       <Status s={s.status} cor={c.rotulo} />
     </Link>
@@ -101,7 +102,7 @@ export function NotaExemplo({ s, aoAbrir }) {
     <button type="button" className="nota exemplo" style={{ background: c.fundo }} onClick={() => aoAbrir(s)}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span className="rotulo-forte" style={{ color: c.rotulo }}>{dataCurta(s.sonhado_em)}</span>
-        <span className="selo-exemplo">exemplo</span>
+        <span className="selo-exemplo">{tr("exemplo")}</span>
       </div>
       {s.titulo?.trim() && <h3>{semViuvas(s.titulo)}</h3>}
       <p>{semViuvas(s.texto)}</p>
@@ -114,16 +115,16 @@ export function NotaExemplo({ s, aoAbrir }) {
 function SonhoExemplo({ s, aoFechar }) {
   const estiloTema = useCorTema();
   return (
-    <Janela titulo={s.titulo?.trim() || 'Sem título'} aoFechar={aoFechar}>
+    <Janela titulo={s.titulo?.trim() || tr("Sem título")} aoFechar={aoFechar}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-        <span className="selo-exemplo">exemplo</span>
+        <span className="selo-exemplo">{tr("exemplo")}</span>
         <span className="rotulo">{dataLonga(s.sonhado_em)}</span>
       </div>
       {s.temas?.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{s.temas.map((t) => <span key={t} className="chip" style={estiloTema(t)}>{t}</span>)}</div>}
       <p className="leitura" style={{ margin: 0 }}>{semViuvas(s.texto)}</p>
       {s.conclusoes?.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <span className="rotulo">Amplificações</span>
+          <span className="rotulo">{tr("Amplificações")}</span>
           {s.conclusoes.map((c) => (
             <div key={c.id} style={{ background: 'var(--cinza)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{dataCurta(c.em || s.sonhado_em)}</span>
@@ -132,29 +133,29 @@ function SonhoExemplo({ s, aoFechar }) {
           ))}
         </div>
       )}
-      <div className="aviso" style={{ background: 'var(--cinza)', color: 'var(--ink)' }}>{semViuvas('Este sonho é um exemplo. Ele não está salvo no seu acervo e some sozinho conforme você registra os seus.')}</div>
-      <Link className="btn btn-azul" to="/app">Registrar um sonho meu</Link>
+      <div className="aviso" style={{ background: 'var(--cinza)', color: 'var(--ink)' }}>{semViuvas(tr("Este sonho é um exemplo. Ele não está salvo no seu acervo e some sozinho conforme você registra os seus."))}</div>
+      <Link className="btn btn-azul" to="/app">{tr("Registrar um sonho meu")}</Link>
     </Janela>
   );
 }
 
 function FaixaExemplos({ n, semSonhos, aoEsconder }) {
-  const faltam = n === 1 ? 'mais 1 sonho seu' : 'mais ' + n + ' sonhos seus';
+  const faltam = n === 1 ? tr("mais 1 sonho seu") : 'mais ' + n + tr(" sonhos seus");
   return (
     <div className="faixa-exemplos">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: '1 1 320px', minWidth: 0 }}>
-        <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{semSonhos ? 'Seu acervo ainda está vazio' : (n === 1 ? 'Resta 1 exemplo' : 'Restam ' + n + ' exemplos')}</span>
+        <span className="rotulo-forte" style={{ color: 'var(--muted)' }}>{semSonhos ? tr("Seu acervo ainda está vazio") : (n === 1 ? tr("Resta 1 exemplo") : tr("Restam ") + n + tr(' exemplos'))}</span>
         <h2 style={{ fontSize: 22, fontWeight: 400, letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-          {semViuvas(semSonhos ? `Estes ${n} sonhos são exemplos, não são seus` : 'Os exemplos estão saindo para dar lugar aos seus sonhos')}
+          {semViuvas(semSonhos ? tr("Estes {0} sonhos são exemplos, não são seus", [n]) : tr("Os exemplos estão saindo para dar lugar aos seus sonhos"))}
         </h2>
         <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: 'var(--muted)', maxWidth: 620 }}>
-          {semViuvas(`Eles servem para mostrar como o acervo fica. Não estão salvos na sua conta e saem um a um: a cada sonho que você registra, um exemplo some. Com ${faltam}, não sobra nenhum.`)}
+          {semViuvas(tr("Eles servem para mostrar como o acervo fica. Não estão salvos na sua conta e saem um a um: a cada sonho que você registra, um exemplo some. Com {0}, não sobra nenhum.", [faltam]))}
         </p>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <Link className="btn btn-azul" to="/app">Registrar um sonho</Link>
-        {semSonhos && <Link className="btn btn-linha" to="/app/importar">Importar do Notion ou do Keep</Link>}
-        <button type="button" className="btn" onClick={aoEsconder} style={{ background: 'transparent', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: 3, padding: '0 8px' }}>Esconder exemplos</button>
+        <Link className="btn btn-azul" to="/app">{tr("Registrar um sonho")}</Link>
+        {semSonhos && <Link className="btn btn-linha" to="/app/importar">{tr("Importar do Notion ou do Keep")}</Link>}
+        <button type="button" className="btn" onClick={aoEsconder} style={{ background: 'transparent', color: 'var(--muted)', textDecoration: 'underline', textUnderlineOffset: 3, padding: '0 8px' }}>{tr("Esconder exemplos")}</button>
       </div>
     </div>
   );
@@ -164,7 +165,7 @@ function FaixaExemplos({ n, semSonhos, aoEsconder }) {
 function Carregando() {
   return (
     <div role="status" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <p className="carregando-resto"><span className="girando" aria-hidden="true" />{semViuvas('Abrindo seus sonhos…')}</p>
+      <p className="carregando-resto"><span className="girando" aria-hidden="true" />{semViuvas(tr("Abrindo seus sonhos…"))}</p>
       <div className="esqueleto" aria-hidden="true">
         {[150, 220, 120, 190, 170, 130, 210, 160].map((h, i) => <div key={i} className="esqueleto-nota" style={{ height: h }} />)}
       </div>
@@ -175,11 +176,11 @@ function Carregando() {
 function Vazio() {
   return (
     <div className="painel" style={{ padding: 32, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <h2 className="titulo-m">Seu primeiro sonho começa amanhã cedo</h2>
-      <p style={{ margin: 0, color: 'var(--muted)', maxWidth: 420, lineHeight: 1.6 }}>{semViuvas('Deixe o celular perto da cama. Ao acordar, abra o Sonhário e fale o que lembrar. Já anota em outro lugar? Traga os seus sonhos.')}</p>
+      <h2 className="titulo-m">{tr("Seu primeiro sonho começa amanhã cedo")}</h2>
+      <p style={{ margin: 0, color: 'var(--muted)', maxWidth: 420, lineHeight: 1.6 }}>{semViuvas(tr("Deixe o celular perto da cama. Ao acordar, abra o Sonhário e fale o que lembrar. Já anota em outro lugar? Traga os seus sonhos."))}</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Link className="btn btn-azul" to="/app">Registrar um sonho</Link>
-        <Link className="btn btn-linha" to="/app/importar">Importar do Notion ou do Keep</Link>
+        <Link className="btn btn-azul" to="/app">{tr("Registrar um sonho")}</Link>
+        <Link className="btn btn-linha" to="/app/importar">{tr("Importar do Notion ou do Keep")}</Link>
       </div>
     </div>
   );
@@ -210,7 +211,7 @@ export default function Acervo() {
     if (ehSenha(q)) {
       setBuscaLocal('');
       if (!laboratorio) mudarLaboratorio(true);
-      avisar(laboratorio ? 'O laboratório já está aberto.' : 'Laboratório onírico aberto.');
+      avisar(laboratorio ? tr("O laboratório já está aberto.") : tr("Laboratório onírico aberto."));
       navigate('/app/observacoes#laboratorio');
       return;
     }
@@ -323,15 +324,15 @@ export default function Acervo() {
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', padding: '24px 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 0 || !carregado ? 'Seu acervo' : sonhos.length === 1 ? '1 sonho' : sonhos.length + ' sonhos'}</h1>
-        <label className="busca"><Busca size={18} /><span className="sr">Buscar nos sonhos</span>
+        <h1 className="titulo-m" style={{ marginRight: 'auto' }}>{sonhos.length === 0 || !carregado ? tr("Seu acervo") : sonhos.length === 1 ? tr("1 sonho") : sonhos.length + tr(' sonhos')}</h1>
+        <label className="busca"><Busca size={18} /><span className="sr">{tr("Buscar nos sonhos")}</span>
           <input ref={campoBusca} type="search" value={busca} onChange={(e) => setBusca(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Escape') { setBusca(''); e.currentTarget.blur(); } }}
-            placeholder="Buscar: palavra, pessoa, lugar" enterKeyHint="search" autoComplete="off" spellCheck={false} />
-          {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label="Limpar busca">×</button>
+            placeholder={tr("Buscar: palavra, pessoa, lugar")} enterKeyHint="search" autoComplete="off" spellCheck={false} />
+          {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label={tr("Limpar busca")}>×</button>
             : <kbd className="busca-atalho" aria-hidden="true">/</kbd>}
         </label>
-        <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}</div>
+        <div className="vistas" role="group" aria-label={tr("Visualização")}>{aba('mural', Mural, tr("Mural"))}{aba('lista', Lista, tr("Lista"))}{aba('calendario', IconeCalendario, tr("Calendário"))}{aba('temas', Tema, tr("Temas"))}</div>
       </div>
 
       {!carregado && sonhos.length === 0 ? <Carregando /> : sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
@@ -339,25 +340,25 @@ export default function Acervo() {
           {!consulta.vazia && (
             <div className="busca-resumo" role="status">
               <span>
-                <strong>{filtrados.length === 1 ? '1 sonho' : filtrados.length + ' sonhos'}</strong>
-                {consulta.termos.length > 0 && <> com {consulta.termos.map((t, i) => <span key={t}>{i > 0 && (i === consulta.termos.length - 1 ? ' e ' : ', ')}<mark className="achado">{t}</mark></span>)}</>}
-                {consulta.excluir.length > 0 && <> sem {consulta.excluir.join(', ')}</>}
-                {totalOcorrencias > 0 && <span style={{ color: 'var(--muted)' }}> · {totalOcorrencias === 1 ? '1 ocorrência' : totalOcorrencias + ' ocorrências'}</span>}
+                <strong>{filtrados.length === 1 ? tr("1 sonho") : filtrados.length + tr(' sonhos')}</strong>
+                {consulta.termos.length > 0 && <>{tr(" com ")}{consulta.termos.map((t, i) => <span key={t}>{i > 0 && (i === consulta.termos.length - 1 ? tr(' e ') : ', ')}<mark className="achado">{t}</mark></span>)}</>}
+                {consulta.excluir.length > 0 && <>{tr(" sem ")}{consulta.excluir.join(', ')}</>}
+                {totalOcorrencias > 0 && <span style={{ color: 'var(--muted)' }}> · {totalOcorrencias === 1 ? tr("1 ocorrência") : totalOcorrencias + tr(" ocorrências")}</span>}
               </span>
-              <span className="busca-dica">{semViuvas('"entre aspas" acha a expressão exata; -palavra tira da busca')}</span>
+              <span className="busca-dica">{semViuvas(tr("\"entre aspas\" acha a expressão exata; -palavra tira da busca"))}</span>
             </div>
           )}
           {temaFiltro && vista !== 'temas' && (
             <div className="busca-resumo" role="status">
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <strong>{filtrados.length === 1 ? '1 sonho' : filtrados.length + ' sonhos'}</strong> com o tema
+                <strong>{filtrados.length === 1 ? tr("1 sonho") : filtrados.length + tr(' sonhos')}</strong>{tr(" com o tema")}
                 <span className="chip" style={{ ...estiloTema(temaFiltro), height: 28, fontSize: 14 }}>{temaFiltro}</span>
               </span>
-              <button type="button" className="btn btn-linha" style={{ minHeight: 34 }} onClick={tirarTema}><Fechar size={12} /> Ver todos</button>
+              <button type="button" className="btn btn-linha" style={{ minHeight: 34 }} onClick={tirarTema}><Fechar size={12} />{tr(" Ver todos")}</button>
             </div>
           )}
 
-          {!carregado && <p className="carregando-resto" role="status"><span className="girando" aria-hidden="true" />{semViuvas('Abrindo o resto do acervo…')}</p>}
+          {!carregado && <p className="carregando-resto" role="status"><span className="girando" aria-hidden="true" />{semViuvas(tr("Abrindo o resto do acervo…"))}</p>}
           {/* Linha do tempo à esquerda e filtros à direita, numa linha só quando cabe. */}
           {carregado && <div className="barra-periodo">
           {(vista === 'mural' || vista === 'lista') && filtrados.length > 0 && (anos.length > 1 || filtrados.length > POR_VEZ) && (
@@ -370,21 +371,21 @@ export default function Acervo() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8, marginLeft: 'auto' }}>
               {nFavoritos > 0 && (
                 <button type="button" className="btn btn-linha filtro" onClick={() => { setSoFavoritos(!soFavoritos); voltarPrimeira(); }} aria-pressed={soFavoritos} style={{ minHeight: 36, background: soFavoritos ? '#FFF4D6' : '#fff' }}>
-                  <span style={{ color: '#C98A00', display: 'inline-flex' }}><Estrela size={15} cheia /></span>favoritos · {nFavoritos}
+                  <span style={{ color: '#C98A00', display: 'inline-flex' }}><Estrela size={15} cheia /></span>{tr("favoritos · ")}{nFavoritos}
                 </button>
               )}
               {semTitulo > 0 && (
                 <button type="button" className="btn btn-linha filtro" onClick={() => { setSoSemTitulo(!soSemTitulo); voltarPrimeira(); }} aria-pressed={soSemTitulo} style={{ minHeight: 36, background: soSemTitulo ? 'var(--cinza)' : '#fff' }}>
-                  <span className="filtro-icone"><Titulo size={14} /></span>sem título · {semTitulo}
+                  <span className="filtro-icone"><Titulo size={14} /></span>{tr("sem título · ")}{semTitulo}
                 </button>
               )}
               {semTema > 0 && (
                 <button type="button" className="btn btn-linha filtro" onClick={() => { setSoSemTema(!soSemTema); voltarPrimeira(); }} aria-pressed={soSemTema} style={{ minHeight: 36, background: soSemTema ? 'var(--cinza)' : '#fff' }}>
-                  <span className="filtro-icone"><Tema size={14} /></span>sem tema · {semTema}
+                  <span className="filtro-icone"><Tema size={14} /></span>{tr("sem tema · ")}{semTema}
                 </button>
               )}
               {sonhos.some((x) => x.status === 'dar_atencao') && <button type="button" className="btn btn-linha filtro" onClick={() => { setSoAtencao(!soAtencao); voltarPrimeira(); }} aria-pressed={soAtencao} style={{ minHeight: 36, background: soAtencao ? 'var(--warn-bg)' : '#fff' }}>
-                <span className="ponto" style={{ background: STATUS.dar_atencao.cor }} />só “dar atenção”
+                <span className="ponto" style={{ background: STATUS.dar_atencao.cor }} />{tr("só “dar atenção”")}
               </button>}
             </div>
           )}
@@ -395,17 +396,17 @@ export default function Acervo() {
             renderSonhos={(l) => <MuralEmLinhas>{l.map((s) => <Nota key={s.id} s={s} achado={achados.get(s.id)} />)}</MuralEmLinhas>} />}
           {(vista === 'mural' || vista === 'lista') && doPeriodo.length > limite && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0 8px' }}>
-              <button type="button" className="btn btn-linha" onClick={() => setLimite((n) => n + POR_VEZ)}>Mostrar mais {Math.min(POR_VEZ, doPeriodo.length - limite)}</button>
-              <span style={{ fontSize: 13, color: 'var(--muted)' }}>{limite} de {doPeriodo.length}</span>
+              <button type="button" className="btn btn-linha" onClick={() => setLimite((n) => n + POR_VEZ)}>{tr("Mostrar mais ")}{Math.min(POR_VEZ, doPeriodo.length - limite)}</button>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>{tr("{0} de {1}", [limite, doPeriodo.length])}</span>
             </div>
           )}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} achados={achados} />}
-          {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? 'Nenhum sonho com esse filtro.' : semViuvas('Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras.')}</p>}
+          {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? tr("Nenhum sonho com esse filtro.") : semViuvas(tr("Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras."))}</p>}
         </>
       )}
 
       {mostrarExemplos && (
-        <section aria-label="Sonhos de exemplo" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: sonhos.length ? 12 : 0 }}>
+        <section aria-label={tr("Sonhos de exemplo")} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: sonhos.length ? 12 : 0 }}>
           <FaixaExemplos n={exemplos.length} semSonhos={sonhos.length === 0} aoEsconder={esconderExemplos} />
           <MuralEmLinhas>{exemplos.map((s) => <NotaExemplo key={s.id} s={s} aoAbrir={setExemploAberto} />)}</MuralEmLinhas>
         </section>
@@ -424,7 +425,7 @@ function ListaSonhos({ sonhos, achados }) {
     <div className="painel" style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
         <thead>
-          <tr>{['Data', 'Sonho', 'Temas', 'Status', 'Áudio'].map((h) => <th key={h} className="rotulo" style={{ textAlign: 'left', padding: '10px 14px', borderBottom: '1px solid var(--line)', background: '#F7F8FA' }}>{h}</th>)}</tr>
+          <tr>{[tr("Data"), tr("Sonho"), tr("Temas"), tr("Status"), tr("Áudio")].map((h) => <th key={h} className="rotulo" style={{ textAlign: 'left', padding: '10px 14px', borderBottom: '1px solid var(--line)', background: '#F7F8FA' }}>{h}</th>)}</tr>
         </thead>
         <tbody>
           {sonhos.map((s) => {
@@ -435,14 +436,14 @@ function ListaSonhos({ sonhos, achados }) {
             return [
               cab && <tr key={'m' + m}><td colSpan={5} className="rotulo" style={{ padding: '16px 14px 8px' }}>{m}</td></tr>,
               <tr key={s.id} className="linha-clicavel" onClick={(e) => { if (!e.target.closest('a')) navegar('/app/sonho/' + s.id); }} style={{ borderBottom: '1px solid var(--line)' }}>
-                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString('pt-BR')}</td>
+                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 600, fontSize: 13 }}>{new Date(s.sonhado_em).toLocaleDateString(locale)}</td>
                 <td style={{ padding: '12px 14px' }}>
-                  {s.favorito && <span style={{ color: '#C98A00', marginRight: 6, verticalAlign: '-2px', display: 'inline-flex' }} aria-label="Favorito"><Estrela size={15} cheia /></span>}
-                  <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Sem título</span>}</Link>
+                  {s.favorito && <span style={{ color: '#C98A00', marginRight: 6, verticalAlign: '-2px', display: 'inline-flex' }} aria-label={tr("Favorito")}><Estrela size={15} cheia /></span>}
+                  <Link to={'/app/sonho/' + s.id} style={{ color: 'var(--ink)', fontWeight: 800, textDecoration: 'none' }}>{s.titulo?.trim() ? <Realce texto={s.titulo} termos={termos} viuvas={false} /> : <span style={{ color: 'var(--muted)', fontWeight: 600 }}>{tr("Sem título")}</span>}</Link>
                   {a?.ocorrencias > 0 && <span className="contagem-achados" style={{ marginLeft: 8 }}>{a.ocorrencias}×</span>}
                   {comentarios?.[s.id] && <span style={{ marginLeft: 8, verticalAlign: '1px' }}><SinalComentarios r={comentarios[s.id]} /></span>}
                   {(a?.trecho || s.texto) && <div style={{ fontFamily: 'var(--serif)', color: 'var(--muted)', fontSize: 13, marginTop: 2, maxWidth: 520, ...(a?.trecho ? { lineHeight: 1.5 } : { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }) }}>
-                    {a?.onde === 'amplificacoes' && <strong style={{ fontFamily: 'inherit' }}>Nas amplificações: </strong>}
+                    {a?.onde === 'amplificacoes' && <strong style={{ fontFamily: 'inherit' }}>{tr("Nas amplificações: ")}</strong>}
                     <Realce texto={a?.trecho || s.texto} termos={termos} viuvas={false} />
                   </div>}
                 </td>
@@ -480,21 +481,21 @@ function JuntarTemas({ temas, aoFechar }) {
 
   async function juntar() {
     if (!pode) return;
-    const msg = marcados.length === 1 ? `Renomear “${marcados[0]}” para “${final}” em ${afetados.length === 1 ? '1 sonho' : afetados.length + ' sonhos'}?`
-      : `Juntar ${marcados.length} temas em “${final}”? Muda ${afetados.length === 1 ? '1 sonho' : afetados.length + ' sonhos'}.`;
+    const msg = marcados.length === 1 ? tr("Renomear “{0}” para “{1}” em {2}?", [marcados[0], final, afetados.length === 1 ? tr('1 sonho') : afetados.length + tr(' sonhos')])
+      : tr("Juntar {0} temas em “{1}”? Muda {2}.", [marcados.length, final, afetados.length === 1 ? tr('1 sonho') : afetados.length + tr(' sonhos')]);
     if (!confirm(msg)) return;
     setOcupado(true);
     const novos = afetados.map((s) => ({ ...s, temas: [...new Set(s.temas.map((t) => (marcados.includes(t) ? final : t)))] }));
     await salvarVarios(novos);
     setOcupado(false);
-    avisar(marcados.length === 1 ? 'Tema renomeado' : marcados.length + ' temas viraram “' + final + '”');
+    avisar(marcados.length === 1 ? tr("Tema renomeado") : marcados.length + tr(" temas viraram “") + final + '”');
     aoFechar();
   }
 
   return (
-    <Janela titulo="Juntar ou renomear temas" aoFechar={aoFechar}>
-      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas('Marque os temas que são a mesma coisa (ex.: “mãe” e “minha mãe”) e escolha o nome que fica. Para renomear, marque só um.')}</p>
-      {temas.length > 12 && <input className="campo" value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Procurar tema" style={{ fontSize: 16 }} />}
+    <Janela titulo={tr("Juntar ou renomear temas")} aoFechar={aoFechar}>
+      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: 'var(--muted)' }}>{semViuvas(tr("Marque os temas que são a mesma coisa (ex.: “mãe” e “minha mãe”) e escolha o nome que fica. Para renomear, marque só um."))}</p>
+      {temas.length > 12 && <input className="campo" value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder={tr("Procurar tema")} style={{ fontSize: 16 }} />}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 280, overflowY: 'auto', padding: 2 }}>
         {visiveis.map((t) => { const on = marcados.includes(t.nome); return (
           <button key={t.nome} type="button" aria-pressed={on} onClick={() => alternar(t.nome)}
@@ -505,15 +506,15 @@ function JuntarTemas({ temas, aoFechar }) {
       </div>
       {marcados.length > 0 && (
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 700 }}>
-          {marcados.length === 1 ? 'Novo nome' : 'Nome do tema que fica'}
+          {marcados.length === 1 ? tr("Novo nome") : tr("Nome do tema que fica")}
           <input className="campo" value={nome} onChange={(e) => setNome(e.target.value)} list="temas-juntar" style={{ fontWeight: 400, fontSize: 16 }} />
           <datalist id="temas-juntar">{marcados.map((t) => <option key={t} value={t} />)}</datalist>
         </label>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" className="btn btn-linha" onClick={aoFechar}>Cancelar</button>
+        <button type="button" className="btn btn-linha" onClick={aoFechar}>{tr("Cancelar")}</button>
         <button type="button" className="btn btn-azul" onClick={juntar} disabled={!pode || ocupado}>
-          {ocupado ? 'Salvando…' : marcados.length > 1 ? `Juntar ${marcados.length} temas` : 'Renomear'}
+          {ocupado ? tr("Salvando…") : marcados.length > 1 ? tr("Juntar {0} temas", [marcados.length]) : tr("Renomear")}
         </button>
       </div>
     </Janela>
@@ -532,10 +533,10 @@ function PorTema({ sonhos, temas, achados }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <aside className="painel" style={{ flex: '1 1 220px', maxWidth: 280, padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span className="rotulo" style={{ margin: '0 8px 8px' }}>Temas por frequência</span>
-        {temas.length > 1 && <button type="button" className="btn btn-tracejado" style={{ margin: '0 8px 10px', minHeight: 36, fontSize: 13 }} onClick={() => setJuntando(true)}>Juntar ou renomear temas</button>}
+        <span className="rotulo" style={{ margin: '0 8px 8px' }}>{tr("Temas por frequência")}</span>
+        {temas.length > 1 && <button type="button" className="btn btn-tracejado" style={{ margin: '0 8px 10px', minHeight: 36, fontSize: 13 }} onClick={() => setJuntando(true)}>{tr("Juntar ou renomear temas")}</button>}
         {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} onClick={(e) => { e.preventDefault(); document.getElementById('tema-' + encodeURIComponent(t.nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}><span className="chip" style={estiloTema(t.nome)}>{t.nome}</span><span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
-        {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{semTema.length} sem tema.</strong> <Link to="/app/acervo?st=1" style={{ color: 'inherit' }}>Ver só esses</Link> e abrir cada um para etiquetar.</div>}
+        {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{tr("{0} sem tema.", [semTema.length])}</strong> <Link to="/app/acervo?st=1" style={{ color: 'inherit' }}>{tr("Ver só esses")}</Link>{tr(" e abrir cada um para etiquetar.")}</div>}
       </aside>
       {juntando && <JuntarTemas temas={temas} aoFechar={() => setJuntando(false)} />}
       <div style={{ flex: '999 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -547,12 +548,12 @@ function PorTema({ sonhos, temas, achados }) {
             <section key={t.nome} id={'tema-' + encodeURIComponent(t.nome)} className="painel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 84 }}>
               <div>
                 <h2 className="titulo-m" style={{ fontSize: 32 }}><span style={{ ...estiloTema(t.nome), padding: '0 10px', borderRadius: 6 }}>{t.nome}</span></h2>
-                <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? tr("1 sonho") : lista.length + tr(' sonhos')}{tr(" · desde ")}{ingles ? mesAno(desde) : mesAno(desde).toLowerCase()}{tr(" · o último em ")}{dataCurta(lista[0].sonhado_em)}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {lista.slice(0, achados?.size ? 24 : 8).map((s) => <Nota key={s.id} s={s} comTemas achado={achados?.get(s.id)} />)}
               </div>
-              {lista.length > (achados?.size ? 24 : 8) && <Link className="btn btn-linha" style={{ alignSelf: 'flex-start' }} to={'/app/acervo?tema=' + encodeURIComponent(t.nome)}>Ver os {lista.length} sonhos</Link>}
+              {lista.length > (achados?.size ? 24 : 8) && <Link className="btn btn-linha" style={{ alignSelf: 'flex-start' }} to={'/app/acervo?tema=' + encodeURIComponent(t.nome)}>{tr("Ver os {0} sonhos", [lista.length])}</Link>}
             </section>
           );
         })}

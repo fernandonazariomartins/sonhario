@@ -7,6 +7,7 @@ import { supabase, AUDIO_BUCKET, IMAGEM_BUCKET } from './supabase.js';
 import { cifrar, decifrar, cifrarArquivo, decifrarArquivo, sonhoDoArquivo } from './cripto.js';
 import * as cofre from './cofre.js';
 import { tipoPorNome } from './midia.js';
+import { tr } from './i18n.js';
 
 const CHAVE = 'sonhario:sonhos';
 const CAMPOS = ['id', 'sonhado_em', 'criado_em', 'atualizado_em', 'titulo', 'texto', 'temas', 'status', 'cor', 'conclusoes', 'levar_sessao', 'audio', 'favorito'];
@@ -123,14 +124,14 @@ function linha(s, userId) {
 async function podeTrancar() {
   await cofre.esperarCofre();
   if (cofre.estadoDoCofre() === 'indisponivel') return false; // banco sem o bloco 14: como antes
-  if (!cofre.temPublica()) throw new Error('o cofre não abriu, e o sonho não sai aberto do aparelho. Tente de novo.');
+  if (!cofre.temPublica()) throw new Error(tr("o cofre não abriu, e o sonho não sai aberto do aparelho. Tente de novo."));
   return true;
 }
 
 async function fechar(s, userId) {
   const o = linha(s, userId);
   if (!(await podeTrancar())) return o;
-  if (s._trancado) throw new Error('Este sonho não abriu neste aparelho; recarregue antes de mexer nele.');
+  if (s._trancado) throw new Error(tr("Este sonho não abriu neste aparelho; recarregue antes de mexer nele."));
   const k = await cofre.chaveParaSalvar(s.id);
   o.cifrado = await cifrar({ titulo: s.titulo || '', texto: s.texto || '', temas: s.temas || [] }, k);
   o.cifrado_amp = await cifrar(s.conclusoes || [], k);
@@ -275,7 +276,7 @@ export function remoto(userId) {
     // Para cada sonho: primeiro grava o texto trancado (com a chave), depois troca os arquivos.
     // Se parar no meio, o que já foi fica trancado e o resto continua legível, como antes.
     async trancarTodos(lista, aoAvancar = () => {}) {
-      if (!cofre.temPublica()) throw new Error('Crie a frase-senha antes.');
+      if (!cofre.temPublica()) throw new Error(tr("Crie a frase-senha antes."));
       const faltam = lista.filter((s) => !s._cifrado && !s._trancado);
       let feitos = 0;
       const falhas = [];

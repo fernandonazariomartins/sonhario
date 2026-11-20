@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCorTema } from '../lib/estado.jsx';
 import { semViuvas } from '../lib/tipografia.js';
+import { tr, dataCurta } from '../lib/i18n.js';
 
-const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-const data = (ms) => { const d = new Date(ms); return d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + d.getFullYear(); };
-const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+const data = (ms) => dataCurta(ms);
+const plural = (n, um, varios) => n + ' ' + tr(n === 1 ? um : varios);
 const rotuloDe = (l) => l.tema || l.palavra;
 const linkDe = (l) => (l.tema ? '/app/acervo?tema=' + encodeURIComponent(l.tema) : '/app/acervo?q=' + encodeURIComponent(l.palavra));
 
@@ -41,7 +41,7 @@ function Grafo({ pessoas, sel, setSel }) {
   const atual = pessoas[sel];
   const ligadosAtual = new Set(atual?.ligados.map((l) => l.chave));
   return (
-    <svg viewBox={'0 0 620 ' + alto} width="100%" role="img" aria-label="Pessoas ligadas às imagens que aparecem nos mesmos sonhos" style={{ display: 'block', maxHeight: 440 }}>
+    <svg viewBox={'0 0 620 ' + alto} width="100%" role="img" aria-label={tr("Pessoas ligadas às imagens que aparecem nos mesmos sonhos")} style={{ display: 'block', maxHeight: 440 }}>
       {pessoas.map((p, i) => p.ligados.map((l) => {
         const j = simbolos.findIndex((s) => s.chave === l.chave);
         if (j < 0) return null;
@@ -82,11 +82,11 @@ function Faixa({ sonhos, periodo }) {
   const pos = (ms) => Math.min(100, Math.max(0, ((ms - periodo.ini) / span) * 100));
   return (
     <div>
-      <div style={{ position: 'relative', height: 26, background: 'var(--cinza)', borderRadius: 8 }} role="img" aria-label={'Aparece em ' + sonhos.length + ' sonhos ao longo do acervo'}>
+      <div style={{ position: 'relative', height: 26, background: 'var(--cinza)', borderRadius: 8 }} role="img" aria-label={tr("Aparece em ") + sonhos.length + tr(" sonhos ao longo do acervo")}>
         {sonhos.map((s) => <span key={s.id} title={data(s.em)} style={{ position: 'absolute', top: 5, bottom: 5, left: pos(s.em) + '%', width: 3, marginLeft: -1.5, borderRadius: 2, background: 'var(--azul)' }} />)}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>
-        <span>{new Date(periodo.ini).getFullYear()}</span><span>hoje</span>
+        <span>{new Date(periodo.ini).getFullYear()}</span><span>{tr("hoje")}</span>
       </div>
     </div>
   );
@@ -101,7 +101,7 @@ function Detalhe({ p, periodo, rotulo }) {
       <div>
         <Link to={p.ehTag ? '/app/acervo?tema=' + encodeURIComponent(p.nome) : '/app/acervo?q=' + encodeURIComponent(p.nome)} style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{p.nome}</Link>
         <p style={{ margin: '2px 0 0', fontSize: 13.5, color: 'var(--muted)' }}>
-          {semViuvas('em ' + plural(p.n, 'sonho', 'sonhos') + (p.peloNome ? ', pelo nome' : '') + ' · primeira vez em ' + data(p.sonhos[0].em) + (p.n > 1 ? ' · a mais recente em ' + data(p.sonhos[p.sonhos.length - 1].em) : ''))}
+          {semViuvas(tr('em ') + plural(p.n, 'sonho', 'sonhos') + (p.peloNome ? tr(", pelo nome") : '') + tr(" · primeira vez em ") + data(p.sonhos[0].em) + (p.n > 1 ? tr(" · a mais recente em ") + data(p.sonhos[p.sonhos.length - 1].em) : ''))}
         </p>
       </div>
       <Faixa sonhos={p.sonhos} periodo={periodo} />
@@ -114,21 +114,21 @@ function Detalhe({ p, periodo, rotulo }) {
               <span style={{ height: 10, borderRadius: 5, background: 'var(--cinza)', overflow: 'hidden' }}>
                 <span style={{ display: 'block', height: '100%', width: (l.n / max) * 100 + '%', background: l.tema ? 'var(--azul)' : 'var(--azul-cinza)', borderRadius: 5 }} />
               </span>
-              <span style={{ fontSize: 12.5, color: 'var(--muted)', minWidth: 56, textAlign: 'right' }}>{l.n} de {p.n}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--muted)', minWidth: 56, textAlign: 'right' }}>{tr("{0} de {1}", [l.n, p.n])}</span>
             </Link>
           ))}
         </div>
-      ) : <p style={{ margin: 0, fontSize: 13.5, color: 'var(--muted)' }}>{semViuvas('Ainda nenhuma imagem se repete nos sonhos com essa pessoa.')}</p>}
+      ) : <p style={{ margin: 0, fontSize: 13.5, color: 'var(--muted)' }}>{semViuvas(tr("Ainda nenhuma imagem se repete nos sonhos com essa pessoa."))}</p>}
       {p.junto.length > 0 && (
         <p style={{ margin: 0, fontSize: 13.5, color: 'var(--muted)' }}>
-          Aparece junto com {p.junto.map((o, i) => <span key={o.nome}>{i ? ', ' : ''}<strong style={{ color: 'var(--ink)' }}>{o.nome}</strong> ({o.n})</span>)}
+          {tr("Aparece junto com ")}{p.junto.map((o, i) => <span key={o.nome}>{i ? ', ' : ''}<strong style={{ color: 'var(--ink)' }}>{o.nome}</strong> ({o.n})</span>)}
         </p>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span className="rotulo">Sonhos mais recentes com {p.nome}</span>
+        <span className="rotulo">{tr("Sonhos mais recentes com {0}", [p.nome])}</span>
         {ultimos.map((s) => (
           <Link key={s.id} to={'/app/sonho/' + s.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 14, color: 'var(--ink)', textDecoration: 'none', padding: '4px 0', borderBottom: '1px solid var(--line)' }}>
-            <strong style={{ fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: s.titulo ? 'var(--ink)' : 'var(--muted)' }}>{s.titulo || 'Sem título'}</strong>
+            <strong style={{ fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: s.titulo ? 'var(--ink)' : 'var(--muted)' }}>{s.titulo || tr("Sem título")}</strong>
             <span style={{ fontSize: 12.5, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{data(s.em)}</span>
           </Link>
         ))}
@@ -138,10 +138,10 @@ function Detalhe({ p, periodo, rotulo }) {
 }
 
 const TEXTOS = {
-  relatos: { nome: 'Personificação', titulo: 'Quem aparece e o que vem junto', rotulo: 'No mesmo sonho',
-    termo: 'Pessoas citadas nos relatos pelo papel (mãe, chefe) ou pelo nome, em pelo menos 3 sonhos. Toque numa delas para ver os temas e as imagens que mais aparecem nos sonhos em que ela está; o que já mora no mesmo ambiente (escola e colega) fica de fora. É contagem: mostra a companhia de cada figura, não o que ela significa.' },
-  nomes: { nome: 'Pessoas pelo nome', titulo: 'As pessoas das suas tags e os seus símbolos', rotulo: 'Símbolos no mesmo sonho',
-    termo: 'Só as tags com nome de alguém (Natália, Tia Marília), em pelo menos 3 sonhos; mãe, pai e criança ficam no quadro de cima. Toque numa pessoa para ver as outras tags que mais aparecem nos mesmos sonhos, pesando o quanto são raras no resto do acervo. É contagem: mostra a companhia de cada pessoa, não o que ela significa.' },
+  relatos: { nome: tr("Personificação"), titulo: tr("Quem aparece e o que vem junto"), rotulo: tr("No mesmo sonho"),
+    termo: tr("Pessoas citadas nos relatos pelo papel (mãe, chefe) ou pelo nome, em pelo menos 3 sonhos. Toque numa delas para ver os temas e as imagens que mais aparecem nos sonhos em que ela está; o que já mora no mesmo ambiente (escola e colega) fica de fora. É contagem: mostra a companhia de cada figura, não o que ela significa.") },
+  nomes: { nome: tr("Pessoas pelo nome"), titulo: tr("As pessoas das suas tags e os seus símbolos"), rotulo: tr("Símbolos no mesmo sonho"),
+    termo: tr("Só as tags com nome de alguém (Natália, Tia Marília), em pelo menos 3 sonhos; mãe, pai e criança ficam no quadro de cima. Toque numa pessoa para ver as outras tags que mais aparecem nos mesmos sonhos, pesando o quanto são raras no resto do acervo. É contagem: mostra a companhia de cada pessoa, não o que ela significa.") },
 };
 
 export function MapaPessoas({ pessoas, periodo, tipo = 'relatos' }) {
@@ -149,7 +149,7 @@ export function MapaPessoas({ pessoas, periodo, tipo = 'relatos' }) {
   const [sel, setSel] = useState(0);
   if (!pessoas.length) return tipo === 'nomes' ? (
     <Quadro nome={txt.nome} titulo={txt.titulo} termo={txt.termo}>
-      <p style={{ margin: 0, fontSize: 14.5, color: 'var(--muted)' }}>{semViuvas('Ainda não há nenhuma tag com nome de pessoa em 3 sonhos ou mais. Quando você marcar alguém pelo nome, ela aparece aqui.')}</p>
+      <p style={{ margin: 0, fontSize: 14.5, color: 'var(--muted)' }}>{semViuvas(tr("Ainda não há nenhuma tag com nome de pessoa em 3 sonhos ou mais. Quando você marcar alguém pelo nome, ela aparece aqui."))}</p>
     </Quadro>
   ) : null;
   const p = pessoas[Math.min(sel, pessoas.length - 1)];
@@ -158,7 +158,7 @@ export function MapaPessoas({ pessoas, periodo, tipo = 'relatos' }) {
       <div className="lab-duas">
         <div className="lab-grafo" style={{ minWidth: 0 }}><Grafo pessoas={pessoas} sel={Math.min(sel, pessoas.length - 1)} setSel={setSel} /></div>
         {/* No celular, o grafo fica pequeno demais: as pessoas viram botões. */}
-        <div className="lab-escolha" role="group" aria-label="Escolher pessoa">
+        <div className="lab-escolha" role="group" aria-label={tr("Escolher pessoa")}>
           {pessoas.map((x, i) => (
             <button key={x.chave} type="button" aria-pressed={x === p} onClick={() => setSel(i)} className="chip"
               style={{ height: 32, fontSize: 14, cursor: 'pointer', border: 0, background: x === p ? 'var(--azul)' : 'var(--cinza)', color: x === p ? '#fff' : 'var(--ink)', fontWeight: x === p ? 800 : 600 }}>
@@ -180,13 +180,13 @@ export function MapaTemas({ mapa }) {
   const max = Math.max(1, ...mapa.linhas.flatMap((l) => l.valores));
   const maxTotal = Math.max(1, ...mapa.totais);
   const cols = mapa.rotulos.length;
-  const grade = { display: 'grid', gridTemplateColumns: `minmax(96px, 150px) repeat(${cols}, minmax(30px, 1fr))`, gap: 3, alignItems: 'center', minWidth: 120 + cols * 34 };
-  const periodo = mapa.passo === 1 ? 'mês' : mapa.passo === 3 ? 'trimestre' : 'semestre';
+  const grade = { display: 'grid', gridTemplateColumns: tr("minmax(96px, 150px) repeat({0}, minmax(30px, 1fr))", [cols]), gap: 3, alignItems: 'center', minWidth: 120 + cols * 34 };
+  const periodo = mapa.passo === 1 ? tr("mês") : mapa.passo === 3 ? tr('trimestre') : tr('semestre');
   return (
-    <Quadro nome="Ritmo dos temas" titulo="Seus temas ao longo do tempo"
-      termo={`Cada linha é um tema, cada coluna um ${periodo}. Quanto mais escuro, mais sonhos com aquele tema. Dá para ver o que chegou, o que voltou e o que ficou em silêncio. A última linha mostra quantos sonhos você registrou em cada ${periodo}.`}>
+    <Quadro nome={tr("Ritmo dos temas")} titulo={tr("Seus temas ao longo do tempo")}
+      termo={tr("Cada linha é um tema, cada coluna um {0}. Quanto mais escuro, mais sonhos com aquele tema. Dá para ver o que chegou, o que voltou e o que ficou em silêncio. A última linha mostra quantos sonhos você registrou em cada {1}.", [periodo, periodo])}>
       <div style={{ overflowX: 'auto', margin: '0 -4px', padding: '0 4px 4px' }}>
-        <div style={grade} role="table" aria-label="Temas por período">
+        <div style={grade} role="table" aria-label={tr("Temas por período")}>
           <span />
           {mapa.rotulos.map((r, c) => (
             <span key={c} style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.25 }}>
@@ -204,7 +204,7 @@ export function MapaTemas({ mapa }) {
               ))}
             </div>
           ))}
-          <span style={{ fontSize: 12, color: 'var(--muted)', paddingTop: 6 }}>todos os sonhos</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)', paddingTop: 6 }}>{tr("todos os sonhos")}</span>
           {mapa.totais.map((t, c) => (
             <span key={c} title={plural(t, 'sonho', 'sonhos')} style={{ height: 44, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 2, paddingTop: 6 }}>
               <span style={{ fontSize: 10.5, color: 'var(--muted)' }}>{t || ''}</span>

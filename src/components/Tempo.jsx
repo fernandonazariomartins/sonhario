@@ -5,16 +5,17 @@ import { Link } from 'react-router-dom';
 import { CORES, tituloDe } from '../lib/sonhos.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Voltar, Avancar } from './Icones.jsx';
+import { tr, ingles, MESES_CURTOS, MESES_LONGOS as LONGOS, DIAS_SEMANA, mesAno, diaMes } from '../lib/i18n.js';
 
-export const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-export const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+export const MESES = MESES_CURTOS;
+export const MESES_LONGOS = LONGOS;
+const SEMANA = ingles ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+const DIAS = DIAS_SEMANA;
 
 const anoDe = (s) => new Date(s.sonhado_em).getFullYear();
 const mesDe = (s) => new Date(s.sonhado_em).getMonth() + 1;
 // No calendário, sonho sem título mostra o começo do relato.
-const nomeCurto = (s) => s.titulo?.trim() || (s.texto || '').trim().split(/\s+/).slice(0, 6).join(' ') || (s.audio ? 'Só o áudio' : tituloDe(s));
+const nomeCurto = (s) => s.titulo?.trim() || (s.texto || '').trim().split(/\s+/).slice(0, 6).join(' ') || (s.audio ? tr("Só o áudio") : tituloDe(s));
 const chaveDia = (d) => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
 
 // { 2026: { total, meses: [12 números] }, ... }
@@ -54,9 +55,9 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
   const hoje = new Date();
   const total = Object.values(contagem).reduce((n, x) => n + x.total, 0);
   return (
-    <nav className="linha-tempo" aria-label="Linha do tempo">
+    <nav className="linha-tempo" aria-label={tr("Linha do tempo")}>
       {comTodos && <button type="button" className={'lt-todos' + (ano === 'todos' ? ' ativo' : '')} aria-current={ano === 'todos'} onClick={() => aoEscolher('todos', 0)}
-        title={total + ' sonhos'}>todos</button>}
+        title={total + tr(' sonhos')}>{tr("todos")}</button>}
       <div className="lt-anos" ref={trilho}>
         <div className="lt-pontos">
           {anos.map((a) => {
@@ -64,7 +65,7 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
             const tam = 6 + Math.round((n / maiorAno) * 4);
             return (
               <button key={a} type="button" className={'lt-ponto' + (a === ano ? ' ativo' : '')} aria-current={a === ano} onClick={() => aoEscolher(a, 0)}
-                aria-label={a + ', ' + (n === 1 ? '1 sonho' : n + ' sonhos')} title={a + ' · ' + (n === 1 ? '1 sonho' : n + ' sonhos')}>
+                aria-label={a + ', ' + (n === 1 ? tr("1 sonho") : n + tr(' sonhos'))} title={a + ' · ' + (n === 1 ? tr("1 sonho") : n + tr(' sonhos'))}>
                 <i style={{ width: tam, height: tam }} />
                 <span className="lt-ponto-ano">{a}</span>
               </button>
@@ -73,15 +74,15 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
         </div>
       </div>
       {comMeses && doAno && (
-        <div className="lt-meses" role="group" aria-label={'Meses de ' + ano}>
+        <div className="lt-meses" role="group" aria-label={tr("Meses de ") + ano}>
           {doAno.meses.map((n, i) => {
             const futuro = ano === hoje.getFullYear() && i > hoje.getMonth();
             if (futuro && !n) return null;
             return (
               <button key={i} type="button" className={'lt-mes' + (mes === i + 1 ? ' ativo' : '')} aria-pressed={mes === i + 1}
                 disabled={!n && !mesObrigatorio}
-                title={MESES_LONGOS[i] + ': ' + (n === 1 ? '1 sonho' : n + ' sonhos')}
-                aria-label={MESES_LONGOS[i] + ' de ' + ano + ', ' + (n === 1 ? '1 sonho' : n + ' sonhos')}
+                title={MESES_LONGOS[i] + ': ' + (n === 1 ? tr("1 sonho") : n + tr(' sonhos'))}
+                aria-label={mesAno(i, ano) + ', ' + (n === 1 ? tr("1 sonho") : n + tr(' sonhos'))}
                 onClick={() => aoEscolher(ano, mes === i + 1 && !mesObrigatorio ? 0 : i + 1)}>
                 <span className="lt-barra"><i style={{ height: n ? Math.max(18, (n / maior) * 100) + '%' : 0 }} /></span>
                 <span className="lt-rotulo">{MESES[i]}</span>
@@ -90,7 +91,7 @@ export function LinhaDoTempo({ contagem, ano, mes, aoEscolher, comTodos = false,
           })}
         </div>
       )}
-      {!semTotal && <span className="lt-total">{ano === 'todos' ? '' : (mes ? doAno.meses[mes - 1] : doAno?.total || 0) + ((mes ? doAno.meses[mes - 1] : doAno?.total) === 1 ? ' sonho' : ' sonhos')}</span>}
+      {!semTotal && <span className="lt-total">{ano === 'todos' ? '' : (mes ? doAno.meses[mes - 1] : doAno?.total || 0) + ((mes ? doAno.meses[mes - 1] : doAno?.total) === 1 ? tr(' sonho') : tr(' sonhos'))}</span>}
     </nav>
   );
 }
@@ -125,18 +126,18 @@ export function Calendario({ sonhos, ano, mes, aoMudarMes, renderSonhos }) {
   const dataDia = dia && (() => { const [a, m, d] = dia.split('-').map(Number); return new Date(a, m - 1, d); })();
 
   return (
-    <section aria-label="Calendário" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <section aria-label={tr("Calendário")} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" className="btn-icone" onClick={() => passo(-1)} aria-label="Mês anterior"><Voltar size={18} /></button>
-        <h2 style={{ fontSize: 24, fontWeight: 400, letterSpacing: '-0.03em', minWidth: 200, textAlign: 'center' }}>{MESES_LONGOS[mes - 1]} de {ano}</h2>
-        <button type="button" className="btn-icone" onClick={() => passo(1)} aria-label="Próximo mês"><Avancar size={18} /></button>
-        <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { const h = new Date(); aoMudarMes(h.getFullYear(), h.getMonth() + 1); }}>Hoje</button>
+        <button type="button" className="btn-icone" onClick={() => passo(-1)} aria-label={tr("Mês anterior")}><Voltar size={18} /></button>
+        <h2 style={{ fontSize: 24, fontWeight: 400, letterSpacing: '-0.03em', minWidth: 200, textAlign: 'center' }}>{mesAno(mes - 1, ano)}</h2>
+        <button type="button" className="btn-icone" onClick={() => passo(1)} aria-label={tr("Próximo mês")}><Avancar size={18} /></button>
+        <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { const h = new Date(); aoMudarMes(h.getFullYear(), h.getMonth() + 1); }}>{tr("Hoje")}</button>
         <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--muted)' }}>
-          {noMes ? `${noMes === 1 ? '1 sonho' : noMes + ' sonhos'} em ${diasComSonho === 1 ? '1 noite' : diasComSonho + ' noites'}` : 'Nenhum sonho neste mês'}
+          {noMes ? `${noMes === 1 ? tr("1 sonho") : noMes + tr(' sonhos')} em ${diasComSonho === 1 ? tr("1 noite") : diasComSonho + tr(' noites')}` : tr("Nenhum sonho neste mês")}
         </span>
       </div>
 
-      <div className="cal" role="grid" aria-label={MESES_LONGOS[mes - 1] + ' de ' + ano}>
+      <div className="cal" role="grid" aria-label={mesAno(mes - 1, ano)}>
         <div role="row" className="cal-semana">{SEMANA.map((d) => <span key={d} role="columnheader">{d}</span>)}</div>
         {Array.from({ length: celulas.length / 7 }, (_, w) => (
           <div role="row" key={w} className="cal-linha">
@@ -144,7 +145,7 @@ export function Calendario({ sonhos, ano, mes, aoMudarMes, renderSonhos }) {
               if (!d) return <span key={i} role="gridcell" className="cal-dia vazio" />;
               const k = chaveDia(d);
               const lista = porDia.get(k) || [];
-              const rotulo = d.getDate() + ' de ' + MESES_LONGOS[mes - 1] + (lista.length ? ', ' + (lista.length === 1 ? '1 sonho' : lista.length + ' sonhos') : '');
+              const rotulo = diaMes(d) + (lista.length ? ', ' + (lista.length === 1 ? tr("1 sonho") : lista.length + tr(' sonhos')) : '');
               return (
                 <div key={i} role="gridcell" className={'cal-dia' + (lista.length ? ' tem' : '') + (k === hojeK ? ' hoje' : '') + (k === dia ? ' ativo' : '')}
                   onClick={() => lista.length && setDia(k === dia ? null : k)} aria-label={rotulo}>
@@ -164,11 +165,11 @@ export function Calendario({ sonhos, ano, mes, aoMudarMes, renderSonhos }) {
           </div>
         ))}
       </div>
-      <p className="so-celular" style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>{semViuvas('Toque num dia marcado para ver os sonhos daquela noite.')}</p>
+      <p className="so-celular" style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>{semViuvas(tr("Toque num dia marcado para ver os sonhos daquela noite."))}</p>
 
       {dia && escolhidos.length > 0 && (
-        <section aria-label="Sonhos do dia" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <h3 className="rotulo">{DIAS[dataDia.getDay()]}, {dataDia.getDate()} de {MESES_LONGOS[dataDia.getMonth()]}</h3>
+        <section aria-label={tr("Sonhos do dia")} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <h3 className="rotulo">{DIAS[dataDia.getDay()]}, {diaMes(dataDia)}</h3>
           {renderSonhos(escolhidos)}
         </section>
       )}

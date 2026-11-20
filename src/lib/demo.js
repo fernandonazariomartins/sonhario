@@ -3,6 +3,7 @@
 // "banco" é uma imitação do Supabase na memória: nada é salvo nem enviado, e recarregar
 // a página volta tudo ao começo. A conta de verdade de quem abre o link não é tocada.
 import { EU, dadosIniciais, urlDesenho } from './demoDados.js';
+import { tr } from './i18n.js';
 
 const FLAG = 'sonhario:demo';
 
@@ -26,7 +27,7 @@ const arquivos = new Map(); // caminho -> Blob (áudios e imagens novos)
 
 const copia = (x) => JSON.parse(JSON.stringify(x));
 const novoId = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + Math.random().toString(16).slice(2));
-const semTabela = (t) => ({ code: 'PGRST205', message: `Could not find the table 'public.${t}' in the schema cache` });
+const semTabela = (t) => ({ code: 'PGRST205', message: tr("Could not find the table 'public.{0}' in the schema cache", [t]) });
 
 // Cada tabela, com a regra de quem vê o quê (como o RLS do banco de verdade).
 function tabela(nome) {
@@ -112,7 +113,7 @@ class Consulta {
       if (this.nome === 'sonhos') db.comentarios = db.comentarios.filter((c) => !saida.some((s) => s.id === c.sonho_id));
     }
     const data = copia(saida);
-    if (this.um === 'single') return data.length ? { data: data[0], error: null } : { data: null, error: { message: 'Nada encontrado.' } };
+    if (this.um === 'single') return data.length ? { data: data[0], error: null } : { data: null, error: { message: tr("Nada encontrado.") } };
     if (this.um === 'maybe') return { data: data[0] || null, error: null };
     return { data: this.op === 'select' || this.devolver ? data : null, error: null };
   }
@@ -136,7 +137,7 @@ const rpcs = {
   },
   aprovar_pedido: ({ pedido }) => {
     const c = meusConvidados().find((x) => x.id === pedido);
-    if (!c) throw new Error('Pedido não encontrado.');
+    if (!c) throw new Error(tr("Pedido não encontrado."));
     for (const s of db.sonhos) if (c.sonhos_pedidos.includes(s.id) && !s.compartilhado_com.includes(c.convidado_email)) s.compartilhado_com.push(c.convidado_email);
     c.pendente = false; c.sonhos_pedidos = [];
     return null;
@@ -146,7 +147,7 @@ const rpcs = {
   ver_convite: ({ chave }) => db.convites.filter((c) => c.token === chave).map(() => ({ dono_nome: EU.nome, dono_foto: '', de_um_sonho: true })),
   ver_trecho_convite: () => [],
   ver_previa_convite: () => null,
-  aceitar_convite: () => { throw new Error('Esse link é seu. Na demonstração, os links não vão para ninguém.'); },
+  aceitar_convite: () => { throw new Error(tr("Esse link é seu. Na demonstração, os links não vão para ninguém.")); },
 };
 
 async function rpc(nome, args = {}) {
@@ -161,9 +162,9 @@ function balde() {
     async createSignedUrl(ref) {
       const blob = arquivos.get(ref);
       const url = blob ? URL.createObjectURL(blob) : urlDesenho(ref);
-      return url ? { data: { signedUrl: url }, error: null } : { data: null, error: { message: 'Arquivo não encontrado.' } };
+      return url ? { data: { signedUrl: url }, error: null } : { data: null, error: { message: tr("Arquivo não encontrado.") } };
     },
-    async download(ref) { const b = arquivos.get(ref); return b ? { data: b, error: null } : { data: null, error: { message: 'Arquivo não encontrado.' } }; },
+    async download(ref) { const b = arquivos.get(ref); return b ? { data: b, error: null } : { data: null, error: { message: tr("Arquivo não encontrado.") } }; },
     async remove(refs) { for (const r of refs) arquivos.delete(r); return { data: null, error: null }; },
     async list() { return { data: [], error: null }; },
   };
@@ -179,7 +180,7 @@ export const clienteDemo = DEMO ? {
   from: (nome) => new Consulta(nome),
   rpc,
   storage: { from: balde },
-  functions: { invoke: async () => ({ data: null, error: new Error('Na demonstração, isso fica desligado.') }) },
+  functions: { invoke: async () => ({ data: null, error: new Error(tr("Na demonstração, isso fica desligado.")) }) },
   auth: {
     getSession: async () => ({ data: { session: { user: usuario, access_token: 'demo' } } }),
     getUser: async () => ({ data: { user: usuario } }),

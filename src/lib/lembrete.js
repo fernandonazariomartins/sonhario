@@ -3,6 +3,7 @@
 // A função "lembrete-manha" roda a cada 5 minutos e avisa quem chegou na hora de acordar.
 import { supabase } from './supabase.js';
 import { DEMO } from './demo.js';
+import { tr } from './i18n.js';
 
 const VAPID = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 const CHAVE = 'sonhario:lembrete';
@@ -25,7 +26,7 @@ function chaveBytes(b64) {
 
 export async function ativarLembrete(hora) {
   const permissao = await Notification.requestPermission();
-  if (permissao !== 'granted') throw new Error('Sem permissão para notificações. Libere nas configurações do navegador.');
+  if (permissao !== 'granted') throw new Error(tr("Sem permissão para notificações. Libere nas configurações do navegador."));
   const reg = await navigator.serviceWorker.ready;
   const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveBytes(VAPID) });
   const fuso = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo';

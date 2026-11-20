@@ -4,6 +4,7 @@ import Janela from './Janela.jsx';
 import { useEstado } from '../lib/estado.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { Mural, Pessoas } from './Icones.jsx';
+import { tr } from '../lib/i18n.js';
 
 function Opcao({ icone, titulo, texto, onClick }) {
   return (
@@ -20,10 +21,10 @@ function Opcao({ icone, titulo, texto, onClick }) {
 export default function EscolherModo() {
   const { mudarModo } = useEstado();
   return (
-    <Janela titulo="Como você vai usar o Sonhário?" aoFechar={() => mudarModo(false)}>
-      <Opcao icone={<Mural size={20} />} titulo="Registrar os meus sonhos" texto="Anotar, organizar e voltar aos seus sonhos." onClick={() => mudarModo(false)} />
-      <Opcao icone={<Pessoas size={20} />} titulo="Registrar os meus sonhos e atender pacientes" texto="Além do seu sonhário, você ganha a aba Pacientes, com um link de convite. Cada paciente escolhe quais sonhos mostrar." onClick={() => mudarModo(true)} />
-      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas('Dá para mudar quando quiser, no menu ⋯.')}</p>
+    <Janela titulo={tr("Como você vai usar o Sonhário?")} aoFechar={() => mudarModo(false)}>
+      <Opcao icone={<Mural size={20} />} titulo={tr("Registrar os meus sonhos")} texto={tr("Anotar, organizar e voltar aos seus sonhos.")} onClick={() => mudarModo(false)} />
+      <Opcao icone={<Pessoas size={20} />} titulo={tr("Registrar os meus sonhos e atender pacientes")} texto={tr("Além do seu sonhário, você ganha a aba Pacientes, com um link de convite. Cada paciente escolhe quais sonhos mostrar.")} onClick={() => mudarModo(true)} />
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(tr("Dá para mudar quando quiser, no menu ⋯."))}</p>
     </Janela>
   );
 }
