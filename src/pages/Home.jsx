@@ -89,7 +89,8 @@ export default function Home() {
             <BotaoInstalar className="btn btn-azul btn-grande" size={18} />
             <Entrar className="btn btn-grande" style={{ border: '1.5px solid var(--preto)', color: 'var(--preto)', background: 'transparent' }}>{usuario ? 'Abrir o Sonhário' : 'Entrar e usar no navegador'}</Entrar>
           </div>
-          <Link to="/demo" style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: 'var(--azul)' }}>{n('Ver o app por dentro, sem cadastro')} <Avancar size={16} /></Link>
+          {/* <a> e não <Link>: a demonstração só liga quando a página carrega já em /demo (lib/demo.js). */}
+          <a href="/demo" style={{ marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 700, color: 'var(--azul)' }}>{n('Ver o app por dentro, sem cadastro')} <Avancar size={16} /></a>
           <p style={{ margin: '14px 0 0', fontSize: 14, color: 'var(--muted)' }}>{n('Sem loja de aplicativos: o Sonhário se instala direto pelo site, no celular e no computador.')}</p>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}><Cadeado size={14} /> {n('Seus sonhos ficam trancados com uma frase-senha. Há também um nível avançado de criptografia.')}</p>
 
