@@ -185,6 +185,17 @@ function Vazio() {
   );
 }
 
+const CHAVE_ACERVO = 'sonhario:acervo';
+function guardarEnderecoAcervo(busca) {
+  try { sessionStorage.setItem(CHAVE_ACERVO, busca); } catch { /* sem armazenamento: volta ao acervo limpo */ }
+}
+// Endereço do acervo como estava da última vez (com os filtros marcados).
+export function enderecoAcervo() {
+  let busca = '';
+  try { busca = sessionStorage.getItem(CHAVE_ACERVO) || ''; } catch { /* idem */ }
+  return '/app/acervo' + (busca ? '?' + busca : '');
+}
+
 export default function Acervo() {
   const { sonhos, exemplos, esconderExemplos, carregado, laboratorio, mudarLaboratorio, avisar } = useEstado();
   const navigate = useNavigate();
@@ -219,19 +230,30 @@ export default function Acervo() {
     window.addEventListener('keydown', tecla);
     return () => window.removeEventListener('keydown', tecla);
   }, []);
-  const [soAtencao, setSoAtencao] = useState(false);
-  const [soFavoritos, setSoFavoritos] = useState(() => params.get('f') === '1');
+  // Os filtros ficam no endereço (?at, ?f, ?sti, ?st): assim, ao abrir um sonho e voltar, continuam marcados.
+  const filtroUrl = (chave) => params.get(chave) === '1';
+  const ligarFiltro = (chave, ligar) => {
+    const novo = new URLSearchParams(params);
+    if (ligar) novo.set(chave, '1'); else novo.delete(chave);
+    setParams(novo, { replace: true });
+  };
+  const soAtencao = filtroUrl('at');
+  const setSoAtencao = (v) => ligarFiltro('at', v);
+  const soFavoritos = filtroUrl('f');
+  const setSoFavoritos = (v) => ligarFiltro('f', v);
   const nFavoritos = useMemo(() => sonhos.filter((s) => s.favorito).length, [sonhos]);
   // ?tema=X: só os sonhos com esse tema (é para onde vão as tags das Observações).
   const temaFiltro = params.get('tema') || '';
   const tirarTema = () => { const novo = new URLSearchParams(params); novo.delete('tema'); novo.delete('ano'); novo.delete('mes'); setParams(novo); };
-  const [soSemTitulo, setSoSemTitulo] = useState(false);
+  const soSemTitulo = filtroUrl('sti');
+  const setSoSemTitulo = (v) => ligarFiltro('sti', v);
   const semTitulo = useMemo(() => sonhos.filter((s) => !s.titulo?.trim()).length, [sonhos]);
-  // ?st=1: só os sonhos sem nenhum tema (vem do aviso da aba Temas).
-  const [soSemTema, setSoSemTema] = useState(() => params.get('st') === '1');
+  // ?st=1: só os sonhos sem nenhum tema (também vem do aviso da aba Temas).
+  const soSemTema = filtroUrl('st');
+  const setSoSemTema = (v) => ligarFiltro('st', v);
   const semTema = useMemo(() => sonhos.filter((s) => !s.temas?.length).length, [sonhos]);
-  const pedeSemTema = params.get('st') === '1';
-  useEffect(() => { if (pedeSemTema) setSoSemTema(true); }, [pedeSemTema]);
+  // Guarda o endereço atual do acervo (filtros, busca, vista, ano) para o "voltar" do sonho.
+  useEffect(() => { guardarEnderecoAcervo(params.toString()); }, [params]);
   // Até 100 sonhos de uma vez; "Mostrar mais" vai somando.
   const POR_VEZ = 100;
   const [limite, setLimite] = useState(POR_VEZ);

@@ -10,7 +10,7 @@ import { semViuvas } from '../lib/tipografia.js';
 import { quemVe, pessoa, terapeutaDe } from '../lib/compartilhar.js';
 import { BotaoConvite } from '../components/Convidar.jsx';
 import { CompartilharSonho } from '../components/Compartilhar.jsx';
-import { BotaoFavorito } from './Acervo.jsx';
+import { BotaoFavorito, enderecoAcervo } from './Acervo.jsx';
 import Avatar from '../components/Avatar.jsx';
 import Janela from '../components/Janela.jsx';
 import Imagens from '../components/Imagens.jsx';
@@ -66,7 +66,7 @@ export default function Sonho() {
   if (!s) return (
     <div style={{ padding: 40, textAlign: 'center' }}>
       <p>Esse sonho não está aqui.</p>
-      <Link to="/app/acervo">Voltar para o acervo</Link>
+      <Link to={enderecoAcervo()}>Voltar para o acervo</Link>
     </div>
   );
 
@@ -159,7 +159,7 @@ export default function Sonho() {
   return (
     <div style={{ width: '100%', maxWidth: 1280, margin: '0 auto', padding: '20px 20px 0', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <div style={{ flexBasis: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Link to="/app/acervo" className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Acervo</Link>
+        <Link to={enderecoAcervo()} className="btn btn-linha" style={{ minHeight: 40 }}><Voltar size={16} /> Acervo</Link>
         {params.get('novo') && <span style={{ height: 28, padding: '0 10px', borderRadius: 999, background: 'var(--azul-claro)', color: 'var(--azul-escuro)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}><Ok size={14} /> guardado</span>}
       </div>
       {temLogin && !compartilhando && (
@@ -325,7 +325,7 @@ export default function Sonho() {
             <Compartilhar size={16} /> Compartilhar
           </button>}
           <button type="button" className="btn btn-linha" style={{ color: 'var(--danger)', borderColor: '#F1C4BF' }}
-            onClick={() => { apagar(s.id); navegar('/app/acervo'); }}>
+            onClick={() => { apagar(s.id); navegar(enderecoAcervo()); }}>
             <Lixo size={16} /> Apagar sonho
           </button>
         </div>

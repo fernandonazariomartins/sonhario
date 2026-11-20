@@ -6,6 +6,7 @@ import { useEstado } from '../lib/estado.jsx';
 import Logo from '../components/Logo.jsx';
 import Assinatura from '../components/Assinatura.jsx';
 import Entrar from './Entrar.jsx';
+import { enderecoAcervo } from './Acervo.jsx';
 import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
 import { CriarFrase, MostrarCodigo, Destrancar, ErroCofre, TrocarFrase, TrancarAcervo, JanelaCriptografia } from '../components/Cofre.jsx';
@@ -106,7 +107,7 @@ export default function AppLayout() {
         <Logo para="/" ficar />
         <nav aria-label="Seções do app" className="abas" style={{ marginLeft: 'auto' }}>
           <NavLink to="/app" end aria-label="Novo sonho" className={({ isActive }) => 'aba' + (isActive ? ' ativa' : ' aba-novo')}><Mais size={16} /> <span className="esconde-celular">Novo</span></NavLink>
-          <NavLink to="/app/acervo" aria-label="Acervo" className={({ isActive }) => aba({ isActive: isActive || pathname.startsWith('/app/sonho') })}><Mural size={16} /> <span className="esconde-pequeno">Acervo</span></NavLink>
+          <NavLink to={pathname.startsWith('/app/sonho') ? enderecoAcervo() : '/app/acervo'} aria-label="Acervo" className={({ isActive }) => aba({ isActive: isActive || pathname.startsWith('/app/sonho') })}><Mural size={16} /> <span className="esconde-pequeno">Acervo</span></NavLink>
           <NavLink to="/app/observacoes" aria-label="Observações" className={aba}><Faisca size={16} /> <span className="esconde-celular">Observações</span></NavLink>
           {(comigoTodos.length > 0 || modo.atende) && <NavLink to="/app/compartilhados" aria-label={rotulo} className={aba}><Pessoas size={16} /> <span className="esconde-celular">{rotulo}</span></NavLink>}
         </nav>
