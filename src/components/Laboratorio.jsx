@@ -92,7 +92,7 @@ function Faixa({ sonhos, periodo }) {
   );
 }
 
-function Detalhe({ p, periodo }) {
+function Detalhe({ p, periodo, rotulo }) {
   const estiloTema = useCorTema();
   const max = Math.max(1, ...p.ligados.map((l) => l.n));
   const ultimos = [...p.sonhos].reverse().slice(0, 4);
@@ -107,7 +107,7 @@ function Detalhe({ p, periodo }) {
       <Faixa sonhos={p.sonhos} periodo={periodo} />
       {p.ligados.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="rotulo">Símbolos no mesmo sonho</span>
+          <span className="rotulo">{rotulo}</span>
           {p.ligados.map((l) => (
             <Link key={l.chave} to={linkDe(l)} style={{ display: 'grid', gridTemplateColumns: 'minmax(80px, 34%) 1fr auto', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'var(--ink)' }}>
               <span className="chip" style={{ ...(l.tema ? estiloTema(l.tema) : { background: 'transparent', border: '1px solid var(--line-strong)' }), height: 24, fontSize: 13, justifySelf: 'start', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rotuloDe(l)}</span>
@@ -137,13 +137,24 @@ function Detalhe({ p, periodo }) {
   );
 }
 
-export function MapaPessoas({ pessoas, periodo }) {
+const TEXTOS = {
+  relatos: { nome: 'Personificação', titulo: 'Quem aparece e o que vem junto', rotulo: 'No mesmo sonho',
+    termo: 'Pessoas citadas nos relatos pelo papel (mãe, chefe) ou pelo nome, em pelo menos 3 sonhos. Toque numa delas para ver os temas e as imagens que mais aparecem nos sonhos em que ela está; o que já mora no mesmo ambiente (escola e colega) fica de fora. É contagem: mostra a companhia de cada figura, não o que ela significa.' },
+  nomes: { nome: 'Pessoas pelo nome', titulo: 'As pessoas das suas tags e os seus símbolos', rotulo: 'Símbolos no mesmo sonho',
+    termo: 'Só as tags com nome de alguém (Natália, Tia Marília), em pelo menos 3 sonhos; mãe, pai e criança ficam no quadro de cima. Toque numa pessoa para ver as outras tags que mais aparecem nos mesmos sonhos, pesando o quanto são raras no resto do acervo. É contagem: mostra a companhia de cada pessoa, não o que ela significa.' },
+};
+
+export function MapaPessoas({ pessoas, periodo, tipo = 'relatos' }) {
+  const txt = TEXTOS[tipo];
   const [sel, setSel] = useState(0);
-  if (!pessoas.length) return null;
+  if (!pessoas.length) return tipo === 'nomes' ? (
+    <Quadro nome={txt.nome} titulo={txt.titulo} termo={txt.termo}>
+      <p style={{ margin: 0, fontSize: 14.5, color: 'var(--muted)' }}>{semViuvas('Ainda não há nenhuma tag com nome de pessoa em 3 sonhos ou mais. Quando você marcar alguém pelo nome, ela aparece aqui.')}</p>
+    </Quadro>
+  ) : null;
   const p = pessoas[Math.min(sel, pessoas.length - 1)];
   return (
-    <Quadro nome="Personificação" titulo="Quem aparece e o que vem junto"
-      termo="As pessoas são as suas tags com nome de alguém (Natália, Tia Marília, mãe), em pelo menos 3 sonhos. Toque numa delas para ver os símbolos que mais aparecem nos mesmos sonhos; o que já mora no mesmo ambiente (escola e colega) fica de fora. É contagem: mostra a companhia de cada pessoa, não o que ela significa.">
+    <Quadro nome={txt.nome} titulo={txt.titulo} termo={txt.termo}>
       <div className="lab-duas">
         <div className="lab-grafo" style={{ minWidth: 0 }}><Grafo pessoas={pessoas} sel={Math.min(sel, pessoas.length - 1)} setSel={setSel} /></div>
         {/* No celular, o grafo fica pequeno demais: as pessoas viram botões. */}
@@ -155,7 +166,7 @@ export function MapaPessoas({ pessoas, periodo }) {
             </button>
           ))}
         </div>
-        <Detalhe p={p} periodo={periodo} />
+        <Detalhe p={p} periodo={periodo} rotulo={txt.rotulo} />
       </div>
     </Quadro>
   );

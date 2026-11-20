@@ -148,10 +148,11 @@ export default function Insights() {
             </div>
             <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { mudarLaboratorio(false); avisar('Laboratório fechado. Para abrir de novo, use a senha na busca.'); }}>Fechar o laboratório</button>
           </div>
-          {(lab.lista.length > 0 || lab.pessoas.length > 0 || lab.mapaTemas)
+          {(lab.lista.length > 0 || lab.pessoas.length > 0 || lab.nomes.length > 0 || lab.mapaTemas)
             ? (
               <div className="insights">
                 <MapaPessoas pessoas={lab.pessoas} periodo={lab.periodo} />
+                <MapaPessoas pessoas={lab.nomes} periodo={lab.periodo} tipo="nomes" />
                 <MapaTemas mapa={lab.mapaTemas} />
                 {lab.lista.map((i) => <Cartao key={i.id} i={i} />)}
               </div>

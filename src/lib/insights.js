@@ -214,21 +214,24 @@ function pessoasDoAcervo(ordenados, palavras, limite) {
   });
 }
 
-// Tags que são pessoas: têm uma palavra de parentesco ou papel (Tia Marília, mãe, chefe)
-// ou são um nome próprio, ou seja, palavras que nos relatos só aparecem com maiúscula.
+// Tags que são nome de pessoa: palavras que nos relatos só aparecem com maiúscula (Natália),
+// com ou sem parentesco junto (Tia Marília). Só o papel (mãe, pai, criança) não conta.
 function tagsDePessoa(ordenados) {
   const minusculas = new Set(), maiusculas = new Set();
   for (const s of ordenados) for (const p of ((s.titulo || '') + ' ' + (s.texto || '')).match(/[\p{L}]+/gu) || []) {
     (/^\p{Lu}/u.test(p) ? maiusculas : minusculas).add(normalizar(p));
   }
   const figuras = new Set(FIGURAS);
+  // Só nomes próprios: "mãe", "pai" e "criança" não contam; "Tia Marília" conta pelo Marília.
+  const comum = (w) => figuras.has(w) || figuras.has(singular(w)) || ehSimbolo(w) || ehSimbolo(singular(w))
+    || CAMPO.has(w) || LUGARES.includes(w) || NAO_NOMES.has(w) || minusculas.has(w);
   const pessoa = (t) => {
     const ws = normalizar(t).split(/[^a-z]+/).filter((w) => w.length > 1);
-    if (!ws.length) return false;
-    if (ws.some((w) => figuras.has(w) || figuras.has(singular(w)))) return true;
-    // Nome próprio: nenhuma das palavras é imagem do dicionário nem aparece em minúscula nos relatos.
-    return ws.every((w) => !ehSimbolo(w) && !ehSimbolo(singular(w)) && !CAMPO.has(w) && !LUGARES.includes(w) && !minusculas.has(w) && !NAO_NOMES.has(w))
-      && ws.some((w) => maiusculas.has(w));
+    const resto = ws.filter((w) => !figuras.has(w) && !figuras.has(singular(w)));
+    if (!resto.length || resto.some(comum)) return false;
+    // Com parentesco na frente (Tia Marília), basta não ser palavra comum; sozinho, o nome precisa
+    // aparecer com maiúscula em algum relato, para "Ansiedade" não virar pessoa.
+    return resto.length < ws.length || resto.some((w) => maiusculas.has(w));
   };
   return pessoa;
 }
@@ -248,7 +251,8 @@ function pessoasPorTag(ordenados) {
       sonhos.push({ id: s.id, titulo: s.titulo?.trim() || '', em: +new Date(s.sonhado_em) });
       for (const t of ts) {
         if (t === nome) continue;
-        if (ehDePessoa.has(t) || ehPessoa(t)) outras.set(t, (outras.get(t) || 0) + 1);
+        const papel = normalizar(t).split(/[^a-z]+/).some((w) => FIGURAS.includes(w) || FIGURAS.includes(singular(w)));
+        if (ehDePessoa.has(t) || ehPessoa(t) || papel) outras.set(t, (outras.get(t) || 0) + 1);
         else if (!obvio(t, nome)) com.set(t, (com.get(t) || 0) + 1);
       }
     });
@@ -586,7 +590,7 @@ export function calcularLaboratorio(sonhos) {
   const ordenados = [...sonhos].sort((a, b) => +new Date(a.sonhado_em) - +new Date(b.sonhado_em));
   const N = ordenados.length;
   const lista = [];
-  if (N < 10) return { lista, pessoas: [], mapaTemas: null };
+  if (N < 10) return { lista, pessoas: [], nomes: [], mapaTemas: null };
   const palavras = ordenados.map(palavrasDe);
   const temasDe = ordenados.map((s) => new Set(s.temas || []));
   const todosTemasNorm = new Set(ordenados.flatMap((s) => (s.temas || []).map((t) => singular(normalizar(t)))));
@@ -656,9 +660,9 @@ export function calcularLaboratorio(sonhos) {
   }
 
   // Mapa das pessoas: quem aparece e o que vem junto com cada uma.
-  // Pessoas pelas tags que são nome de alguém; se houver poucas, completa com as pessoas dos relatos.
-  let pessoas = pessoasPorTag(ordenados);
-  if (pessoas.length < 2) pessoas = [...pessoas, ...pessoasDoAcervo(ordenados, palavras, 10).filter((p) => !pessoas.some((q) => mesmaImagem(q.nome, p.nome)))].slice(0, 10);
+  // Quem aparece nos relatos (pelo papel ou pelo nome) e, à parte, as tags que são nome de alguém.
+  const pessoas = pessoasDoAcervo(ordenados, palavras, 10);
+  const nomes = pessoasPorTag(ordenados);
 
   // Mapa dos temas no tempo: os temas mais frequentes, mês a mês (ou por trimestre em acervos longos).
   let mapaTemas = null;
@@ -690,5 +694,5 @@ export function calcularLaboratorio(sonhos) {
     if (linhas.length >= 2) mapaTemas = { passo, rotulos, linhas, totais };
   }
 
-  return { lista, pessoas, mapaTemas, periodo: { ini: +new Date(ordenados[0].sonhado_em), fim: Date.now() } };
+  return { lista, pessoas, nomes, mapaTemas, periodo: { ini: +new Date(ordenados[0].sonhado_em), fim: Date.now() } };
 }
