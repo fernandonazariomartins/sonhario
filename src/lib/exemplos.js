@@ -104,9 +104,9 @@ function conteudo(id) {
       { tema: 'trabalho', texto: 'recuou: 7 → 1 sonhos' },
     ] };
     case 'figuras': return { itens: [
-      { palavra: 'mãe', texto: 'em 9 relatos', ligados: [{ tema: 'casa' }, { tema: 'chave' }, { palavra: 'cozinha' }] },
-      { palavra: 'Tomás', texto: 'em 5 relatos · pelo nome', ligados: [{ tema: 'viagem' }, { palavra: 'estrada' }] },
-      { palavra: 'desconhecido', texto: 'em 4 relatos', ligados: [{ tema: 'água' }, { palavra: 'porta' }] },
+      { palavra: 'mãe', texto: 'em 9 relatos' },
+      { palavra: 'Tomás', texto: 'em 5 relatos · pelo nome' },
+      { palavra: 'desconhecido', texto: 'em 4 relatos' },
     ] };
     case 'grandes': return { itens: [
       { sonho: sonhoEx('A casa com um andar a mais'), texto: '5 temas · 3 pessoas · 4 lugares · 9 imagens · 640 palavras' },

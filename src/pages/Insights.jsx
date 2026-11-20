@@ -4,6 +4,7 @@ import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { calcularInsights, calcularLaboratorio, META } from '../lib/insights.js';
 import { INSIGHTS_EXEMPLO, insightDeExemplo, requisito } from '../lib/exemplos.js';
 import { Cadeado } from '../components/Icones.jsx';
+import { MapaPessoas, MapaTemas } from '../components/Laboratorio.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { compararNovidades, guardar, linhas, quandoFoi } from '../lib/novidades.js';
 
@@ -147,8 +148,14 @@ export default function Insights() {
             </div>
             <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { mudarLaboratorio(false); avisar('Laboratório fechado. Para abrir de novo, use a senha na busca.'); }}>Fechar o laboratório</button>
           </div>
-          {lab.lista.length > 0
-            ? <div className="insights">{lab.lista.map((i) => <Cartao key={i.id} i={i} />)}</div>
+          {(lab.lista.length > 0 || lab.pessoas.length > 0 || lab.mapaTemas)
+            ? (
+              <div className="insights">
+                <MapaPessoas pessoas={lab.pessoas} periodo={lab.periodo} />
+                <MapaTemas mapa={lab.mapaTemas} />
+                {lab.lista.map((i) => <Cartao key={i.id} i={i} />)}
+              </div>
+            )
             : <p style={{ margin: 0, fontSize: 15, color: 'var(--muted)' }}>{semViuvas(sonhos.length < 10 ? 'As observações extras aparecem a partir de 10 sonhos registrados.' : 'Ainda não há nada para mostrar aqui. Com mais sonhos e temas, as observações extras aparecem sozinhas.')}</p>}
         </section>
       )}

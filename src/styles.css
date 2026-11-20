@@ -150,6 +150,10 @@ mark.achado { background: #FFE58A; color: inherit; border-radius: 3px; padding: 
 .insight { border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #fff; border: 1px solid var(--line); }
 .insight.bloqueado { background: var(--cinza); border-color: transparent; }
 .laboratorio { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; padding: 20px; border-radius: 20px; background: var(--azul-claro); }
+.insight.largo { grid-column: 1 / -1; padding: 22px 24px; }
+.lab-duas { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.lab-escolha { display: none; }
+@media (max-width: 760px) { .lab-duas { grid-template-columns: 1fr; gap: 18px; } .insight.largo { padding: 18px 16px; } .lab-grafo { display: none; } .lab-escolha { display: flex; flex-wrap: wrap; gap: 8px; } }
 .insight.com-novidade { border: 1.5px solid var(--azul); box-shadow: 0 0 0 4px var(--azul-claro); }
 .selo-novidade { height: 20px; padding: 0 8px; border-radius: 999px; background: var(--azul); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; display: inline-flex; align-items: center; flex: none; white-space: nowrap; }
 .insight .linha-nova { position: relative; }
