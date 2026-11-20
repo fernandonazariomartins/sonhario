@@ -47,6 +47,14 @@ input, textarea, select { font-family: inherit; color: var(--ink); }
 .aba { height: 36px; padding: 0 12px; border-radius: 9px; display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; border: 0; background: transparent; }
 .aba.ativa { background: #fff; box-shadow: 0 1px 2px rgba(20,30,40,.12); font-weight: 800; color: var(--ink); }
 .aba.ativa svg { color: var(--azul); }
+/* Visualizações do acervo (Mural, Lista...): sem trilho cinza, só um sublinhado,
+   para não parecer a navegação principal do topo. */
+.vistas { display: flex; gap: 2px; border-bottom: 1px solid var(--line); }
+.vista { height: 36px; padding: 0 10px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: transparent; display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.vista:hover { color: var(--ink); }
+.vista.ativa { color: var(--ink); font-weight: 800; border-bottom-color: var(--azul); }
+.vista.ativa svg { color: var(--azul); }
+@media (max-width: 640px) { .vistas { width: 100%; justify-content: space-between; } .vista { padding: 0 6px; } }
 .busca { flex: 1 1 220px; max-width: 480px; height: 44px; border-radius: 10px; background: var(--cinza); display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--muted); }
 .busca input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 14px; outline: none; }
 .busca input::-webkit-search-cancel-button { display: none; }
@@ -240,12 +248,22 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 /* Linha do tempo (no lugar dos números de página): uma linha só, discreta */
 .barra-periodo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 18px; }
 .barra-periodo:empty { display: none; }
-.linha-tempo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 18px; min-width: 0; max-width: 100%; }
-.lt-anos { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.linha-tempo { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 14px; min-width: 0; max-width: 100%; }
+.lt-todos { flex: none; height: 26px; padding: 0 8px; margin-top: 1px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; }
+.lt-todos:hover { color: var(--ink); background: var(--cinza); }
+.lt-todos.ativo { color: var(--ink); background: var(--cinza); font-weight: 800; }
+.lt-anos { overflow-x: auto; scrollbar-width: none; max-width: 100%; min-width: 0; }
 .lt-anos::-webkit-scrollbar { display: none; }
-.lt-ano { flex: none; height: 30px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.lt-ano:hover { color: var(--ink); background: var(--cinza); }
-.lt-ano.ativo { color: var(--ink); background: var(--cinza); font-weight: 800; }
+.lt-pontos { position: relative; display: flex; }
+.lt-pontos::before { content: ''; position: absolute; left: 17px; right: 17px; top: 14px; height: 1.5px; background: var(--line-strong); border-radius: 2px; }
+.lt-ponto { position: relative; flex: none; width: 34px; height: 44px; border: 0; padding: 0; background: transparent; cursor: pointer; }
+.lt-ponto i { position: absolute; left: 50%; top: 14.75px; transform: translate(-50%, -50%); border-radius: 999px; background: var(--node); box-shadow: 0 0 0 3px #fff; transition: background .15s, width .15s, height .15s; }
+.lt-ponto:hover i { background: var(--muted); }
+.lt-ponto.ativo i { width: 12px !important; height: 12px !important; background: var(--azul); box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px var(--azul-claro); }
+.lt-ponto-ano { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); font-size: 11.5px; font-weight: 700; line-height: 1; color: var(--muted); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.lt-ponto:hover .lt-ponto-ano, .lt-ponto:focus-visible .lt-ponto-ano { opacity: 1; }
+.lt-ponto.ativo .lt-ponto-ano { opacity: 1; color: var(--ink); font-weight: 800; }
+.lt-pontos:has(.lt-ponto:hover:not(.ativo)) .lt-ponto.ativo:not(:hover) .lt-ponto-ano { opacity: .35; }
 .lt-meses { display: flex; align-items: flex-end; gap: 2px; }
 .lt-mes { width: 30px; border: 0; background: transparent; padding: 2px 0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--subtle); }
 .lt-mes:disabled { cursor: default; opacity: .4; }
@@ -255,7 +273,7 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 .lt-mes.ativo { color: var(--ink); }
 .lt-mes.ativo .lt-barra i { background: var(--azul); }
 .lt-rotulo { font-size: 10.5px; font-weight: 700; line-height: 1; }
-.lt-total { font-size: 12.5px; color: var(--muted); padding-bottom: 2px; }
+.lt-total { font-size: 12.5px; color: var(--muted); align-self: flex-start; margin-top: 7px; }
 @media (max-width: 640px) { .lt-meses { width: 100%; justify-content: space-between; } .lt-mes { width: auto; flex: 1 1 0; } .lt-total { display: none; } }
 
 /* Calendário */

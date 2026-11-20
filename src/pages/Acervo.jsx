@@ -273,7 +273,7 @@ export default function Acervo() {
     setParams(novo);
   };
   const aba = (v, Icone, nome) => (
-    <button type="button" className={'aba' + (vista === v ? ' ativa' : '')} aria-pressed={vista === v} onClick={() => mudar(v)}><Icone size={16} />{nome}</button>
+    <button type="button" className={'vista' + (vista === v ? ' ativa' : '')} aria-pressed={vista === v} onClick={() => mudar(v)}><Icone size={15} />{nome}</button>
   );
 
   return (
@@ -287,7 +287,7 @@ export default function Acervo() {
           {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label="Limpar busca">×</button>
             : <kbd className="busca-atalho" aria-hidden="true">/</kbd>}
         </label>
-        <div className="abas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}</div>
+        <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}</div>
       </div>
 
       {sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
@@ -319,7 +319,7 @@ export default function Acervo() {
             <LinhaDoTempo contagem={contagem} ano={ano} mes={mes} aoEscolher={escolherPeriodo} comTodos={comFiltro || anos.length > 1} />
           )}
           {vista === 'calendario' && filtrados.length > 0 && (
-            <LinhaDoTempo contagem={contagem} ano={calAno} mes={calMes} aoEscolher={(a, m) => mudarMes(a, m || ultimoMes(a))} mesObrigatorio semTotal />
+            <LinhaDoTempo contagem={contagem} ano={calAno} mes={calMes} aoEscolher={(a, m) => mudarMes(a, m || ultimoMes(a))} comMeses mesObrigatorio semTotal />
           )}
           {vista !== 'temas' && (semTitulo > 0 || semTema > 0 || nFavoritos > 0 || sonhos.some((x) => x.status === 'dar_atencao')) && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8, marginLeft: 'auto' }}>
