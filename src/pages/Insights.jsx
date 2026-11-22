@@ -4,7 +4,7 @@ import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { calcularInsights, calcularLaboratorio, META } from '../lib/insights.js';
 import { INSIGHTS_EXEMPLO, insightDeExemplo, requisito } from '../lib/exemplos.js';
 import { Cadeado } from '../components/Icones.jsx';
-import { MapaPessoas, MapaTemas } from '../components/Laboratorio.jsx';
+import { CurvaTemas, MapaPessoas, MapaTemas } from '../components/Laboratorio.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { compararNovidades, guardar, linhas, quandoFoi } from '../lib/novidades.js';
 
@@ -148,11 +148,12 @@ export default function Insights() {
             </div>
             <button type="button" className="btn btn-linha" style={{ minHeight: 36 }} onClick={() => { mudarLaboratorio(false); avisar('Laboratório fechado. Para abrir de novo, use a senha na busca.'); }}>Fechar o laboratório</button>
           </div>
-          {(lab.lista.length > 0 || lab.pessoas.length > 0 || lab.nomes.length > 0 || lab.mapaTemas)
+          {(lab.lista.length > 0 || lab.pessoas.length > 0 || lab.nomes.length > 0 || lab.mapaTemas || lab.curva)
             ? (
               <div className="insights">
                 <MapaPessoas pessoas={lab.pessoas} periodo={lab.periodo} />
                 <MapaPessoas pessoas={lab.nomes} periodo={lab.periodo} tipo="nomes" />
+                <CurvaTemas curva={lab.curva} />
                 <MapaTemas mapa={lab.mapaTemas} />
                 {lab.lista.map((i) => <Cartao key={i.id} i={i} />)}
               </div>

@@ -590,7 +590,7 @@ export function calcularLaboratorio(sonhos) {
   const ordenados = [...sonhos].sort((a, b) => +new Date(a.sonhado_em) - +new Date(b.sonhado_em));
   const N = ordenados.length;
   const lista = [];
-  if (N < 10) return { lista, pessoas: [], nomes: [], mapaTemas: null };
+  if (N < 10) return { lista, pessoas: [], nomes: [], mapaTemas: null, curva: null };
   const palavras = ordenados.map(palavrasDe);
   const temasDe = ordenados.map((s) => new Set(s.temas || []));
   const todosTemasNorm = new Set(ordenados.flatMap((s) => (s.temas || []).map((t) => singular(normalizar(t)))));
@@ -694,5 +694,138 @@ export function calcularLaboratorio(sonhos) {
     if (linhas.length >= 2) mapaTemas = { passo, rotulos, linhas, totais };
   }
 
-  return { lista, pessoas, nomes, mapaTemas, periodo: { ini: +new Date(ordenados[0].sonhado_em), fim: Date.now() } };
+  return { lista, pessoas, nomes, mapaTemas, curva: curvaDosTemas(ordenados), periodo: { ini: +new Date(ordenados[0].sonhado_em), fim: Date.now() } };
+}
+
+// Curva dos temas: em que parte dos sonhos de cada ano (ou semestre, em acervos curtos) cada tema aparece,
+// e os casos que chamam atenção: o que subiu rápido, dois temas que parecem trocar de lugar e o que voltou.
+// Usa a proporção, não o número, para um ano com mais registros não parecer cheio de tudo.
+function curvaDosTemas(ordenados) {
+  const N = ordenados.length;
+  const datas = ordenados.map((s) => new Date(s.sonhado_em));
+  const anos = datas[N - 1].getFullYear() - datas[0].getFullYear() + 1;
+  // Por ano quando há anos suficientes com sonhos; senão, por semestre.
+  return (anos >= 3 && curvaPor(true, ordenados, datas)) || curvaPor(false, ordenados, datas);
+}
+
+function curvaPor(porAno, ordenados, datas) {
+  const N = ordenados.length;
+  const sem = (d) => d.getFullYear() * 2 + (d.getMonth() < 6 ? 0 : 1);
+  const chave = porAno ? (d) => d.getFullYear() : sem;
+  const a = chave(datas[0]), z = chave(datas[N - 1]);
+  const P = Math.min(12, z - a + 1);
+  if (P < 3) return null;
+  const base = z - P + 1;
+  const rotulos = Array.from({ length: P }, (_, i) => {
+    const k = base + i;
+    return porAno ? String(k) : Math.floor(k / 2) + (k % 2 ? '.2' : '.1'); // 2025.1 = 1º semestre
+  });
+  const totais = Array(P).fill(0);
+  const ocorre = new Map();
+  ordenados.forEach((s, i) => {
+    const c = chave(datas[i]) - base;
+    if (c < 0) return;
+    totais[c]++;
+    for (const t of new Set(s.temas || [])) { if (!ocorre.has(t)) ocorre.set(t, Array(P).fill(0)); ocorre.get(t)[c]++; }
+  });
+  // Períodos com poucos sonhos fazem a proporção pular à toa: ficam de fora da conta dos destaques.
+  const firme = totais.map((t) => t >= 5);
+  if (firme.filter(Boolean).length < 3) return null;
+  const agora = new Date();
+  const parcial = chave(agora) === z; // o último período ainda está acontecendo
+  const linhas = [...ocorre].map(([tema, n]) => ({
+    tema, n, total: n.reduce((x, y) => x + y, 0),
+    p: n.map((v, i) => (totais[i] ? v / totais[i] : null)),
+  })).filter((l) => l.total >= 4).sort((x, y) => y.total - x.total);
+  if (linhas.length < 2) return null;
+  const pct = (v) => Math.round(v * 100) + '%';
+  // Como o período entra numa frase: "em 2024" ou "no 1º semestre de 2024".
+  const partes = (i) => { const [y, m] = rotulos[i].split('.'); return { y, m }; };
+  const em = (i) => (porAno ? 'em ' + rotulos[i] : 'no ' + partes(i).m + 'º semestre de ' + partes(i).y);
+  const de = (i) => (porAno ? 'de ' + rotulos[i] : 'do ' + partes(i).m + 'º semestre de ' + partes(i).y);
+  const entre = (i, j) => (porAno ? `De ${rotulos[i]} a ${rotulos[j]}` : `Do ${partes(i).m}º semestre de ${partes(i).y} ao ${partes(j).m}º de ${partes(j).y}`);
+  const idx = totais.map((_, i) => i).filter((i) => firme[i]);
+  const destaques = [];
+
+  // 1. Subiu rápido: o maior salto de um período firme para o seguinte.
+  {
+    let melhor = null;
+    for (const l of linhas) for (let k = 1; k < idx.length; k++) {
+      const i = idx[k - 1], j = idx[k];
+      const d = l.p[j] - l.p[i];
+      // Vindo do zero depois de já ter aparecido antes é uma volta, não uma subida: fica para o "Voltou".
+      if (l.n[i] === 0 && idx.slice(0, k - 1).some((q) => l.n[q] > 0)) continue;
+      if (l.n[j] >= 3 && d >= 0.12 && l.p[j] >= 2 * l.p[i] && (!melhor || d > melhor.d)) melhor = { l, i, j, d };
+    }
+    if (melhor) {
+      const { l, i, j } = melhor;
+      destaques.push({ id: 'subiu', nome: 'Subiu rápido', temas: [{ tema: l.tema, papel: 'sobe' }], de: i, ate: j,
+        resumo: l.tema,
+        texto: `${l.tema} foi de ${pct(l.p[i])} dos sonhos ${em(i)} para ${pct(l.p[j])} ${em(j)}: de ${l.n[i]} para ${l.n[j]} sonhos.` });
+    }
+  }
+
+  // 2. Trocaram de lugar: um tema sobe enquanto outro desce, período a período, e quase nunca estão no mesmo sonho.
+  {
+    const firmes = (l) => idx.map((i) => l.p[i]);
+    const media = (v) => v.reduce((x, y) => x + y, 0) / v.length;
+    const corr = (u, v) => {
+      const mu = media(u), mv = media(v);
+      let num = 0, du = 0, dv = 0;
+      for (let i = 0; i < u.length; i++) { num += (u[i] - mu) * (v[i] - mv); du += (u[i] - mu) ** 2; dv += (v[i] - mv) ** 2; }
+      return du && dv ? num / Math.sqrt(du * dv) : 0;
+    };
+    // Variação entre o começo e o fim (média dos dois primeiros e dos dois últimos períodos firmes).
+    const variacao = (v) => { const m = v.length >= 4 ? 2 : 1; return media(v.slice(-m)) - media(v.slice(0, m)); };
+    const cand = linhas.slice(0, 15).map((l) => ({ l, v: firmes(l) })).map((x) => ({ ...x, dv: variacao(x.v) }));
+    const subiu = destaques[0]?.temas[0].tema;
+    let melhor = null, melhorSemSubiu = null;
+    for (const s of cand) for (const d of cand) {
+      if (s === d || s.dv < 0.08 || d.dv > -0.08) continue;
+      const r = corr(s.v, d.v);
+      if (r > -0.6) continue;
+      const score = -r * (s.dv - d.dv);
+      if (!melhor || score > melhor.score) melhor = { s, d, r, score };
+      if (s.l.tema !== subiu && d.l.tema !== subiu && (!melhorSemSubiu || score > melhorSemSubiu.score)) melhorSemSubiu = { s, d, r, score };
+    }
+    // Se der, um par diferente do tema que subiu rápido, para os destaques não repetirem a mesma história.
+    if (melhorSemSubiu) melhor = melhorSemSubiu;
+    if (melhor) {
+      const { s, d } = melhor;
+      const i = idx[0], j = idx[idx.length - 1];
+      const juntos = ordenados.filter((x) => (x.temas || []).includes(s.l.tema) && (x.temas || []).includes(d.l.tema)).length;
+      destaques.push({ id: 'trocaram', nome: 'Trocaram de lugar', temas: [{ tema: s.l.tema, papel: 'sobe' }, { tema: d.l.tema, papel: 'desce' }], de: i, ate: j,
+        resumo: s.l.tema + ' e ' + d.l.tema,
+        texto: `${entre(i, j)}, enquanto ${s.l.tema} foi de ${pct(s.l.p[i])} para ${pct(s.l.p[j])} dos sonhos, ${d.l.tema} foi de ${pct(d.l.p[i])} para ${pct(d.l.p[j])}. `
+          + (!juntos ? 'Nunca estiveram no mesmo sonho.' : juntos === 1 ? 'Estiveram no mesmo sonho só uma vez.' : `Estiveram no mesmo sonho ${juntos <= 3 ? 'só ' : ''}${juntos} vezes.`) });
+    }
+  }
+
+  // 3. Voltou: some por pelo menos um período inteiro e reaparece com força.
+  {
+    const usados = new Set(destaques.flatMap((x) => x.temas.map((t) => t.tema)));
+    let melhor = null;
+    for (const l of linhas) {
+      if (usados.has(l.tema)) continue;
+      for (let k = 1; k < idx.length - 1; k++) {
+        const i = idx[k];
+        if (l.n[i] !== 0) continue;
+        const antes = idx.slice(0, k).reduce((x, j) => x + l.n[j], 0);
+        let fim = k + 1; while (fim < idx.length - 1 && l.n[idx[fim]] === 0) fim++;
+        const depois = l.n[idx[fim]];
+        if (antes >= 2 && depois >= 2 && (!melhor || depois > melhor.depois)) melhor = { l, sumiu: i, voltou: idx[fim], depois, antes };
+      }
+    }
+    if (melhor) {
+      const { l, sumiu, voltou } = melhor;
+      destaques.push({ id: 'voltou', nome: 'Voltou', temas: [{ tema: l.tema, papel: 'volta' }], de: sumiu, ate: voltou,
+        resumo: l.tema,
+        texto: `${l.tema} não apareceu em nenhum sonho ${de(sumiu)} e voltou ${em(voltou)}, em ${l.n[voltou]} sonhos.` });
+    }
+  }
+
+  // Os temas dos destaques sempre entram no gráfico, mesmo fora dos mais frequentes.
+  const nosDestaques = new Set(destaques.flatMap((x) => x.temas.map((t) => t.tema)));
+  const mostradas = linhas.filter((l, k) => k < 10 || nosDestaques.has(l.tema));
+  return { porAno, rotulos, totais, firme, parcial, linhas: mostradas, destaques };
 }

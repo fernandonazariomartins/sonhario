@@ -1,6 +1,6 @@
 // Quadros largos do Laboratório onírico: o mapa das pessoas e o mapa dos temas no tempo.
 // Só mostram contagens do próprio acervo; nada aqui interpreta.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCorTema } from '../lib/estado.jsx';
 import { semViuvas } from '../lib/tipografia.js';
@@ -212,6 +212,178 @@ export function MapaTemas({ mapa }) {
             </span>
           ))}
         </div>
+      </div>
+    </Quadro>
+  );
+}
+
+// ——— Curva dos temas ———
+
+// Cores dos destaques (validadas para daltonismo): sobe em azul, desce em terracota, volta em verde.
+const COR = { sobe: '#0257AA', desce: '#C8551B', volta: '#1E8263' };
+const SETA = { sobe: '↑', desce: '↓', volta: '↺' };
+
+export function CurvaTemas({ curva }) {
+  const estiloTema = useCorTema();
+  const [sel, setSel] = useState({ destaque: 0 });
+  const [foco, setFoco] = useState(null); // período sob o mouse ou o dedo
+  // O desenho usa a largura real da caixa, para letras e linhas terem o mesmo tamanho no celular e no computador.
+  const caixa = useRef(null);
+  const [largura, setLargura] = useState(720);
+  useEffect(() => {
+    const el = caixa.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([e]) => setLargura(Math.round(e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [curva]);
+  if (!curva) return null;
+  const { rotulos, totais, firme, parcial, linhas, destaques } = curva;
+  const P = rotulos.length;
+  const destaque = sel.tema ? null : destaques[sel.destaque] || null;
+  const ativos = sel.tema ? [{ tema: sel.tema, papel: 'sobe' }] : destaque ? destaque.temas : [];
+  const corDe = new Map(ativos.map((t) => [t.tema, COR[t.papel]]));
+
+  const estreito = largura < 520;
+  const W = Math.max(300, largura), H = estreito ? 260 : 300, esq = 40, dir = estreito ? 92 : 132, topo = 18, baixo = 40;
+  const larg = W - esq - dir, alt = H - topo - baixo;
+  const maxP = Math.max(0.1, ...linhas.flatMap((l) => l.p.filter((v) => v != null)));
+  const teto = Math.min(1, Math.ceil(maxP * 10) / 10);
+  const passoGrade = teto > 0.5 ? 0.25 : teto > 0.2 ? 0.1 : 0.05;
+  const x = (i) => esq + (P === 1 ? larg / 2 : (i * larg) / (P - 1));
+  const y = (v) => topo + alt - (v / teto) * alt;
+  const trecho = (l, de, ate) => {
+    let d = '', abre = true;
+    for (let i = de; i <= ate; i++) {
+      if (l.p[i] == null) { abre = true; continue; }
+      d += (abre ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(l.p[i]).toFixed(1);
+      abre = false;
+    }
+    return d;
+  };
+  const ultimo = parcial ? P - 2 : P - 1; // o período em andamento entra tracejado
+  const grade = [];
+  for (let v = 0; v <= teto + 1e-9; v += passoGrade) grade.push(v);
+
+  // Rótulos diretos no fim das linhas em destaque, afastados para não se encostarem.
+  const fimDe = (l) => { for (let i = P - 1; i >= 0; i--) if (l.p[i] != null) return i; return 0; };
+  const rotFim = linhas.filter((l) => corDe.has(l.tema)).map((l) => ({ l, i: fimDe(l), y: y(l.p[fimDe(l)]) })).sort((a, b) => a.y - b.y);
+  for (let k = 1; k < rotFim.length; k++) if (rotFim[k].y - rotFim[k - 1].y < 18) rotFim[k].y = rotFim[k - 1].y + 18;
+
+  const pct = (v) => Math.round(v * 100) + '%';
+  const nomeP = (i) => (curva.porAno ? rotulos[i] : rotulos[i].replace(/(\d+)\.(\d)/, '$2º semestre de $1'));
+  const periodoNome = curva.porAno ? 'ano' : 'semestre';
+  const resumoAria = (destaque ? destaque.texto + ' ' : '') + 'Temas: ' + linhas.map((l) => l.tema + ' ' + l.p.map((v, i) => rotulos[i] + ' ' + (v == null ? '-' : pct(v))).join(', ')).join('; ');
+
+  return (
+    <Quadro nome="Curva dos temas" titulo={`Como os seus temas cresceram e minguaram, ${periodoNome} a ${periodoNome}`}
+      termo={`Cada linha é um tema: a parte dos sonhos de cada ${periodoNome} em que ele aparece. Usa a proporção, e não o número, para um ${periodoNome} com mais registros não parecer cheio de tudo. Os destaques são contas: um tema que sobe enquanto outro desce pode ser coincidência, ou uma imagem cedendo lugar a outra. O sentido é seu.`}>
+      {destaques.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="group" aria-label="Destaques">
+          {destaques.map((d, k) => {
+            const on = !sel.tema && sel.destaque === k;
+            return (
+              <button key={d.id} type="button" aria-pressed={on} onClick={() => setSel({ destaque: k })}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: '8px 14px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
+                  border: '1px solid ' + (on ? 'var(--ink)' : 'var(--line-strong)'), background: on ? 'var(--ink)' : 'var(--panel)', color: on ? '#fff' : 'var(--ink)' }}>
+                <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: on ? 0.8 : 0.65 }}>{d.nome}</span>
+                <span style={{ fontSize: 14.5, fontWeight: 700, display: 'flex', gap: 8 }}>
+                  {d.temas.map((t) => <span key={t.tema}><span aria-hidden="true" style={{ color: on ? '#fff' : COR[t.papel] }}>{SETA[t.papel]} </span><span className="sigilo">{t.tema}</span></span>)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div ref={caixa} style={{ position: 'relative' }} onPointerLeave={() => setFoco(null)}>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={resumoAria} style={{ display: 'block', overflow: 'visible' }}>
+          {destaque && (
+            <rect x={x(destaque.de)} y={topo} width={Math.max(2, x(destaque.ate) - x(destaque.de))} height={alt} fill="var(--azul-claro)" opacity={0.55} rx={4} />
+          )}
+          {grade.map((v) => (
+            <g key={v}>
+              <line x1={esq} x2={W - dir} y1={y(v)} y2={y(v)} stroke="var(--line)" strokeWidth={1} />
+              <text x={esq - 8} y={y(v)} textAnchor="end" dominantBaseline="central" fontSize={11} fill="var(--muted)">{pct(v)}</text>
+            </g>
+          ))}
+          {rotulos.map((r, i) => (estreito && P > 6 && i % 2 !== (P - 1) % 2 && foco !== i) ? null : (
+            <text key={i} x={x(i)} y={H - baixo + 18} textAnchor="middle" fontSize={estreito ? 10.5 : 11.5} fontWeight={foco === i ? 800 : 500} fill={firme[i] ? 'var(--ink)' : 'var(--subtle)'}>
+              {r}{parcial && i === P - 1 ? '*' : ''}
+            </text>
+          ))}
+          {foco != null && <line x1={x(foco)} x2={x(foco)} y1={topo} y2={topo + alt} stroke="var(--subtle)" strokeWidth={1} strokeDasharray="3 3" />}
+          {/* Os outros temas ficam ao fundo, em cinza. */}
+          {linhas.filter((l) => !corDe.has(l.tema)).map((l) => (
+            <g key={l.tema} fill="none" stroke="var(--node)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round">
+              <path d={trecho(l, 0, ultimo)} />
+              {parcial && <path d={trecho(l, ultimo, P - 1)} strokeDasharray="3 4" />}
+            </g>
+          ))}
+          {linhas.filter((l) => corDe.has(l.tema)).map((l) => {
+            const cor = corDe.get(l.tema);
+            return (
+              <g key={l.tema}>
+                <path d={trecho(l, 0, ultimo)} fill="none" stroke={cor} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+                {parcial && <path d={trecho(l, ultimo, P - 1)} fill="none" stroke={cor} strokeWidth={2.5} strokeDasharray="4 5" strokeLinecap="round" />}
+                {l.p.map((v, i) => v != null && (
+                  <circle key={i} cx={x(i)} cy={y(v)} r={foco === i ? 6 : 4.5} fill={cor} stroke="var(--panel)" strokeWidth={2} />
+                ))}
+              </g>
+            );
+          })}
+          {rotFim.map(({ l, i, y: yy }) => (
+            <text key={l.tema} className="sigilo" x={x(i) + 12} y={yy} dominantBaseline="central" fontSize={estreito ? 12.5 : 13.5} fontWeight={800} fill="var(--ink)">
+              <tspan fill={corDe.get(l.tema)}>{SETA[ativos.find((t) => t.tema === l.tema)?.papel] || ''} </tspan>{l.tema}
+            </text>
+          ))}
+          {/* Faixas invisíveis por período: passar o mouse ou tocar mostra os números. */}
+          {rotulos.map((_, i) => {
+            const meio = P === 1 ? larg : larg / (P - 1);
+            return <rect key={i} x={x(i) - meio / 2} y={0} width={meio} height={H} fill="transparent" style={{ cursor: 'crosshair' }}
+              onPointerEnter={() => setFoco(i)} onClick={() => setFoco(i)} />;
+          })}
+        </svg>
+        {foco != null && (
+          <div role="status" style={{ position: 'absolute', top: 0, left: Math.max(0, Math.min(W - 180, foco > P / 2 ? x(foco) - 192 : x(foco) + 12)), width: 180, boxSizing: 'border-box',
+            background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: 10, boxShadow: 'var(--shadow-pop)', padding: '8px 12px', fontSize: 13, pointerEvents: 'none', zIndex: 2 }}>
+            <div style={{ fontWeight: 800 }}>{nomeP(foco)}{parcial && foco === P - 1 ? ' (até agora)' : ''}</div>
+            <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: ativos.length ? 4 : 0 }}>{plural(totais[foco], 'sonho registrado', 'sonhos registrados')}{!firme[foco] ? ' · poucos para comparar' : ''}</div>
+            {linhas.filter((l) => corDe.has(l.tema)).map((l) => (
+              <div key={l.tema} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 10, height: 3, borderRadius: 2, background: corDe.get(l.tema) }} />
+                <span className="sigilo">{l.tema}</span>
+                <strong style={{ marginLeft: 'auto', paddingLeft: 10 }}>{l.p[foco] == null ? '–' : pct(l.p[foco])}</strong>
+                <span style={{ color: 'var(--muted)', fontSize: 12 }}>({l.n[foco]})</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {(destaque || sel.tema) && (
+        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, maxWidth: 680 }} className="sigilo">
+          {destaque ? semViuvas(destaque.texto) : (() => {
+            const l = linhas.find((m) => m.tema === sel.tema);
+            const vals = l.p.map((v, i) => (v == null ? null : { v, i })).filter(Boolean);
+            const ini = vals[0], fim = vals[vals.length - 1];
+            return semViuvas(`${l.tema}: em ${pct(ini.v)} dos sonhos de ${nomeP(ini.i)} e em ${pct(fim.v)} dos de ${nomeP(fim.i)}, em ${plural(l.total, 'sonho', 'sonhos')} no total.`);
+          })()}
+        </p>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 12, color: 'var(--muted)', marginRight: 2 }}>Ver um tema:</span>
+        {linhas.map((l) => {
+          const on = sel.tema === l.tema;
+          return (
+            <button key={l.tema} type="button" aria-pressed={on} className="chip" onClick={() => setSel(on ? { destaque: 0 } : { tema: l.tema })}
+              style={{ ...estiloTema(l.tema), height: 26, fontSize: 13, cursor: 'pointer', border: 0, outline: on ? '2px solid var(--ink)' : 'none', outlineOffset: 1, fontWeight: on ? 800 : 600 }}>
+              {l.tema}
+            </button>
+          );
+        })}
+        {parcial && <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 'auto' }}>* {periodoNome} em andamento, tracejado</span>}
       </div>
     </Quadro>
   );
