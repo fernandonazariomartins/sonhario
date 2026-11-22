@@ -829,3 +829,202 @@ function curvaPor(porAno, ordenados, datas) {
   const mostradas = linhas.filter((l, k) => k < 10 || nosDestaques.has(l.tema));
   return { porAno, rotulos, totais, firme, parcial, linhas: mostradas, destaques };
 }
+
+// ——— Retrato de um tema (laboratório) ———
+// Tudo o que o acervo junta em volta de um tema ou de uma pessoa: o que vem junto, quem aparece,
+// quando, o clima dos relatos e o que a própria pessoa já escreveu nas amplificações.
+// Continua sendo contagem e as palavras de quem sonha: o retrato junta o material, não diz o que o tema significa.
+
+const AFETOS = [
+  ['medo', 'medo assustado assustada apavorado apavorada pavor terror susto temor'],
+  ['angústia', 'angustia angustiado angustiada aflito aflita aflicao desespero desesperado desesperada'],
+  ['ansiedade', 'ansiedade ansioso ansiosa nervoso nervosa tenso tensa preocupado preocupada'],
+  ['tristeza', 'triste tristeza chorar chorando chorei choro melancolia'],
+  ['raiva', 'raiva bravo brava irritado irritada furioso furiosa odio briga brigando brigar'],
+  ['vergonha', 'vergonha envergonhado envergonhada constrangido constrangida humilhado humilhada'],
+  ['culpa', 'culpa culpado culpada arrependido arrependida'],
+  ['alegria', 'alegria alegre feliz felicidade contente rindo risada riso'],
+  ['paz', 'paz calma calmo tranquilo tranquila tranquilidade sereno serena'],
+  ['alívio', 'alivio aliviado aliviada'],
+  ['saudade', 'saudade saudades'],
+  ['desejo', 'desejo vontade atracao apaixonado apaixonada paixao'],
+  ['perda', 'perdido perdida perder perdi perdendo sumiu sumir'],
+  ['pressa', 'pressa atrasado atrasada atraso correndo corria correr fugir fugindo fugia'],
+].map(([nome, ws]) => [nome, new Set(ws.split(' '))]);
+
+const DIAS_SONHO = 864e5;
+
+export function retratoDoTema(sonhos, tema) {
+  const ordenados = [...sonhos].sort((a, b) => +new Date(a.sonhado_em) - +new Date(b.sonhado_em));
+  const N = ordenados.length;
+  const dentro = ordenados.map((s) => (s.temas || []).includes(tema));
+  const idx = dentro.map((d, i) => (d ? i : -1)).filter((i) => i >= 0);
+  const n = idx.length;
+  if (!n) return null;
+  const fora = Math.max(1, N - n);
+  const ref = (i) => ({ id: ordenados[i].id, titulo: ordenados[i].titulo?.trim() || '', em: +new Date(ordenados[i].sonhado_em) });
+  const forca = (d, total) => (d / n) / ((total - d + 0.5) / fora);
+  const sonhosDoTema = idx.map(ref);
+
+  // Tempo: quando chegou, quando voltou por último, o ano em que mais pesou e o silêncio atual.
+  const primeiro = sonhosDoTema[0], ultimo = sonhosDoTema[n - 1];
+  let fase = null;
+  {
+    const porAno = new Map();
+    ordenados.forEach((s, i) => {
+      const y = new Date(s.sonhado_em).getFullYear();
+      const v = porAno.get(y) || { t: 0, d: 0 }; v.t++; if (dentro[i]) v.d++; porAno.set(y, v);
+    });
+    const anos = [...porAno].filter(([, v]) => v.t >= 8);
+    if (anos.length >= 2 && n >= 4) {
+      const [ano, v] = anos.sort((a, b) => b[1].d / b[1].t - a[1].d / a[1].t)[0];
+      const geral = n / N;
+      if (v.d >= 3 && v.d / v.t >= geral * 1.5) fase = { ano, n: v.d, total: v.t, p: v.d / v.t, geral };
+    }
+  }
+  let silencio = null;
+  if (n >= 3) {
+    const vaos = idx.slice(1).map((i, k) => +new Date(ordenados[i].sonhado_em) - +new Date(ordenados[idx[k]].sonhado_em));
+    const media = vaos.reduce((a, b) => a + b, 0) / vaos.length;
+    const desde = Date.now() - ultimo.em;
+    const depois = N - 1 - idx[n - 1]; // sonhos registrados depois do último com o tema
+    if (desde > Math.max(60 * DIAS_SONHO, media * 2.5) && depois >= 5) silencio = { desde: ultimo.em, dias: Math.round(desde / DIAS_SONHO), depois };
+  }
+
+  // Com o que vem: outros temas no mesmo sonho, pesando o quanto são raros fora dele.
+  const freq = new Map();
+  ordenados.forEach((s) => { for (const t of new Set(s.temas || [])) freq.set(t, (freq.get(t) || 0) + 1); });
+  const ehPessoaTag = tagsDePessoa(ordenados);
+  const ehPapel = (t) => normalizar(t).split(/[^a-z]+/).some((w) => FIGURAS.includes(w) || FIGURAS.includes(singular(w)));
+  const juntos = new Map();
+  for (const i of idx) for (const t of new Set(ordenados[i].temas || [])) if (t !== tema && !mesmaImagem(t, tema)) juntos.set(t, (juntos.get(t) || 0) + 1);
+  const companhia = [], pessoas = new Map();
+  for (const [t, d] of juntos) {
+    if (d < 2) continue;
+    const item = { tema: t, n: d, f: forca(d, freq.get(t)), total: freq.get(t) };
+    if (ehPessoaTag(t) || ehPapel(t)) pessoas.set('tag:' + t, { nome: t, tag: true, n: d, f: item.f });
+    else companhia.push(item);
+  }
+  companhia.sort((a, b) => b.n * Math.min(3, b.f) - a.n * Math.min(3, a.f));
+
+  // Quem aparece nos relatos: pelo papel (mãe, chefe) ou pelo nome.
+  const palavras = ordenados.map(palavrasDe);
+  const nomes = nomesPorRelato(ordenados);
+  {
+    const total = new Map(), d = new Map(), forma = new Map();
+    ordenados.forEach((s, i) => {
+      const aqui = new Map();
+      for (const [k, orig] of palavras[i]) if (FIGURAS.includes(k)) aqui.set(k, orig);
+      for (const [k, orig] of nomes[i]) if (!aqui.has(k)) aqui.set(k, orig);
+      for (const [k, orig] of aqui) {
+        total.set(k, (total.get(k) || 0) + 1);
+        if (!forma.has(k)) forma.set(k, orig);
+        if (dentro[i]) d.set(k, (d.get(k) || 0) + 1);
+      }
+    });
+    for (const [k, m] of d) {
+      if (m < 2 || mesmaImagem(k, tema)) continue;
+      const nome = forma.get(k);
+      if ([...pessoas.values()].some((p) => mesmaImagem(p.nome, nome))) continue;
+      pessoas.set(k, { nome, n: m, f: forca(m, total.get(k)) });
+    }
+  }
+  const listaPessoas = [...pessoas.values()].filter((p) => p.tag || p.f >= 1.3 || p.n >= Math.max(3, n * 0.3))
+    .sort((a, b) => b.n * Math.min(3, b.f) - a.n * Math.min(3, a.f)).slice(0, 6);
+
+  // Imagens dos relatos que se juntam a esse tema bem mais do que no resto do acervo, sem ser tema junto.
+  const imagens = [];
+  {
+    const temasJunto = new Set([...juntos.keys()].map((t) => singular(normalizar(t))));
+    const total = new Map(), d = new Map(), forma = new Map();
+    palavras.forEach((m, i) => {
+      for (const [k, orig] of m) {
+        if (k.length < 3 || !(ehSimbolo(k) || LUGARES.includes(k))) continue;
+        total.set(k, (total.get(k) || 0) + 1);
+        if (!forma.has(k)) forma.set(k, orig);
+        if (dentro[i]) d.set(k, (d.get(k) || 0) + 1);
+      }
+    });
+    for (const [k, m] of d) {
+      // Pessoas já estão no bloco delas; o vocabulário do próprio tema (casa e quarto) não é descoberta.
+      if (m < 2 || temasJunto.has(k) || FIGURAS.includes(k) || mesmaImagem(k, tema) || obvio(k, tema)) continue;
+      if (listaPessoas.some((p) => mesmaImagem(p.nome, k))) continue;
+      const f = forca(m, total.get(k));
+      if (f >= 1.8) imagens.push({ palavra: forma.get(k), n: m, f });
+    }
+    imagens.sort((a, b) => b.n * Math.min(4, b.f) - a.n * Math.min(4, a.f));
+  }
+
+  // Clima: palavras de afeto nos relatos com esse tema, comparadas com o resto do acervo.
+  const clima = [];
+  {
+    const tem = palavras.map((m) => {
+      const r = new Set();
+      for (const k of m.keys()) for (const [nome, ws] of AFETOS) if (ws.has(k)) r.add(nome);
+      return r;
+    });
+    for (const [nome] of AFETOS) {
+      let d = 0, t = 0;
+      tem.forEach((r, i) => { if (r.has(nome)) { t++; if (dentro[i]) d++; } });
+      if (d >= 2) clima.push({ nome, n: d, p: d / n, pFora: (t - d) / fora, f: forca(d, t) });
+    }
+    clima.sort((a, b) => b.n * Math.min(3, b.f) - a.n * Math.min(3, a.f));
+  }
+
+  // Antes e depois: o tema que vem no sonho anterior e no seguinte (até 7 dias de distância).
+  const antes = new Map(), depois = new Map();
+  for (const i of idx) {
+    const t0 = +new Date(ordenados[i].sonhado_em);
+    if (i > 0 && t0 - +new Date(ordenados[i - 1].sonhado_em) <= 7 * DIAS_SONHO && !dentro[i - 1])
+      for (const t of new Set(ordenados[i - 1].temas || [])) antes.set(t, (antes.get(t) || 0) + 1);
+    if (i + 1 < N && +new Date(ordenados[i + 1].sonhado_em) - t0 <= 7 * DIAS_SONHO && !dentro[i + 1])
+      for (const t of new Set(ordenados[i + 1].temas || [])) depois.set(t, (depois.get(t) || 0) + 1);
+  }
+  const sequencia = (m) => [...m].filter(([t, k]) => k >= 2 && !mesmaImagem(t, tema)).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([t, k]) => ({ tema: t, n: k }));
+
+  // As palavras de quem sonha: amplificações dos sonhos com o tema e as de outros sonhos que falam dele.
+  const tNorm = normalizar(tema);
+  const citaTema = (txt) => {
+    const ws = normalizar(txt).split(/[^a-z0-9]+/).filter(Boolean).map(singular);
+    const alvo = tNorm.split(/[^a-z0-9]+/).filter(Boolean).map(singular);
+    return alvo.length > 0 && alvo.every((a) => ws.includes(a));
+  };
+  const amplificacoes = [], emOutros = [];
+  ordenados.forEach((s, i) => {
+    for (const c of s.conclusoes || []) {
+      const texto = (c.texto || '').trim();
+      if (!texto) continue;
+      const a = { texto, cita: citaTema(texto), sonho: ref(i), em: c.em ? +new Date(c.em) : +new Date(s.sonhado_em) };
+      if (dentro[i]) amplificacoes.push(a); else if (a.cita) emOutros.push(a);
+    }
+  });
+  // Primeiro as que falam do tema pelo nome, depois as mais recentes.
+  amplificacoes.sort((a, b) => (b.cita - a.cita) || b.em - a.em);
+  emOutros.sort((a, b) => b.em - a.em);
+  const comAmplificacao = new Set(amplificacoes.map((a) => a.sonho.id)).size;
+
+  const atencao = idx.filter((i) => ordenados[i].status === 'dar_atencao').map(ref).reverse();
+  const favoritos = idx.filter((i) => ordenados[i].favorito).length;
+
+  // Perguntas para levar à sessão: montadas com os números acima, sem sugerir resposta.
+  const perguntas = [`O que ${tema} é para você fora dos sonhos? O que vem à cabeça quando você pensa em ${tema}, sem filtrar?`];
+  const c0 = companhia.find((c) => c.f >= 1.2 || c.n >= 3);
+  if (c0) perguntas.push(`${tema} e ${c0.tema} aparecem juntos em ${plural(c0.n, 'sonho', 'sonhos')}. Onde os dois se encontram na sua vida acordada?`);
+  const p0 = listaPessoas[0];
+  if (p0) perguntas.push(`${p0.nome} está em ${p0.n} dos ${n} sonhos com ${tema}. O que ${p0.nome} tem a ver com ${tema} para você?`);
+  if (fase) perguntas.push(`${tema} pesou mais em ${fase.ano}: esteve em ${Math.round(fase.p * 100)}% dos sonhos daquele ano. O que acontecia na sua vida nessa época?`);
+  if (silencio) perguntas.push(`${tema} não aparece desde ${dataDe(silencio.desde)}, mesmo com ${plural(silencio.depois, 'sonho registrado', 'sonhos registrados')} depois. O que mudou desde então?`);
+  const cl = clima.find((x) => x.f >= 1.5);
+  if (cl) perguntas.push(`Nos relatos com ${tema}, ${cl.nome} aparece em ${cl.n} de ${n}. Como é ${cl.nome} para você, hoje?`);
+  const dp = sequencia(depois)[0];
+  if (dp && dp.n >= 3) perguntas.push(`Depois de sonhar com ${tema}, ${dp.tema} veio no sonho seguinte ${plural(dp.n, 'vez', 'vezes')}. O que um puxa do outro?`);
+  if (!amplificacoes.length && !emOutros.length) perguntas.push(`Você ainda não escreveu amplificações nos sonhos com ${tema}. Que lembranças, histórias ou imagens se ligam a ${tema} para você?`);
+
+  return {
+    tema, n, N, p: n / N, primeiro, ultimo, sonhos: sonhosDoTema, fase, silencio,
+    companhia: companhia.slice(0, 6), pessoas: listaPessoas, imagens: imagens.slice(0, 8), clima: clima.slice(0, 5),
+    antes: sequencia(antes), depois: sequencia(depois),
+    amplificacoes, emOutros, comAmplificacao, atencao, favoritos, perguntas: perguntas.slice(0, 6).map((q) => q.charAt(0).toUpperCase() + q.slice(1)),
+    periodo: { ini: +new Date(ordenados[0].sonhado_em), fim: Date.now() },
+  };
+}

@@ -336,3 +336,14 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
 .discreto .chip mark, .discreto .sigilo-tag mark { background: transparent; }
 .discreto input.sigilo::placeholder, .discreto textarea.sigilo::placeholder { color: transparent; }
 .btn-discreto.ligado { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* Retrato de um tema (laboratório, aba Temas do acervo) */
+.retrato { display: flex; flex-direction: column; gap: 20px; padding: 20px; border-radius: 16px; background: var(--azul-claro); }
+.retrato-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.retrato-numeros > div { display: flex; flex-direction: column; gap: 2px; background: var(--panel); border-radius: 12px; padding: 12px 14px; }
+.retrato-numeros strong { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.retrato-numeros span { font-size: 12.5px; color: var(--muted); }
+.retrato-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px 28px; }
+.retrato-perguntas { display: flex; flex-direction: column; gap: 8px; background: var(--panel); border-radius: 12px; padding: 16px 18px; }
+.retrato-perguntas ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-family: var(--serif); font-size: 16px; line-height: 1.55; }
+.tema-clicavel { border: 0; background: none; padding: 0; cursor: pointer; font: inherit; text-align: left; }

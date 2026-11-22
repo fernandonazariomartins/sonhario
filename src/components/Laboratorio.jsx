@@ -388,3 +388,158 @@ export function CurvaTemas({ curva }) {
     </Quadro>
   );
 }
+
+// ——— Retrato de um tema ———
+// Abre ao tocar num tema na aba Temas do acervo, com o laboratório aberto.
+// Junta o material em volta do tema; o sentido continua com quem sonha.
+
+function Bloco({ titulo, dica, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+      <span className="rotulo">{titulo}</span>
+      {children}
+      {dica && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>{semViuvas(dica)}</span>}
+    </div>
+  );
+}
+
+function Barra({ rotulo, para, n, de, estilo, max }) {
+  return (
+    <Link to={para} style={{ display: 'grid', gridTemplateColumns: 'minmax(80px, 40%) 1fr auto', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'var(--ink)' }}>
+      <span className="chip" style={{ ...estilo, height: 24, fontSize: 13, justifySelf: 'start', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rotulo}</span>
+      <span style={{ height: 10, borderRadius: 5, background: 'var(--cinza)', overflow: 'hidden' }}>
+        <span style={{ display: 'block', height: '100%', width: (n / max) * 100 + '%', background: 'var(--azul)', borderRadius: 5 }} />
+      </span>
+      <span style={{ fontSize: 12.5, color: 'var(--muted)', minWidth: 52, textAlign: 'right' }}>{n} de {de}</span>
+    </Link>
+  );
+}
+
+function Amplificacao({ a }) {
+  const [inteira, setInteira] = useState(false);
+  const longa = a.texto.length > 320;
+  return (
+    <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <p className="sigilo" style={{ margin: 0, fontFamily: 'var(--serif)', fontSize: 15, lineHeight: 1.6 }}>
+        {semViuvas(longa && !inteira ? a.texto.slice(0, 300).replace(/\s+\S*$/, '') + '…' : a.texto)}
+        {longa && <button type="button" onClick={() => setInteira(!inteira)} style={{ marginLeft: 6, border: 0, background: 'none', padding: 0, color: 'var(--azul)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans, inherit)' }}>{inteira ? 'menos' : 'ler tudo'}</button>}
+      </p>
+      <Link to={'/app/sonho/' + a.sonho.id} style={{ fontSize: 12.5, color: 'var(--muted)', textDecoration: 'none' }}>
+        em <strong className="sigilo" style={{ color: 'var(--ink)' }}>{a.sonho.titulo || 'Sem título'}</strong> · {data(a.sonho.em)}
+      </Link>
+    </div>
+  );
+}
+
+export function RetratoTema({ r, aoFechar }) {
+  const estiloTema = useCorTema();
+  const [todas, setTodas] = useState(false);
+  if (!r) return null;
+  const pct = (v) => Math.round(v * 100) + '%';
+  const linkTema = (t) => '/app/acervo?tema=' + encodeURIComponent(t);
+  const maxC = Math.max(1, ...r.companhia.map((c) => c.n), ...r.pessoas.map((p) => p.n));
+  const amps = todas ? r.amplificacoes : r.amplificacoes.slice(0, 3);
+  const neutro = { background: 'transparent', border: '1px solid var(--line-strong)' };
+  return (
+    <section className="retrato" aria-label={'Retrato de ' + r.tema}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginRight: 'auto', maxWidth: 680 }}>
+          <span className="rotulo-forte" style={{ color: 'var(--azul)' }}>Laboratório onírico · retrato do tema</span>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.55, color: 'var(--muted)' }}>
+            {semViuvas(`Tudo o que o seu acervo junta em volta de ${r.tema}: o que vem junto, quem aparece, quando, o clima dos relatos e o que você já escreveu. O Sonhário não diz o que ${r.tema} significa; reúne o material para você e quem te acompanha procurarem.`)}
+          </p>
+        </div>
+        {aoFechar && <button type="button" className="btn btn-linha" style={{ minHeight: 34 }} onClick={aoFechar}>Fechar o retrato</button>}
+      </div>
+
+      <div className="retrato-numeros">
+        <div><strong>{r.n}</strong><span>{r.n === 1 ? 'sonho' : 'sonhos'} · {pct(r.p)} do acervo</span></div>
+        <div><strong>{data(r.primeiro.em)}</strong><span>a primeira vez</span></div>
+        <div><strong>{data(r.ultimo.em)}</strong><span>a mais recente</span></div>
+        <div><strong>{r.comAmplificacao}</strong><span>{r.comAmplificacao === 1 ? 'sonho com amplificação' : 'sonhos com amplificação'}</span></div>
+      </div>
+
+      <Bloco titulo="Quando aparece" dica={r.fase ? `Pesou mais em ${r.fase.ano}: ${pct(r.fase.p)} dos sonhos daquele ano, contra ${pct(r.fase.geral)} no acervo todo.` : null}>
+        <Faixa sonhos={r.sonhos} periodo={r.periodo} />
+        {r.silencio && <span className="sigilo" style={{ fontSize: 13.5, color: 'var(--ink)' }}>{semViuvas(`Em silêncio desde ${data(r.silencio.desde)}: ${plural(r.silencio.depois, 'sonho registrado', 'sonhos registrados')} depois, nenhum com ${r.tema}.`)}</span>}
+      </Bloco>
+
+      <div className="retrato-grade">
+        {r.companhia.length > 0 && (
+          <Bloco titulo="Com o que vem" dica="Outros temas no mesmo sonho, primeiro os que quase não aparecem sem ele.">
+            {r.companhia.map((c) => <Barra key={c.tema} rotulo={c.tema} para={linkTema(c.tema)} n={c.n} de={r.n} estilo={estiloTema(c.tema)} max={maxC} />)}
+          </Bloco>
+        )}
+        {r.pessoas.length > 0 && (
+          <Bloco titulo="Quem aparece" dica="Pessoas das tags e dos relatos, pelo papel ou pelo nome.">
+            {r.pessoas.map((p) => <Barra key={p.nome} rotulo={p.nome} para={p.tag ? linkTema(p.nome) : '/app/acervo?q=' + encodeURIComponent(p.nome)} n={p.n} de={r.n} estilo={p.tag ? estiloTema(p.nome) : neutro} max={maxC} />)}
+          </Bloco>
+        )}
+        {r.imagens.length > 0 && (
+          <Bloco titulo="Imagens dos relatos" dica={`Palavras que aparecem bem mais nos sonhos com ${r.tema} do que no resto, sem nunca terem virado tema junto.`}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {r.imagens.map((x) => (
+                <Link key={x.palavra} to={'/app/acervo?q=' + encodeURIComponent(x.palavra)} className="chip" style={{ ...neutro, height: 28, fontSize: 13.5, color: 'var(--ink)', textDecoration: 'none' }}>
+                  {x.palavra}<span style={{ marginLeft: 6, color: 'var(--muted)', fontWeight: 500 }}>{x.n}</span>
+                </Link>
+              ))}
+            </div>
+          </Bloco>
+        )}
+        {r.clima.length > 0 && (
+          <Bloco titulo="O clima dos relatos" dica="Palavras de sentimento escritas por você nos relatos. Ao lado, o mesmo no resto do acervo.">
+            {r.clima.map((c) => (
+              <div key={c.nome} style={{ display: 'grid', gridTemplateColumns: '92px 1fr auto', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{c.nome}</span>
+                <span style={{ position: 'relative', height: 10, borderRadius: 5, background: 'var(--cinza)' }}>
+                  <span style={{ position: 'absolute', inset: 0, width: Math.min(100, c.p * 100) + '%', background: 'var(--azul)', borderRadius: 5 }} />
+                  <span title="no resto do acervo" style={{ position: 'absolute', top: -3, bottom: -3, left: Math.min(100, c.pFora * 100) + '%', width: 2, background: 'var(--ink)' }} />
+                </span>
+                <span style={{ fontSize: 12.5, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{pct(c.p)} · resto {pct(c.pFora)}</span>
+              </div>
+            ))}
+          </Bloco>
+        )}
+        {(r.antes.length > 0 || r.depois.length > 0) && (
+          <Bloco titulo="Antes e depois" dica="Temas do sonho anterior e do seguinte, quando vieram até 7 dias de distância.">
+            {r.antes.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 13, color: 'var(--muted)', minWidth: 58 }}>antes</span>{r.antes.map((x) => <Link key={x.tema} to={linkTema(x.tema)} className="chip" style={{ ...estiloTema(x.tema), height: 26, fontSize: 13 }}>{x.tema} <span style={{ opacity: 0.7, marginLeft: 4 }}>{x.n}×</span></Link>)}</div>}
+            {r.depois.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 13, color: 'var(--muted)', minWidth: 58 }}>depois</span>{r.depois.map((x) => <Link key={x.tema} to={linkTema(x.tema)} className="chip" style={{ ...estiloTema(x.tema), height: 26, fontSize: 13 }}>{x.tema} <span style={{ opacity: 0.7, marginLeft: 4 }}>{x.n}×</span></Link>)}</div>}
+          </Bloco>
+        )}
+      </div>
+
+      <Bloco titulo={`O que você já escreveu sobre ${r.tema}`}>
+        {r.amplificacoes.length === 0 && r.emOutros.length === 0 && (
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>{semViuvas('Ainda não há amplificações nos sonhos com esse tema. É aqui que, com o tempo, aparece o que ele é para você, nas suas palavras.')}</p>
+        )}
+        {amps.map((a, k) => <Amplificacao key={k} a={a} />)}
+        {r.amplificacoes.length > 3 && <button type="button" className="btn btn-linha" style={{ alignSelf: 'flex-start', minHeight: 34 }} onClick={() => setTodas(!todas)}>{todas ? 'Mostrar menos' : 'Ver as ' + r.amplificacoes.length + ' amplificações'}</button>}
+        {r.emOutros.length > 0 && (
+          <>
+            <span style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{semViuvas(`Em amplificações de outros sonhos que falam de ${r.tema}:`)}</span>
+            {r.emOutros.slice(0, 3).map((a, k) => <Amplificacao key={'o' + k} a={a} />)}
+          </>
+        )}
+      </Bloco>
+
+      {r.atencao.length > 0 && (
+        <Bloco titulo={'Ainda pedem atenção · ' + r.atencao.length}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {r.atencao.slice(0, 4).map((s) => (
+              <Link key={s.id} to={'/app/sonho/' + s.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 14, color: 'var(--ink)', textDecoration: 'none', padding: '4px 0', borderBottom: '1px solid var(--line)' }}>
+                <strong className="sigilo" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.titulo || 'Sem título'}</strong>
+                <span style={{ fontSize: 12.5, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{data(s.em)}</span>
+              </Link>
+            ))}
+          </div>
+        </Bloco>
+      )}
+
+      <div className="retrato-perguntas">
+        <span className="rotulo-forte" style={{ color: 'var(--azul)' }}>Para levar à sessão</span>
+        <ol>{r.perguntas.map((q, k) => <li key={k} className="sigilo">{semViuvas(q)}</li>)}</ol>
+        <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{semViuvas('Perguntas montadas com os números acima. Não têm resposta certa: servem para começar a conversa.')}</span>
+      </div>
+    </section>
+  );
+}

@@ -9,6 +9,8 @@ import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
 import { ehSenha } from '../lib/laboratorio.js';
 import Realce from '../components/Realce.jsx';
+import { RetratoTema } from '../components/Laboratorio.jsx';
+import { retratoDoTema } from '../lib/insights.js';
 
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
@@ -314,6 +316,7 @@ export default function Acervo() {
     if (params.get('ano')) novo.ano = params.get('ano');
     if (params.get('mes')) novo.mes = params.get('mes');
     if (temaFiltro && v !== 'temas') novo.tema = temaFiltro;
+    if (v === 'temas' && params.get('r')) novo.r = params.get('r');
     setParams(novo);
   };
   const aba = (v, Icone, nome) => (
@@ -522,19 +525,34 @@ function JuntarTemas({ temas, aoFechar }) {
 
 function PorTema({ sonhos, temas, achados }) {
   const estiloTema = useCorTema();
+  const { sonhos: todos, laboratorio } = useEstado();
   const [juntando, setJuntando] = useState(false);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const alvo = params.get('t');
+  // Com o laboratório aberto, tocar num tema abre o retrato dele (?r=tema, para voltar do sonho e continuar aberto).
+  const retrato = laboratorio ? params.get('r') || '' : '';
+  const r = useMemo(() => (retrato ? retratoDoTema(todos, retrato) : null), [retrato, todos]);
+  const irPara = (nome) => setTimeout(() => document.getElementById('tema-' + encodeURIComponent(nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  const abrirRetrato = (nome, fechar) => {
+    const novo = new URLSearchParams(params);
+    if (fechar) novo.delete('r'); else novo.set('r', nome);
+    setParams(novo, { replace: true });
+    irPara(nome);
+  };
   useEffect(() => {
-    if (alvo) setTimeout(() => document.getElementById('tema-' + encodeURIComponent(alvo))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    if (alvo) irPara(alvo);
   }, [alvo]);
+  useEffect(() => {
+    if (retrato) irPara(retrato);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const semTema = sonhos.filter((s) => !s.temas?.length);
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
       <aside className="painel" style={{ flex: '1 1 220px', maxWidth: 280, padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span className="rotulo" style={{ margin: '0 8px 8px' }}>Temas por frequência</span>
+        {laboratorio && <span style={{ margin: '-4px 8px 10px', fontSize: 12.5, lineHeight: 1.45, color: 'var(--azul)' }}>{semViuvas('Laboratório aberto: toque num tema para ver o retrato dele.')}</span>}
         {temas.length > 1 && <button type="button" className="btn btn-tracejado" style={{ margin: '0 8px 10px', minHeight: 36, fontSize: 13 }} onClick={() => setJuntando(true)}>Juntar ou renomear temas</button>}
-        {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} onClick={(e) => { e.preventDefault(); document.getElementById('tema-' + encodeURIComponent(t.nome))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}><span className="chip" style={estiloTema(t.nome)}>{t.nome}</span><span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
+        {temas.map((t) => <a key={t.nome} href={'#tema-' + encodeURIComponent(t.nome)} aria-current={retrato === t.nome ? 'true' : undefined} onClick={(e) => { e.preventDefault(); if (laboratorio) abrirRetrato(t.nome); else irPara(t.nome); }} style={{ minHeight: 40, padding: '0 10px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600, background: retrato === t.nome ? 'var(--azul-claro)' : undefined }}><span className="chip" style={estiloTema(t.nome)}>{t.nome}</span><span style={{ color: 'var(--muted)', fontSize: 13 }}>{t.n}</span></a>)}
         {semTema.length > 0 && <div className="aviso" style={{ margin: '10px 8px 0' }}><strong>{semTema.length} sem tema.</strong> <Link to="/app/acervo?st=1" style={{ color: 'inherit' }}>Ver só esses</Link> e abrir cada um para etiquetar.</div>}
       </aside>
       {juntando && <JuntarTemas temas={temas} aoFechar={() => setJuntando(false)} />}
@@ -543,12 +561,22 @@ function PorTema({ sonhos, temas, achados }) {
           const lista = sonhos.filter((s) => s.temas?.includes(t.nome));
           if (!lista.length) return null;
           const desde = lista[lista.length - 1].sonhado_em;
+          const aberto = retrato === t.nome;
+          const nome = <span className="sigilo-tag" style={{ ...estiloTema(t.nome), padding: '0 10px', borderRadius: 6 }}>{t.nome}</span>;
           return (
             <section key={t.nome} id={'tema-' + encodeURIComponent(t.nome)} className="painel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 84 }}>
-              <div>
-                <h2 className="titulo-m" style={{ fontSize: 32 }}><span className="sigilo-tag" style={{ ...estiloTema(t.nome), padding: '0 10px', borderRadius: 6 }}>{t.nome}</span></h2>
-                <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 10 }}>
+                <div style={{ marginRight: 'auto' }}>
+                  <h2 className="titulo-m" style={{ fontSize: 32 }}>
+                    {laboratorio
+                      ? <button type="button" className="tema-clicavel" aria-expanded={aberto} title={aberto ? 'Fechar o retrato' : 'Ver o retrato deste tema'} onClick={() => abrirRetrato(t.nome, aberto)}>{nome}</button>
+                      : nome}
+                  </h2>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
+                </div>
+                {laboratorio && !aberto && <button type="button" className="btn btn-linha" style={{ minHeight: 34, color: 'var(--azul)' }} onClick={() => abrirRetrato(t.nome)}>Ver o retrato</button>}
               </div>
+              {aberto && <RetratoTema r={r} aoFechar={() => abrirRetrato(t.nome, true)} />}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {lista.slice(0, achados?.size ? 24 : 8).map((s) => <Nota key={s.id} s={s} comTemas achado={achados?.get(s.id)} />)}
               </div>
