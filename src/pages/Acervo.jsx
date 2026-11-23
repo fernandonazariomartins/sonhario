@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario, Documento, Amplificar } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario, Documento, Amplificar, Mais } from '../components/Icones.jsx';
 import { LinhaDoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
@@ -190,6 +190,38 @@ function Vazio() {
   );
 }
 
+const EXTRAS = [
+  { v: 'calendario', Icone: IconeCalendario, nome: 'Calendário' },
+  { v: 'amplificacoes', Icone: Amplificar, nome: 'Amplificações' },
+];
+
+// Botão "+" no fim das abas: abre as visualizações que não ficam sempre à mostra.
+function MaisVistas({ vista, aoEscolher }) {
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e) => { if (!caixa.current?.contains(e.target)) setAberto(false); };
+    const esc = (e) => { if (e.key === 'Escape') setAberto(false); };
+    document.addEventListener('pointerdown', fora);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
+  }, [aberto]);
+  const outras = EXTRAS.filter((x) => x.v !== vista);
+  return (
+    <div ref={caixa} style={{ position: 'relative', display: 'flex' }}>
+      <button type="button" className="vista vista-mais" onClick={() => setAberto(!aberto)} aria-expanded={aberto} aria-haspopup="menu" aria-label="Mais visualizações" title="Mais visualizações"><Mais size={16} /></button>
+      {aberto && (
+        <div className="menu" role="menu" style={{ minWidth: 200 }}>
+          {outras.map(({ v, Icone, nome }) => (
+            <button key={v} role="menuitem" type="button" className="menu-item" onClick={() => { setAberto(false); aoEscolher(v); }}><Icone size={17} /> {nome}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const CHAVE_ACERVO = 'sonhario:acervo';
 function guardarEnderecoAcervo(busca) {
   try { sessionStorage.setItem(CHAVE_ACERVO, busca); } catch { /* sem armazenamento: volta ao acervo limpo */ }
@@ -325,7 +357,7 @@ export default function Acervo() {
     setParams(novo);
   };
   const aba = (v, Icone, nome) => (
-    <button type="button" className={'vista' + (vista === v ? ' ativa' : '')} aria-pressed={vista === v} onClick={() => mudar(v)}><Icone size={15} />{nome}</button>
+    <button key={v} type="button" className={'vista' + (vista === v ? ' ativa' : '')} aria-pressed={vista === v} onClick={() => mudar(v)}><Icone size={15} />{nome}</button>
   );
 
   return (
@@ -339,7 +371,10 @@ export default function Acervo() {
           {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label="Limpar busca">×</button>
             : <kbd className="busca-atalho" aria-hidden="true">/</kbd>}
         </label>
-        <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}{aba('amplificacoes', Amplificar, 'Amplificações')}</div>
+        <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('temas', Tema, 'Temas')}
+          {/* Calendário e Amplificações ficam no "+"; a que estiver aberta aparece como aba. */}
+          {EXTRAS.filter((x) => x.v === vista).map((x) => aba(x.v, x.Icone, x.nome))}
+          <MaisVistas vista={vista} aoEscolher={mudar} /></div>
       </div>
 
       {!carregado && sonhos.length === 0 ? <Carregando /> : sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (

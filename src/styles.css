@@ -58,8 +58,10 @@ input, textarea, select { font-family: inherit; color: var(--ink); }
 .vista:hover { color: var(--ink); }
 .vista.ativa { color: var(--ink); font-weight: 800; border-bottom-color: var(--azul); }
 .vista.ativa svg { color: var(--azul); }
-@media (max-width: 640px) { .vistas { width: 100%; justify-content: space-between; overflow-x: auto; scrollbar-width: none; } .vistas::-webkit-scrollbar { display: none; } .vista { padding: 0 6px; flex: none; } }
-@media (max-width: 480px) { .vista svg { display: none; } }
+@media (max-width: 640px) { .vistas { width: 100%; justify-content: space-between; } .vista { padding: 0 6px; } }
+.vista-mais { padding: 0 8px; }
+.vista-mais[aria-expanded="true"] { color: var(--ink); }
+@media (max-width: 480px) { .vista:not(.vista-mais) svg { display: none; } }
 .busca { flex: 1 1 220px; max-width: 480px; height: 44px; border-radius: 10px; background: var(--cinza); display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--muted); }
 .busca input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 14px; outline: none; }
 .busca input::-webkit-search-cancel-button { display: none; }
