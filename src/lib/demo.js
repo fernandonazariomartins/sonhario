@@ -37,6 +37,7 @@ function tabela(nome) {
     case 'perfis': return { linhas: [], visivel: () => true, chave: 'id' };
     case 'convites': return { linhas: db.convites, visivel: () => true, chave: 'token' };
     case 'lembretes': return { linhas: db.lembretes, visivel: () => true, chave: 'endpoint' };
+    case 'notas_tema': return { linhas: db.notas_tema, visivel: (r) => r.user_id === EU.id, chave: 'id' };
     case 'chaves_sonhos': return { linhas: [], visivel: () => true, chave: 'sonho_id' };
     default: return null; // "chaves": sem criptografia na demonstração
   }
@@ -47,6 +48,7 @@ function preencher(nome, r) {
   const agora = new Date().toISOString();
   if (nome === 'sonhos') return { user_id: EU.id, compartilhado_com: [], imagens: [], apagado_em: null, favorito: false, ...r };
   if (nome === 'compartilhamentos') return { id: novoId(), dono_id: EU.id, escopo: 'escolhidos', pendente: false, sonhos_pedidos: [], eh_terapeuta: false, criado_em: agora, ...r };
+  if (nome === 'notas_tema') return { user_id: EU.id, criado_em: agora, editado_em: null, ...r };
   if (nome === 'convites') return { dono_id: EU.id, criado_em: agora, ...r };
   if (nome === 'comentarios') {
     const sonho = db.sonhos.find((s) => s.id === r.sonho_id) || db.daMarina.find((s) => s.id === r.sonho_id);

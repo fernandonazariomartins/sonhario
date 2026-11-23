@@ -224,7 +224,14 @@ export function dadosIniciais() {
     c(8, uuid(900), MARINA.id, EU.email, MARINA.id, MARINA.nome, 'Né? Quando acordei, fui direto anotar antes que sumisse.', [0, '07:20'], false),
     c(9, uuid(901), MARINA.id, EU.email, EU.id, EU.nome, 'Perguntar à Marina se o jardim é o da casa da infância dela.', [8, '09:00'], true, true),
   ];
-  return { sonhos, daMarina, compartilhamentos, perfis, comentarios };
+  // Comentários sobre temas (página do tema): só quem escreveu vê.
+  const nt = (n, tema, texto, dias) => ({ id: uuid(800 + n), user_id: EU.id, tema, texto, cifrado: null, chave_dono: null, criado_em: emHora(dias, '08:10'), editado_em: null });
+  const notas_tema = [
+    nt(1, 'casa', 'A casa quase nunca é a minha de hoje: é a da avó, ou uma mistura das duas. Reparar em que cômodo cada sonho acontece.', 40),
+    nt(2, 'casa', 'Nos últimos meses ela ganha cômodos que eu não conhecia. Levar essa sequência para a Helena.', 3),
+    nt(3, 'água', 'Quase sempre subindo devagar, sem afogar ninguém. O que está enchendo?', 12),
+  ];
+  return { sonhos, daMarina, compartilhamentos, perfis, comentarios, notas_tema };
 }
 
 // Desenhos dos sonhos, como quem rabisca no caderno ao acordar.

@@ -4,6 +4,7 @@ import { useEstado } from '../lib/estado.jsx';
 import { lerArquivos, deKeepJSON, combinarComAcervo } from '../lib/importar.js';
 import { tituloDe, dataCurta } from '../lib/sonhos.js';
 import { guardarMidia } from '../lib/midia.js';
+import { useNotasTema, restaurarNotas } from '../lib/notasTema.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Mic, Imagem } from '../components/Icones.jsx';
 
@@ -12,6 +13,7 @@ const anexosDe = (s) => s._midia ? { audios: s.audio ? 0 : Math.min(1, s._midia.
 export default function Importar() {
   const { sonhos, salvarVarios, avisar, salvarAudio, salvarImagem } = useEstado();
   const navegar = useNavigate();
+  useNotasTema(); // carregadas, para a restauração não repetir comentários que já estão aqui
   const [lido, setLido] = useState(null); // { sonhos, keep, marcadores }
   const [marcados, setMarcados] = useState([]);
   const [pularRepetidos, setPularRepetidos] = useState(true);
@@ -45,11 +47,14 @@ export default function Importar() {
       else prontos.push(s);
     }
     await salvarVarios(prontos);
+    let notas = 0;
+    if (lido.notasTema?.length) notas = await restaurarNotas(lido.notasTema).catch((e) => { avisar('Os comentários dos temas não vieram: ' + e.message); return 0; });
     setImportando(null);
     const partes = [];
     if (novos.length) partes.push(novos.length === 1 ? '1 sonho importado' : novos.length + ' sonhos importados');
     if (comRelato) partes.push(comRelato === 1 ? '1 completado com o relato' : comRelato + ' completados com o relato');
     if (comAnexos) partes.push(comAnexos === 1 ? '1 completado com os anexos' : comAnexos + ' completados com os anexos');
+    if (notas) partes.push(notas === 1 ? '1 comentário de tema' : notas + ' comentários de tema');
     avisar(partes.join(' · '));
     navegar('/app/acervo');
   }

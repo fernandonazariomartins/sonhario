@@ -896,3 +896,26 @@ grant execute on function public.aceitar_convite_terapeuta(text) to authenticate
 -- 17. Laboratório onírico -------------------------------------------------------
 -- Quem digitou a senha na busca vê as observações extras (só as do próprio acervo).
 alter table public.perfis add column if not exists laboratorio boolean;
+
+-- 18. Comentários sobre um tema ------------------------------------------------
+-- Na página de um tema (/app/acervo?tema=X), a pessoa escreve o que pensa sobre aquele tema.
+-- Só quem escreveu vê. Com a frase-senha, o tema e o texto vão trancados em "cifrado"
+-- (com a chave da nota embrulhada para a dona em "chave_dono"); "tema" e "texto" ficam vazios.
+-- Pode rodar de novo.
+create table if not exists public.notas_tema (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  tema          text not null default '',
+  texto         text not null default '' check (length(texto) <= 5000),
+  cifrado       text,
+  chave_dono    text,
+  criado_em     timestamptz not null default now(),
+  editado_em    timestamptz
+);
+create index if not exists notas_tema_user on public.notas_tema (user_id, criado_em);
+alter table public.notas_tema enable row level security;
+drop policy if exists "notas_tema: só a dona" on public.notas_tema;
+create policy "notas_tema: só a dona" on public.notas_tema
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));

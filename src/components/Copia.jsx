@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import Janela from './Janela.jsx';
 import { useEstado } from '../lib/estado.jsx';
 import { montarCopia, contarArquivos, baixar } from '../lib/backup.js';
+import { useNotasTema } from '../lib/notasTema.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { Importar, Ok } from './Icones.jsx';
 
@@ -14,6 +15,7 @@ export default function Copia({ aoFechar }) {
   const abertos = useMemo(() => sonhos.filter((s) => !s._trancado), [sonhos]);
   const trancados = sonhos.length - abertos.length;
   const arquivos = useMemo(() => contarArquivos(abertos), [abertos]);
+  const { notas } = useNotasTema();
   const temArquivos = arquivos.audios + arquivos.imagens > 0;
   const [comArquivos, setComArquivos] = useState(true);
   const [etapa, setEtapa] = useState(''); // '' | 'baixando' | 'montando' | 'pronto'
@@ -25,6 +27,7 @@ export default function Copia({ aoFechar }) {
     try {
       const r = await montarCopia(abertos, { urlAudio, urlImagem }, {
         comArquivos: comArquivos && temArquivos,
+        notasTema: notas,
         aoAvancar: (feitos, total) => { setProgresso({ feitos, total }); if (feitos === total) setEtapa('montando'); },
       });
       baixar(r.blob, r.nome);

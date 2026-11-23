@@ -11,6 +11,8 @@ import { ehSenha } from '../lib/laboratorio.js';
 import Realce from '../components/Realce.jsx';
 import { RetratoTema } from '../components/Laboratorio.jsx';
 import { retratoDoTema } from '../lib/insights.js';
+import ComentariosTema from '../components/ComentariosTema.jsx';
+import { useNotasTema, notasDoTema, renomearNasNotas } from '../lib/notasTema.js';
 
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
@@ -362,6 +364,7 @@ export default function Acervo() {
               </span>
             </div>
           )}
+          {temaFiltro && vista !== 'temas' && <ComentariosTema tema={temaFiltro} />}
 
           {!carregado && <p className="carregando-resto" role="status"><span className="girando" aria-hidden="true" />{semViuvas('Abrindo o resto do acervo…')}</p>}
           {/* Linha do tempo à esquerda e filtros à direita, numa linha só quando cabe. */}
@@ -493,6 +496,7 @@ function JuntarTemas({ temas, aoFechar }) {
     const novos = afetados.map((s) => ({ ...s, temas: [...new Set(s.temas.map((t) => (marcados.includes(t) ? final : t)))] }));
     await salvarVarios(novos);
     setOcupado(false);
+    await renomearNasNotas(marcados, final).catch((e) => avisar('Os comentários do tema não foram junto: ' + e.message));
     avisar(marcados.length === 1 ? 'Tema renomeado' : marcados.length + ' temas viraram “' + final + '”');
     aoFechar();
   }
@@ -526,10 +530,20 @@ function JuntarTemas({ temas, aoFechar }) {
   );
 }
 
+// Na aba Temas: leva à página do tema, onde ficam os comentários.
+function ComentarTema({ nome, n }) {
+  return (
+    <Link className="btn btn-linha" style={{ minHeight: 34 }} to={'/app/acervo?tema=' + encodeURIComponent(nome)} title={'Comentários sobre ' + nome}>
+      <Mensagem size={14} /> {n === 0 ? 'Comentar' : n === 1 ? '1 comentário' : n + ' comentários'}
+    </Link>
+  );
+}
+
 function PorTema({ sonhos, temas, achados }) {
   const estiloTema = useCorTema();
   const { sonhos: todos, laboratorio } = useEstado();
   const [juntando, setJuntando] = useState(false);
+  const { notas } = useNotasTema();
   const [params, setParams] = useSearchParams();
   const alvo = params.get('t');
   // Com o laboratório aberto, tocar num tema abre o retrato dele (?r=tema, para voltar do sonho e continuar aberto).
@@ -577,6 +591,7 @@ function PorTema({ sonhos, temas, achados }) {
                   </h2>
                   <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
                 </div>
+                <ComentarTema nome={t.nome} n={notasDoTema(notas, t.nome).length} />
                 <Link className="btn btn-linha" style={{ minHeight: 34 }} to={'/app/relatorio?tema=' + encodeURIComponent(t.nome)} title={'Relatório de ' + t.nome + ' em PDF'}><Documento size={14} /> PDF</Link>
                 {laboratorio && !aberto && <button type="button" className="btn btn-linha" style={{ minHeight: 34, color: 'var(--azul)' }} onClick={() => abrirRetrato(t.nome)}>Ver o retrato</button>}
               </div>

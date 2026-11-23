@@ -362,6 +362,7 @@ export async function lerArquivos(entrada) {
   const keep = [];
   const copia = []; // sonhario.json de uma cópia do acervo
   let copiaEm = null;
+  const notasTema = []; // comentários sobre os temas da cópia
   for (const f of arquivos) {
     const txt = await f.text();
     const n = f.name.toLowerCase();
@@ -372,7 +373,7 @@ export async function lerArquivos(entrada) {
     else if (n.endsWith('.json')) {
       try {
         const o = JSON.parse(txt);
-        if (ehCopiaSonhario(o)) { copia.push(...deCopiaSonhario(o, midias)); copiaEm = o.em || copiaEm; continue; }
+        if (ehCopiaSonhario(o)) { copia.push(...deCopiaSonhario(o, midias)); copiaEm = o.em || copiaEm; if (Array.isArray(o.comentarios_temas)) notasTema.push(...o.comentarios_temas); continue; }
         (o.labels || []).forEach((l) => marcadores.add(l.name));
         keep.push(o);
       } catch { /* não é uma nota do Keep */ }
@@ -381,7 +382,7 @@ export async function lerArquivos(entrada) {
     else sonhos.push(...(n.endsWith('.md') ? deMarkdown(txt, f.name, midias) : deTexto(txt, f.name, midias)));
   }
   // Cópia do Sonhário: o .json já tem tudo; o Sonhos.md que vem junto é só para ler.
-  if (copia.length) return { sonhos: copia, keep: [], midias, marcadores: [], soCSV: false, copia: { em: copiaEm } };
+  if (copia.length) return { sonhos: copia, keep: [], midias, marcadores: [], soCSV: false, copia: { em: copiaEm }, notasTema };
   // Num export do Notion, as outras páginas (a da tabela, subpáginas soltas) ficam de fora.
   // Num .zip que não é do Notion (ex.: Sonhos.md + pasta de anexos), cada .md vira sonhos.
   if (!paginas.length && !doCSV.length) for (const o of outrosMd) sonhos.push(...deMarkdown(o.txt, o.nome, midias));

@@ -53,6 +53,19 @@ function markdown(sonhos, quando) {
   return linhas.join('\n');
 }
 
+function mdNotas(notas) {
+  if (!notas.length) return '';
+  const porTema = new Map();
+  for (const n of notas) { if (!porTema.has(n.tema)) porTema.set(n.tema, []); porTema.get(n.tema).push(n); }
+  const linhas = ['', '---', '', '# Comentários sobre os temas', ''];
+  for (const [tema, lista] of [...porTema].sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))) {
+    linhas.push('## ' + tema, '');
+    for (const n of lista) linhas.push(`- ${dataHora(n.criado_em).slice(0, 10)} · ${n.texto.trim().replace(/\n+/g, ' ')}`);
+    linhas.push('');
+  }
+  return linhas.join('\n');
+}
+
 const LEIA_ME = (quando, n) => `Sonhário · cópia do acervo
 Baixada em ${dataHora(quando)}, com ${n === 1 ? '1 sonho' : n + ' sonhos'}.
 
@@ -63,7 +76,8 @@ O que tem aqui
 
 Para restaurar
 No Sonhário, abra ⋯ › Importar sonhos e envie este .zip inteiro, sem descompactar.
-Os sonhos voltam com temas, status, favoritos, amplificações, áudios e imagens.
+Os sonhos voltam com temas, status, favoritos, amplificações, áudios e imagens,
+além dos comentários sobre os temas.
 Os que já estiverem no acervo são pulados.
 
 Atenção: esta cópia está aberta, sem a criptografia do app.
@@ -71,7 +85,8 @@ Guarde num lugar só seu.
 `;
 
 // aoAvancar(feitos, total): conta os arquivos baixados.
-export async function montarCopia(sonhos, { urlAudio, urlImagem }, { comArquivos = true, aoAvancar = () => {} } = {}) {
+// notasTema: os comentários sobre os temas, que vão no .json e no fim do Sonhos.md.
+export async function montarCopia(sonhos, { urlAudio, urlImagem }, { comArquivos = true, aoAvancar = () => {}, notasTema = [] } = {}) {
   const quando = new Date().toISOString();
   const usados = new Set();
   const nomeUnico = (base) => { let n = base, k = 2; while (usados.has(n)) n = base + '-' + k++; usados.add(n); return n; };
@@ -116,8 +131,9 @@ export async function montarCopia(sonhos, { urlAudio, urlImagem }, { comArquivos
     });
     paraMd.push({ ...s, _audio: audio?.caminho, _imagens: ims.map((x) => x.caminho) });
   }
-  arquivos['sonhario.json'] = strToU8(JSON.stringify({ app: 'Sonhário', tipo: 'copia-do-acervo', versao: 1, em: quando, total: json.length, sonhos: json }, null, 2));
-  arquivos['Sonhos.md'] = strToU8(markdown(paraMd, quando));
+  const notas = notasTema.filter((n) => !n._trancado && n.texto?.trim()).map((n) => ({ tema: n.tema, texto: n.texto, criado_em: n.criado_em, editado_em: n.editado_em || null }));
+  arquivos['sonhario.json'] = strToU8(JSON.stringify({ app: 'Sonhário', tipo: 'copia-do-acervo', versao: 1, em: quando, total: json.length, sonhos: json, comentarios_temas: notas }, null, 2));
+  arquivos['Sonhos.md'] = strToU8(markdown(paraMd, quando) + mdNotas(notas));
   arquivos['LEIA-ME.txt'] = strToU8(LEIA_ME(quando, json.length));
   const zip = zipSync(arquivos, { level: 6 });
   return { blob: new Blob([zip], { type: 'application/zip' }), nome: `sonhario-copia-${quando.slice(0, 10)}.zip`, falhas };
