@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario, Documento } from '../components/Icones.jsx';
 import { LinhaDoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
@@ -356,7 +356,10 @@ export default function Acervo() {
                 <strong>{filtrados.length === 1 ? '1 sonho' : filtrados.length + ' sonhos'}</strong> com o tema
                 <span className="chip" style={{ ...estiloTema(temaFiltro), height: 28, fontSize: 14 }}>{temaFiltro}</span>
               </span>
-              <button type="button" className="btn btn-linha" style={{ minHeight: 34 }} onClick={tirarTema}><Fechar size={12} /> Ver todos</button>
+              <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
+                {filtrados.length > 0 && <Link className="btn btn-linha" style={{ minHeight: 34 }} to={'/app/relatorio?tema=' + encodeURIComponent(temaFiltro)}><Documento size={14} /> Relatório em PDF</Link>}
+                <button type="button" className="btn btn-linha" style={{ minHeight: 34 }} onClick={tirarTema}><Fechar size={12} /> Ver todos</button>
+              </span>
             </div>
           )}
 
@@ -574,6 +577,7 @@ function PorTema({ sonhos, temas, achados }) {
                   </h2>
                   <span style={{ fontSize: 13, color: 'var(--muted)' }}>{lista.length === 1 ? '1 sonho' : lista.length + ' sonhos'} · desde {mesAno(desde).toLowerCase()} · o último em {dataCurta(lista[0].sonhado_em)}</span>
                 </div>
+                <Link className="btn btn-linha" style={{ minHeight: 34 }} to={'/app/relatorio?tema=' + encodeURIComponent(t.nome)} title={'Relatório de ' + t.nome + ' em PDF'}><Documento size={14} /> PDF</Link>
                 {laboratorio && !aberto && <button type="button" className="btn btn-linha" style={{ minHeight: 34, color: 'var(--azul)' }} onClick={() => abrirRetrato(t.nome)}>Ver o retrato</button>}
               </div>
               {aberto && <RetratoTema r={r} aoFechar={() => abrirRetrato(t.nome, true)} />}

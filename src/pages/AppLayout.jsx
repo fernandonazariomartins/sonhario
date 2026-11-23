@@ -11,6 +11,7 @@ import Contribuir from '../components/Contribuir.jsx';
 import Lembrete from '../components/Lembrete.jsx';
 import { CriarFrase, MostrarCodigo, Destrancar, ErroCofre, TrocarFrase, TrancarAcervo, JanelaCriptografia } from '../components/Cofre.jsx';
 import JanelaIA from '../components/IA.jsx';
+import Copia from '../components/Copia.jsx';
 import EscolherModo from '../components/EscolherModo.jsx';
 import { rotuloAba, convitePendente } from '../lib/compartilhar.js';
 import { instalado } from '../lib/lembrete.js';
@@ -18,7 +19,7 @@ import { primeiraVezInstalado } from '../lib/instalar.js';
 import { sairDaDemo } from '../lib/demo.js';
 import { semViuvas } from '../lib/tipografia.js';
 import { useDiscreto, mudarDiscreto } from '../lib/discreto.js';
-import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado, Ok, Olho, OlhoFechado } from '../components/Icones.jsx';
+import { Mais, Mural, Faisca, Importar, Sair, Pontos, Sino, Mensagem, Voltar, Lixo, Pessoas, Cadeado, Ok, Olho, OlhoFechado, Documento } from '../components/Icones.jsx';
 
 export default function AppLayout() {
   const { pronto, usuario, semConta, temLogin, aviso, sair, entrar, sonhos, lixeira, apagarVarios, salvarVarios, avisar, compartilhamentos, cofre, codigoRecuperacao, abertosNoBanco, demo, modo, mudarModo } = useEstado();
@@ -29,7 +30,7 @@ export default function AppLayout() {
   const [arrumando, setArrumando] = useState(false);
   const { pathname } = useLocation();
   const [menu, setMenu] = useState(false);
-  const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'frase' | 'trancar' | 'ia'
+  const [janela, setJanela] = useState(''); // 'contribuir' | 'lembrete' | 'frase' | 'trancar' | 'ia' | 'copia'
   const caixaMenu = useRef(null);
   const discreto = useDiscreto();
 
@@ -88,6 +89,7 @@ export default function AppLayout() {
     if (codigoRecuperacao) return <MostrarCodigo />;
   }
   const pedeFrase = usuario && cofre === 'trancado' && !naCaptura;
+  const podeLerAqui = !usuario || cofre === 'aberto' || cofre === 'indisponivel';
   const abrindoCofre = usuario && cofre === 'carregando' && !naCaptura;
   // Quem atende vê a aba como Pacientes (lá também ficam os amigos que compartilham).
   const rotulo = modo.atende ? 'Pacientes' : rotuloAba(comigoTodos);
@@ -110,7 +112,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-casca" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header className="topo">
         <Logo para="/" ficar />
         <nav aria-label="Seções do app" className="abas" style={{ marginLeft: 'auto' }}>
@@ -129,6 +131,8 @@ export default function AppLayout() {
           {menu && (
             <div className="menu" role="menu">
               <Link role="menuitem" className="menu-item" to="/app/importar"><Importar size={18} /> Importar sonhos</Link>
+              {podeLerAqui && sonhos.length > 0 && <button role="menuitem" type="button" className="menu-item" onClick={() => abrir('copia')}><Importar size={18} /> Baixar cópia do acervo</button>}
+              {podeLerAqui && sonhos.some((s) => s.temas?.length) && <Link role="menuitem" className="menu-item" to="/app/relatorio"><Documento size={18} /> Relatório de um tema (PDF)</Link>}
               <Link role="menuitem" className="menu-item" to="/" state={{ ficar: true }}><Voltar size={18} /> Página inicial</Link>
               {temLogin && <Link role="menuitem" className="menu-item" to="/app/pessoas"><Pessoas size={18} /> Pessoas com acesso{compartilhamentos.pedidos.length > 0 && <span style={{ marginLeft: 'auto', minWidth: 22, height: 22, padding: '0 6px', borderRadius: 999, background: 'var(--azul)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{compartilhamentos.pedidos.length}</span>}</Link>}
               {temLogin && usuario && !modo.atende && compartilhamentos.comigo.length === 0 && compartilhamentos.aguardando.length === 0 && <Link role="menuitem" className="menu-item" to="/app/compartilhados"><Pessoas size={18} /> Compartilhados comigo</Link>}
@@ -193,6 +197,7 @@ export default function AppLayout() {
       {janela === 'cripto' && <JanelaCriptografia aoFechar={() => setJanela('')} aoTrocarFrase={() => setJanela('frase')} />}
       {janela === 'trancar' && <TrancarAcervo aoFechar={() => setJanela('')} />}
       {janela === 'ia' && <JanelaIA aoFechar={() => setJanela('')} />}
+      {janela === 'copia' && <Copia aoFechar={() => setJanela('')} />}
       {/* Pergunta uma vez só, fora da captura (de manhã a pessoa abre o app para gravar). */}
       {usuario && !demo && cofre === 'aberto' && modo.carregado && modo.perguntar && !naCaptura && !janela && <EscolherModo />}
       {aviso && (

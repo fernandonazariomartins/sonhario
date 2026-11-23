@@ -87,6 +87,8 @@ export default function Importar() {
         </div>
       </div>
 
+      <p style={{ margin: '-6px 0 0', fontSize: 14, lineHeight: 1.55, color: 'var(--muted)' }}>{semViuvas('Tem uma cópia do acervo baixada no Sonhário? Envie o .zip inteiro aqui para restaurar tudo, nesta conta ou em outra.')}</p>
+
       <label className="btn btn-preto btn-grande" style={{ alignSelf: 'flex-start' }}>
         Escolher arquivos
         <input type="file" multiple accept=".zip,.csv,.json,.txt,.md,image/*,audio/*,.3gp,.amr,.m4a" onChange={escolher} className="sr" />
@@ -105,6 +107,9 @@ export default function Importar() {
                 ))}
               </div>
             </div>
+          )}
+          {lido.copia && (
+            <div className="aviso" style={{ background: 'var(--azul-claro)', color: 'var(--azul-escuro)' }}>{semViuvas('Cópia do Sonhário' + (lido.copia.em ? ' baixada em ' + new Date(lido.copia.em).toLocaleDateString('pt-BR') : '') + '. Os sonhos voltam com temas, status, favoritos, amplificações, áudios e imagens.')}</div>
           )}
           {lido.soCSV && (
             <div className="aviso">{semViuvas('Este arquivo .csv traz só o título, a data e os temas. O texto de cada sonho fica nas páginas do Notion: envie o .zip do export para trazer os relatos também.')}</div>

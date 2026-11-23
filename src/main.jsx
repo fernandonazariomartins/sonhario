@@ -20,6 +20,7 @@ import Convite from './pages/Convite.jsx';
 import ConviteTerapeuta from './pages/ConviteTerapeuta.jsx';
 import Lixeira from './pages/Lixeira.jsx';
 import Pessoas from './pages/Pessoas.jsx';
+import Relatorio from './pages/Relatorio.jsx';
 import { SONHO_DESTAQUE } from './lib/demoDados.js';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -42,6 +43,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="insights" element={<Navigate to="/app/observacoes" replace />} />
             <Route path="lixeira" element={<Lixeira />} />
             <Route path="pessoas" element={<Pessoas />} />
+            <Route path="relatorio" element={<Relatorio />} />
             <Route path="compartilhados" element={<Compartilhados />} />
             <Route path="compartilhados/:dono" element={<Compartilhados />} />
             <Route path="compartilhados/:dono/:id" element={<Compartilhados />} />

@@ -1,7 +1,7 @@
 // Importação de sonhos que a pessoa já tem: Notion (CSV), Google Keep (Takeout, JSON) e texto/Markdown.
 // Áudios e imagens que vêm junto (no .zip ou soltos) entram no sonho: ficam em "_midia" até a hora de guardar.
 import { unzipSync, strFromU8 } from 'fflate';
-import { novoSonho } from './sonhos.js';
+import { novoSonho, novoId, STATUS, CORES } from './sonhos.js';
 import { tipoPorNome, ehAudio, ehImagem } from './midia.js';
 
 const CORES_KEEP = { DEFAULT: 'branco', YELLOW: 'amarelo', GREEN: 'verde', TEAL: 'azul', BLUE: 'azul', CERULEAN: 'azul', ORANGE: 'coral', RED: 'coral', PINK: 'coral', PURPLE: 'lilas', BROWN: 'areia', GRAY: 'areia' };
@@ -360,6 +360,8 @@ export async function lerArquivos(entrada) {
   const outrosMd = []; // .md de um .zip que não são páginas da tabela do Notion
   const marcadores = new Set();
   const keep = [];
+  const copia = []; // sonhario.json de uma cópia do acervo
+  let copiaEm = null;
   for (const f of arquivos) {
     const txt = await f.text();
     const n = f.name.toLowerCase();
@@ -370,6 +372,7 @@ export async function lerArquivos(entrada) {
     else if (n.endsWith('.json')) {
       try {
         const o = JSON.parse(txt);
+        if (ehCopiaSonhario(o)) { copia.push(...deCopiaSonhario(o, midias)); copiaEm = o.em || copiaEm; continue; }
         (o.labels || []).forEach((l) => marcadores.add(l.name));
         keep.push(o);
       } catch { /* não é uma nota do Keep */ }
@@ -377,6 +380,8 @@ export async function lerArquivos(entrada) {
     else if (f.doZip) outrosMd.push({ txt, nome: f.name });
     else sonhos.push(...(n.endsWith('.md') ? deMarkdown(txt, f.name, midias) : deTexto(txt, f.name, midias)));
   }
+  // Cópia do Sonhário: o .json já tem tudo; o Sonhos.md que vem junto é só para ler.
+  if (copia.length) return { sonhos: copia, keep: [], midias, marcadores: [], soCSV: false, copia: { em: copiaEm } };
   // Num export do Notion, as outras páginas (a da tabela, subpáginas soltas) ficam de fora.
   // Num .zip que não é do Notion (ex.: Sonhos.md + pasta de anexos), cada .md vira sonhos.
   if (!paginas.length && !doCSV.length) for (const o of outrosMd) sonhos.push(...deMarkdown(o.txt, o.nome, midias));
@@ -386,6 +391,40 @@ export async function lerArquivos(entrada) {
   const unicos = doCSV.filter((x) => { const k = x.titulo + '|' + x.sonhado_em + '|' + x.temas.join(); return !vistos.has(k) && vistos.add(k); });
   sonhos.push(...(paginas.length ? paginas : unicos));
   return { sonhos, keep, midias, marcadores: [...marcadores].sort(), soCSV: !paginas.length && doCSV.length > 0 };
+}
+
+// Cópia do acervo baixada no próprio Sonhário (⋯ › Baixar cópia do acervo, ou a .json de antes de trancar).
+const ehCopiaSonhario = (o) => o && o.app === 'Sonhário' && Array.isArray(o.sonhos);
+
+export function deCopiaSonhario(o, midias = null) {
+  const saida = [];
+  for (const x of o.sonhos) {
+    if (!x || typeof x !== 'object') continue;
+    // Id novo: a cópia pode ser restaurada em outra conta, onde o id antigo já pode existir.
+    const s = novoSonho({
+      id: novoId(),
+      titulo: String(x.titulo || ''),
+      texto: String(x.texto || ''),
+      temas: Array.isArray(x.temas) ? x.temas.map(String).filter(Boolean) : [],
+      sonhado_em: x.sonhado_em || new Date().toISOString(),
+      criado_em: x.criado_em || x.sonhado_em || new Date().toISOString(),
+      atualizado_em: x.atualizado_em || x.criado_em || x.sonhado_em || new Date().toISOString(),
+      status: STATUS[x.status] ? x.status : 'nao_aberto',
+      cor: CORES[x.cor] ? x.cor : 'branco',
+      favorito: !!x.favorito,
+      levar_sessao: !!x.levar_sessao,
+      conclusoes: Array.isArray(x.conclusoes) ? x.conclusoes.filter((c) => c && c.texto) : [],
+    });
+    // Anexos: só a cópia em .zip traz os arquivos ("arquivo" aponta para anexos/…).
+    const audios = [], imagens = [];
+    let faltando = 0;
+    const pegar = (arq, lista) => { const item = midias?.achar(arq); if (item) lista.push(item); else faltando++; };
+    if (x.audio?.arquivo) pegar(x.audio.arquivo, audios);
+    for (const im of Array.isArray(x.imagens) ? x.imagens : []) if (im?.arquivo) pegar(im.arquivo, imagens);
+    if (audios.length || imagens.length || faltando) s._midia = { audios, imagens, faltando };
+    if (s.titulo || s.texto || s._midia || s.conclusoes.length) saida.push(s);
+  }
+  return saida;
 }
 
 // Compara o que vai entrar com o acervo, sem duplicar.
