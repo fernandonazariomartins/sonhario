@@ -230,6 +230,10 @@ export function dadosIniciais() {
     nt(1, 'casa', 'A casa quase nunca é a minha de hoje: é a da avó, ou uma mistura das duas. Reparar em que cômodo cada sonho acontece.', 40),
     nt(2, 'casa', 'Nos últimos meses ela ganha cômodos que eu não conhecia. Levar essa sequência para a Helena.', 3),
     nt(3, 'água', 'Quase sempre subindo devagar, sem afogar ninguém. O que está enchendo?', 12),
+    // Amplificações sobre o processo (vista Amplificações do acervo), sem sonho próprio.
+    nt(4, '@processo', 'Desde que comecei a anotar todo dia, os sonhos ficaram mais longos e cheios de gente. Parece que lembrar puxa mais lembrança.', 60),
+    nt(5, '@processo', 'Li sobre a descida de Inana ao mundo de baixo e pensei em todos os porões e subsolos deste ano. Algo me chama para baixo antes de subir.', 18),
+    nt(6, '@processo', 'Na sessão, a Helena notou que quase nunca estou sozinha nos sonhos, mas raramente falo com alguém. Fico observando.', 5),
   ];
   return { sonhos, daMarina, compartilhamentos, perfis, comentarios, notas_tema };
 }

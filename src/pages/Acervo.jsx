@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEstado, useCorTema } from '../lib/estado.jsx';
 import { STATUS, CORES, dataCurta, dataLonga, mesAno, duracao, contarTemas } from '../lib/sonhos.js';
 import Janela from '../components/Janela.jsx';
-import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario, Documento } from '../components/Icones.jsx';
+import { Mural, Lista, Tema, Titulo, Busca, Mic, Estrela, Fechar, Imagem, Mensagem, Calendario as IconeCalendario, Documento, Amplificar } from '../components/Icones.jsx';
 import { LinhaDoTempo, Calendario, contarPorAno, noPeriodo } from '../components/Tempo.jsx';
 import { semViuvas } from '../lib/tipografia.js';
 import { interpretar, casar } from '../lib/busca.js';
@@ -13,6 +13,7 @@ import { RetratoTema } from '../components/Laboratorio.jsx';
 import { retratoDoTema } from '../lib/insights.js';
 import ComentariosTema from '../components/ComentariosTema.jsx';
 import { useNotasTema, notasDoTema, renomearNasNotas } from '../lib/notasTema.js';
+import PainelAmplificacoes from '../components/Amplificacoes.jsx';
 
 export function Status({ s, cor }) {
   const st = STATUS[s] || STATUS.nao_aberto;
@@ -274,7 +275,8 @@ export default function Acervo() {
       if (vista !== 'temas' && soAtencao && s.status !== 'dar_atencao') return false;
       if (vista !== 'temas' && soSemTitulo && s.titulo?.trim()) return false;
       if (vista !== 'temas' && soSemTema && s.temas?.length) return false;
-      if (consulta.vazia) return true;
+      // Na vista Amplificações, a busca vale para cada amplificação (no painel), não para o sonho.
+      if (consulta.vazia || vista === 'amplificacoes') return true;
       const r = casar(s, consulta);
       if (!r) return false;
       totalOcorrencias += r.ocorrencias;
@@ -302,7 +304,7 @@ export default function Acervo() {
   };
   const doPeriodo = useMemo(() => noPeriodo(filtrados, ano, mes), [filtrados, ano, mes]);
   const visiveis = doPeriodo.slice(0, limite);
-  const mostrarExemplos = exemplos.length > 0 && !comFiltro && (!anoUrl || anoUrl === String(anos[0]) || sonhos.length === 0);
+  const mostrarExemplos = exemplos.length > 0 && vista !== 'amplificacoes' && !comFiltro && (!anoUrl || anoUrl === String(anos[0]) || sonhos.length === 0);
 
   // Calendário: o mês da URL (mesmo vazio) ou o mês do sonho mais recente.
   const ultimoMes = (a) => (contagem[a]?.meses.findLastIndex((n) => n > 0) ?? -1) + 1 || 1;
@@ -319,6 +321,7 @@ export default function Acervo() {
     if (params.get('mes')) novo.mes = params.get('mes');
     if (temaFiltro && v !== 'temas') novo.tema = temaFiltro;
     if (v === 'temas' && params.get('r')) novo.r = params.get('r');
+    if (v === 'amplificacoes' && params.get('a')) novo.a = params.get('a');
     setParams(novo);
   };
   const aba = (v, Icone, nome) => (
@@ -336,12 +339,12 @@ export default function Acervo() {
           {busca ? <button type="button" className="busca-limpar" onClick={() => { setBusca(''); campoBusca.current?.focus(); }} aria-label="Limpar busca">×</button>
             : <kbd className="busca-atalho" aria-hidden="true">/</kbd>}
         </label>
-        <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}</div>
+        <div className="vistas" role="group" aria-label="Visualização">{aba('mural', Mural, 'Mural')}{aba('lista', Lista, 'Lista')}{aba('calendario', IconeCalendario, 'Calendário')}{aba('temas', Tema, 'Temas')}{aba('amplificacoes', Amplificar, 'Amplificações')}</div>
       </div>
 
       {!carregado && sonhos.length === 0 ? <Carregando /> : sonhos.length === 0 ? (!mostrarExemplos && <Vazio />) : (
         <>
-          {!consulta.vazia && (
+          {!consulta.vazia && vista !== 'amplificacoes' && (
             <div className="busca-resumo" role="status">
               <span>
                 <strong>{filtrados.length === 1 ? '1 sonho' : filtrados.length + ' sonhos'}</strong>
@@ -408,8 +411,9 @@ export default function Acervo() {
               <span style={{ fontSize: 13, color: 'var(--muted)' }}>{limite} de {doPeriodo.length}</span>
             </div>
           )}
+          {vista === 'amplificacoes' && <PainelAmplificacoes sonhos={filtrados} consulta={consulta} comProcesso={!temaFiltro && !soFavoritos && !soAtencao && !soSemTitulo && !soSemTema} />}
           {vista === 'temas' && <PorTema sonhos={filtrados} temas={temas} achados={achados} />}
-          {filtrados.length === 0 && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? 'Nenhum sonho com esse filtro.' : semViuvas('Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras.')}</p>}
+          {filtrados.length === 0 && vista !== 'amplificacoes' && <p style={{ color: 'var(--muted)' }}>{consulta.vazia ? 'Nenhum sonho com esse filtro.' : semViuvas('Nenhum sonho com essa busca. Tente o começo da palavra ou menos palavras.')}</p>}
         </>
       )}
 

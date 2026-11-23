@@ -129,3 +129,9 @@ export async function restaurarNotas(entrando) {
 }
 
 export const notasDoTema = (notas, tema) => notas.filter((n) => n.tema === tema);
+
+// Amplificações gerais, sobre o processo como um todo (vista Amplificações do acervo).
+// Moram na mesma tabela, com este "tema" reservado; com o cofre, ele também sai trancado.
+export const PROCESSO = '@processo';
+export const ehProcesso = (n) => n.tema === PROCESSO;
+export const amplificarProcesso = (texto) => comentarTema(PROCESSO, texto);

@@ -53,11 +53,21 @@ function markdown(sonhos, quando) {
   return linhas.join('\n');
 }
 
-function mdNotas(notas) {
-  if (!notas.length) return '';
+const PROCESSO = '@processo'; // o mesmo de notasTema.js: amplificações sobre o processo
+
+function mdNotas(todas) {
+  const processo = todas.filter((n) => n.tema === PROCESSO);
+  const notas = todas.filter((n) => n.tema !== PROCESSO);
+  const linhas = [];
+  if (processo.length) {
+    linhas.push('', '---', '', '# Amplificações sobre o processo', '');
+    for (const n of processo) linhas.push(`- ${dataHora(n.criado_em).slice(0, 10)} · ${n.texto.trim().replace(/\n+/g, ' ')}`);
+    linhas.push('');
+  }
+  if (!notas.length) return linhas.join('\n');
   const porTema = new Map();
   for (const n of notas) { if (!porTema.has(n.tema)) porTema.set(n.tema, []); porTema.get(n.tema).push(n); }
-  const linhas = ['', '---', '', '# Comentários sobre os temas', ''];
+  linhas.push('', '---', '', '# Comentários sobre os temas', '');
   for (const [tema, lista] of [...porTema].sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))) {
     linhas.push('## ' + tema, '');
     for (const n of lista) linhas.push(`- ${dataHora(n.criado_em).slice(0, 10)} · ${n.texto.trim().replace(/\n+/g, ' ')}`);
@@ -77,7 +87,7 @@ O que tem aqui
 Para restaurar
 No Sonhário, abra ⋯ › Importar sonhos e envie este .zip inteiro, sem descompactar.
 Os sonhos voltam com temas, status, favoritos, amplificações, áudios e imagens,
-além dos comentários sobre os temas.
+além dos comentários sobre os temas e das amplificações sobre o processo.
 Os que já estiverem no acervo são pulados.
 
 Atenção: esta cópia está aberta, sem a criptografia do app.

@@ -58,7 +58,8 @@ input, textarea, select { font-family: inherit; color: var(--ink); }
 .vista:hover { color: var(--ink); }
 .vista.ativa { color: var(--ink); font-weight: 800; border-bottom-color: var(--azul); }
 .vista.ativa svg { color: var(--azul); }
-@media (max-width: 640px) { .vistas { width: 100%; justify-content: space-between; } .vista { padding: 0 6px; } }
+@media (max-width: 640px) { .vistas { width: 100%; justify-content: space-between; overflow-x: auto; scrollbar-width: none; } .vistas::-webkit-scrollbar { display: none; } .vista { padding: 0 6px; flex: none; } }
+@media (max-width: 480px) { .vista svg { display: none; } }
 .busca { flex: 1 1 220px; max-width: 480px; height: 44px; border-radius: 10px; background: var(--cinza); display: flex; align-items: center; gap: 8px; padding: 0 14px; color: var(--muted); }
 .busca input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 14px; outline: none; }
 .busca input::-webkit-search-cancel-button { display: none; }
@@ -406,3 +407,19 @@ button.nota { border: 0; text-align: left; font: inherit; cursor: pointer; }
   .rel-rodape .socials { display: none; }
   .rel-rodape a { color: var(--ink); }
 }
+
+/* Vista Amplificações do acervo: a amplificação na frente, o sonho como origem embaixo. */
+.amp-tipos { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.amp-tipo { height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: #fff; color: var(--muted); font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.amp-tipo span { font-weight: 500; opacity: .75; }
+.amp-tipo:hover { color: var(--ink); border-color: var(--node); }
+.amp-tipo.ativa { background: var(--ink); border-color: var(--ink); color: #fff; }
+.nota-amp { gap: 10px; padding: 16px; }
+.nota-amp > p { font-size: 15.5px; line-height: 1.6; -webkit-line-clamp: 14; white-space: pre-line; overflow-wrap: anywhere; }
+.amp-origem { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid rgba(31, 35, 40, .1); }
+.amp-origem h3 { font-size: 13.5px; color: var(--ink); }
+.nota-processo { background: #fff; box-shadow: inset 3px 0 0 var(--azul), var(--shadow-card); }
+.nota-processo:hover { box-shadow: inset 3px 0 0 var(--azul), var(--shadow-card); }
+.amp-nova { width: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #fff; box-shadow: var(--shadow-pop); }
+.amp-nova.fechada { flex-direction: row; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px; border: 0; box-shadow: var(--shadow-card); color: var(--muted); font: inherit; font-size: 15px; text-align: left; cursor: text; }
+.amp-nova.fechada:hover { box-shadow: var(--shadow-pop); color: var(--ink); }

@@ -45,4 +45,5 @@ export const Compartilhar = (p) => <I {...p}><circle cx="18" cy="5.5" r="2.5" />
 export const Link = (p) => <I {...p} d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />;
 export const Imagem = (p) => <I {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9.5" r="1.6" /><path d="M21 16l-5-5-9 9" /></I>;
 export const Documento = (p) => <I {...p}><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 17v-3M12 17v-5M15 17v-2" /></I>;
+export const Amplificar = (p) => <I {...p}><circle cx="12" cy="12" r="2" /><path d="M8 8a5.7 5.7 0 0 0 0 8M16 8a5.7 5.7 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14" /></I>;
 export const Restaurar = (p) => <I {...p} d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />;
